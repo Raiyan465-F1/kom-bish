@@ -33,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--model", default=None, help="default: GEMINI_MODEL from the environment")
     p.add_argument("--sleep", type=float, default=2.0, help="seconds between calls (free-tier limits are unpublished)")
     args = p.parse_args(argv)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # Bangla transcripts on a Windows console
 
     with (args.dir / "expected.csv").open(encoding="utf-8-sig", newline="") as f:
         rows = list(csv.DictReader(f))

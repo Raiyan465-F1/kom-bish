@@ -54,13 +54,14 @@ def count(rate: float | None, n: int) -> int | None:
 
 def run_offscript() -> dict:
     """Run the off-script test in a subprocess: pass/fail from pytest, counts from run_offscript()."""
+    utf8 = {"text": True, "encoding": "utf-8", "errors": "replace"}   # test output can contain Bangla
     passed = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_offscript.py"],
-                            cwd=ROOT, capture_output=True, text=True).returncode == 0
+                            cwd=ROOT, capture_output=True, **utf8).returncode == 0
     out = subprocess.run(
         [sys.executable, "-c",
          "import json; from tests.test_offscript import run_offscript; r = run_offscript(); "
          "r.pop('details'); print(json.dumps(r))"],
-        cwd=ROOT, capture_output=True, text=True, check=True).stdout
+        cwd=ROOT, capture_output=True, check=True, **utf8).stdout
     return {**json.loads(out.strip().splitlines()[-1]), "pytest_passed": passed}
 
 

@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("base_url")
     p.add_argument("--images", type=Path, help="folder of test photos")
     args = p.parse_args(argv)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # Bangla headlines on a Windows console
 
     from gradio_client import Client, handle_file
 

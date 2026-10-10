@@ -38,7 +38,8 @@ def check(name: str, ok: bool, detail: str = "") -> bool:
 
 
 def git(*args: str) -> str:
-    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
+                          errors="replace").stdout.strip()
 
 
 def tracked_files() -> list[str]:
@@ -86,7 +87,9 @@ def check_git() -> None:
 
 def check_tests() -> None:
     for name, extra in (("pytest -q", []), ("pytest -q -m final", ["-m", "final"])):
-        run = subprocess.run([sys.executable, "-m", "pytest", "-q", *extra], cwd=ROOT, capture_output=True, text=True)
+        run = subprocess.run([sys.executable, "-m", "pytest", "-q", *extra], cwd=ROOT, capture_output=True,
+                             text=True, encoding="utf-8", errors="replace",
+                             env=os.environ | {"PYTHONIOENCODING": "utf-8"})
         tail = (run.stdout.strip().splitlines() or [""])[-1]
         failed = "; ".join(line for line in run.stdout.splitlines() if line.startswith("FAILED"))
         check(f"tests: {name}", run.returncode == 0, f"{tail} {failed}".strip())
@@ -244,6 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-network", action="store_true", help="skip the link checks")
     p.add_argument("--skip-tests", action="store_true", help="skip the two pytest runs")
     args = p.parse_args(argv)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # Windows consoles default to a legacy code page
 
     files = tracked_files()
     check_git()

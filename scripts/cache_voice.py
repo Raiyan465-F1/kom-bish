@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("audio_file", type=Path)
     p.add_argument("--model", help="overrides GEMINI_MODEL for this call")
     args = p.parse_args(argv)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # Bangla transcript on a Windows console
 
     data = args.audio_file.read_bytes()
     if len(data) > voice.MAX_BYTES:
