@@ -1,0 +1,72 @@
+1
+00:00:00,500 --> 00:00:05,000
+Most farmers spray
+on the dealer's word.
+
+2
+00:00:05,000 --> 00:00:10,000
+Kom Bish says whether
+to spray at all.
+
+3
+00:00:10,000 --> 00:00:18,000
+TODO-C: narration line 2
+
+4
+00:00:18,000 --> 00:00:26,000
+The farmer reads the consent text
+and ticks the box.
+
+5
+00:00:26,000 --> 00:00:36,000
+A rice-leaf photo is uploaded.
+(Sample image: RiceLeafBD test split)
+
+6
+00:00:36,000 --> 00:00:44,000
+"From the photo, this looks like
+bacterial leaf blight."
+
+7
+00:00:44,000 --> 00:00:54,000
+No insecticide needed —
+fix the fertiliser
+
+8
+00:00:54,000 --> 00:01:05,000
+The same reviewed text plays
+as a recorded human voice.
+
+9
+00:01:05,000 --> 00:01:15,000
+"Before spraying anything else,
+talk to your agriculture officer."
+
+10
+00:01:15,000 --> 00:01:22,000
+Blast: Spray correctly,
+and stay safe
+
+11
+00:01:22,000 --> 00:01:27,000
+A safety clip plays
+with every spray answer.
+
+12
+00:01:27,000 --> 00:01:33,000
+Not sure — call 16123
+or your agriculture officer
+
+13
+00:01:33,000 --> 00:01:38,000
+When it can't recognise the problem,
+Kom Bish doesn't guess.
+
+14
+00:01:38,000 --> 00:01:44,000
+Code, live demo and evaluation:
+links on screen
+
+15
+00:01:44,000 --> 00:01:50,000
+TODO-C: narration line 4 (thank you)

@@ -1,0 +1,12 @@
+Kom Bish (কম বিষ) — Team Unsick — Hack for Humanity BD 2026, Round 2
+Track: Inclusive Rural Development & Agriculture
+Team: <name 1> (lead, <email>, <phone>), <name 2>, <name 3>
+
+GitHub repository:   https://github.com/<gh-user>/kom-bish
+Live demo:           <primary https URL>  (how to try: tick consent, upload a rice-leaf photo, press পরামর্শ নিন)
+Demo mirror:         <second https URL, if any>
+Demo video (YouTube, unlisted): <https://youtu.be/...>
+Demo video (file in this folder): Kom_Bish_demo.mp4
+Pitch deck (file in this folder): Kom_Bish_deck.pptx
+Worker Studio entry: <URL if available>
+Test photos for judges: https://github.com/<gh-user>/kom-bish/tree/main/examples
