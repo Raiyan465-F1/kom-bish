@@ -111,5 +111,6 @@ def bootstrap_counts() -> None:
                 rec = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if rec.get("type") == "consultation":
+            # scripts/check_logging.py writes app_version="test" records; they are not consultations.
+            if rec.get("type") == "consultation" and rec.get("app_version") != "test":
                 _bump(rec)

@@ -78,6 +78,27 @@ def test_empty_mapping_exits(raw, tmp_path):
     assert "Mapping is empty" in str(e.value)
 
 
+def test_duplicates_are_removed_and_label_conflicts_dropped(tmp_path):
+    import shutil
+
+    mapping = make_synthetic_data.make(tmp_path, per_class=PER_CLASS)
+    root = tmp_path / "raw"
+    blb, tungro, brown = (root / "RiceLeafBD" / c for c in ("Bacterial Leaf Blight", "Tungro Virus", "Brown Spot"))
+    shutil.copy(blb / "img_000.jpg", blb / "img_000 (1).jpg")        # same class twice: keep one
+    shutil.copy(blb / "img_001.jpg", tungro / "conflict.jpg")        # BLB vs other: drop both copies
+    shutil.copy(brown / "img_002.jpg", tungro / "same_target.jpg")   # other vs other: keep one
+    out = tmp_path / "out"
+    prepare_data.main(["--root", str(root), "--out", str(out), "--mapping-json", str(mapping),
+                       "--accept-count-mismatch"])
+    with (out / "manifest.csv").open(encoding="utf-8", newline="") as f:
+        origs = [r["orig_path"] for r in csv.DictReader(f)]
+    assert len(origs) == N_IMAGES - 1                                 # 111 files in, 3 extras and 1 conflict out
+    assert "RiceLeafBD/Bacterial Leaf Blight/img_001.jpg" not in origs
+    assert "RiceLeafBD/Tungro Virus/conflict.jpg" not in origs
+    assert sum(o.startswith("RiceLeafBD/Bacterial Leaf Blight/img_000") for o in origs) == 1
+    assert ("RiceLeafBD/Brown Spot/img_002.jpg" in origs) != ("RiceLeafBD/Tungro Virus/same_target.jpg" in origs)
+
+
 def test_split_is_seeded(raw, tmp_path):
     root, mapping = raw
     manifests = []

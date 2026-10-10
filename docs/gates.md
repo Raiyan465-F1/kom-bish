@@ -20,8 +20,40 @@ Fill in **Decision**, **Date** and **Who** when each gate is decided.
 
 ## Data counts
 
-- RiceLeafBD and BD5: TODO-HUMAN. Counts are checked against the published figures when
-  `training/prepare_data.py` runs on the real folders (step 07 Part B). Write one line here per mismatch.
+Prepared locally on 11 Oct 2026 with `python training/prepare_data.py --root data/raw --out data/prepared
+--dhs --phash --accept-count-mismatch`. The folder mapping in `prepare_data.py` came from the folder names,
+which were unambiguous. Files on disk vs the published figures:
+
+| Source, class | Files on disk | Published | Kept for training | What we know |
+|---|---|---|---|---|
+| RiceLeafBD, Bacterial Leaf Blight | 422 | 417 | 335 | 66 files are byte-identical copies of another file in the folder (removed). 21 more are byte-identical to a file in another class folder (dropped, see below). |
+| RiceLeafBD, Healthy | 252 | 252 | 252 | Matches. |
+| RiceLeafBD, Brown Spot | 356 | 356 | 348 | 5 byte-identical copies removed; 3 dropped as label conflicts. |
+| RiceLeafBD, Tungro Virus | 530 | 530 | 495 | 17 byte-identical copies removed; 18 dropped as label conflicts. |
+| BD5, Blast | 720 | 339 | 720 | **Unexplained.** See the BD5 note below. |
+| BD5, Normal Leaf | 834 | 923 | 834 | **Unexplained.** |
+| BD5, Narrow Brown Spot | 476 | 329 | 476 | **Unexplained.** |
+| BD5, Sheath Blight | 626 | 454 | 623 | **Unexplained.** 3 byte-identical copies removed. |
+| BD5, Tungro | 494 | 500 | 494 | **Unexplained.** |
+
+Target totals kept: bacterial_leaf_blight 335, blast 720, healthy 1,086, other 2,436 (4,577 images), split
+70/15/15 into train 3,208, val 696, test 673.
+
+- **Label conflicts (dropped, never guessed):** 21 RiceLeafBD photos exist byte-for-byte in two class folders
+  with different targets: 18 in both "Bacterial Leaf Blight" and "Tungro Virus", 3 in both "Bacterial Leaf
+  Blight" and "Brown Spot". Both copies of each were dropped (42 files). The prep log lists every pair.
+- **BD5 does not match its own description.** The folder holds 3,150 JPEGs, all 300×300 px. The PDFs inside it
+  and the Mendeley page for version 2 (DOI 10.17632/sjkptpgv79.2, checked 11 Oct 2026) both say 2,545 images
+  (Blast 339, Narrow Brown Spot 329, Sheath Blight 454, Tungro 500, Normal Leaf 923) resized to 224×224. We
+  do not know why the download differs. TODO-HUMAN: confirm where this archive came from and whether it is
+  the official "Download All" file.
+- **Near-duplicates:** with `--phash` (Hamming distance ≤ 5, an unverified threshold) 1,200 images fell into
+  531 groups (burst shots of the same leaf). Each group is kept inside one split so the test split does not
+  contain near-copies of training images.
+- **Background confound (seen by eye, 30 random images per source):** BD5 images are detached leaves on a
+  white sheet; RiceLeafBD images are taken in the field. All blast comes from BD5 and all BLB from RiceLeafBD,
+  so a model can separate them by background alone. The Dhan-Shomadhan **field** blast images are the only
+  check of blast on a field background.
 - Dhan-Shomadhan (HF mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification`), loaded locally
   with `datasets==5.1.0` on 11 Oct 2026: 1,106 rows in total; **74 field-background "Rice Blast" images**
   (198 more on a white background, which are not used). These 74 are the held-out cross-source blast test.

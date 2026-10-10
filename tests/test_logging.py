@@ -75,9 +75,16 @@ def test_counters(store):
     assert store.counts() == {"total": 6, "no_spray": 2, "correct_use": 1, "referrals": 3, "sprays_avoided": 1}
 
 
+def test_bootstrap_ignores_check_script_records(store):
+    store.log_consult({**record("R1_BLB", True), "app_version": "0.1.0"})
+    store.log_consult({**record("R3_HEALTHY", True), "app_version": "test"})   # written by scripts/check_logging.py
+    store.bootstrap_counts()
+    assert store.counts() == {"total": 1, "no_spray": 1, "correct_use": 0, "referrals": 0, "sprays_avoided": 1}
+
+
 def test_bootstrap_restores_counts_after_restart(store):
     for rule_id, planning in [("R1_BLB", True), ("R2_BLAST", None), ("R5_ABSTAIN", None)]:
-        rid = store.log_consult(record(rule_id, planning))
+        rid = store.log_consult({**record(rule_id, planning), "app_version": "0.1.0"})
     store.log_feedback(rid)
     with store.LOG_FILE.open("a", encoding="utf-8") as f:
         f.write("not json\n")

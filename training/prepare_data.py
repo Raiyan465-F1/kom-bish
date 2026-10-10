@@ -48,7 +48,17 @@ PUBLISHED_COUNTS = {
 
 # Filled in Part B from the printed tree. Key: folder path relative to --root, exactly as printed
 # (forward slashes). Value: (source, source_class) present in SOURCE_CLASS_TO_TARGET, or None to drop.
-FOLDER_TO_TARGET: dict[str, tuple[str, str] | None] = {}
+FOLDER_TO_TARGET: dict[str, tuple[str, str] | None] = {   # filled 11 Oct 2026 from the local --print-tree
+    "BD5/Blast": ("BD5", "Blast"),
+    "BD5/Narrow_Brown_Spot": ("BD5", "Narrow Brown Spot"),
+    "BD5/Normal_Leaf": ("BD5", "Normal Leaf"),
+    "BD5/Sheath_Blight": ("BD5", "Sheath Blight"),
+    "BD5/Tungro": ("BD5", "Tungro"),
+    "RiceLeafBD/Bacterial Leaf Blight": ("RiceLeafBD", "Bacterial Leaf Blight"),
+    "RiceLeafBD/Brown Spot": ("RiceLeafBD", "Brown Spot"),
+    "RiceLeafBD/Healthy Leaf": ("RiceLeafBD", "Healthy"),
+    "RiceLeafBD/Tungro Virus": ("RiceLeafBD", "Tungro Virus"),
+}
 
 # Only if a dataset keeps labels in a CSV. Filled from the printed CSV header. Shape:
 # {"csv": "<rel path>", "image_dir": "<rel dir>", "file_col": "<col>", "label_col": "<col>",
@@ -173,6 +183,45 @@ def check_counts(records: list[dict], accept_mismatch: bool) -> None:
         raise SystemExit(MSG_COUNTS)
 
 
+def resolve_exact_duplicates(records: list[dict], root: Path) -> list[dict]:
+    """Keep one copy of byte-identical files. Drop every copy when the copies disagree on the target class.
+
+    The same photo filed under two classes with different targets has no trustworthy label: never guess.
+    """
+    by_hash: dict[str, list[dict]] = {}
+    for r in records:
+        by_hash.setdefault(r["sha1"], []).append(r)
+
+    def target(r: dict) -> str:
+        return SOURCE_CLASS_TO_TARGET[(r["source"], r["source_class"])]
+
+    conflicts = {h: members for h, members in by_hash.items() if len({target(m) for m in members}) > 1}
+    kept, seen = [], set()
+    removed: Counter = Counter()
+    for r in records:
+        if r["sha1"] in conflicts:
+            continue
+        if r["sha1"] in seen:
+            removed[(r["source"], r["source_class"])] += 1
+            continue
+        seen.add(r["sha1"])
+        kept.append(r)
+
+    print(f"\nByte-identical duplicates removed (one copy kept): {sum(removed.values())} files")
+    for (source, cls), n in sorted(removed.items()):
+        print(f"{n:6d}  {source} | {cls}")
+    dropped = sum(len(m) for m in conflicts.values())
+    print(f"Label conflicts dropped (same photo filed under classes with different targets): "
+          f"{len(conflicts)} photos, {dropped} files")
+    for members in conflicts.values():
+        print("        " + "  ==  ".join(rel(m["orig"], root) for m in members))
+    after = Counter((r["source"], r["source_class"]) for r in kept)
+    print("Images kept per (source, source class):")
+    for key in PUBLISHED_COUNTS:
+        print(f"{after[key]:6d}  {key[0]} | {key[1]} -> {SOURCE_CLASS_TO_TARGET[key]}")
+    return kept
+
+
 # --------------------------------------------------------------------- split
 
 def group_records(records: list[dict], use_phash: bool, phash_dist: int) -> list[list[int]]:
@@ -219,8 +268,8 @@ def group_records(records: list[dict], use_phash: bool, phash_dist: int) -> list
     for i in range(len(records)):
         groups.setdefault(find(i), []).append(i)
     multi = [g for g in groups.values() if len(g) > 1]
-    print(f"\nDuplicate groups kept in one split: {len(multi)} groups, {sum(map(len, multi))} images"
-          f" ({'exact + phash' if use_phash else 'exact only'})")
+    print(f"\nNear-duplicate groups kept in one split: {len(multi)} groups, {sum(map(len, multi))} images"
+          f" ({f'phash distance <= {phash_dist}' if use_phash else '--phash not set'})")
     return list(groups.values())
 
 
@@ -373,6 +422,7 @@ def main(argv: list[str] | None = None) -> int:
     check_counts(records, args.accept_count_mismatch)
     for r in records:
         r["sha1"] = hashlib.sha1(r["orig"].read_bytes()).hexdigest()
+    records = resolve_exact_duplicates(records, root)
     groups = group_records(records, args.phash, args.phash_dist)
     split_groups(records, groups, args.seed)
 
