@@ -1,0 +1,13 @@
+name: Keep Render awake
+# Runs only when the Actions variable RENDER_URL is set (Render route, gate G1).
+# Render free sleeps after 15 minutes idle. One service awake all month uses 744 of the 750 free hours.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    if: ${{ vars.RENDER_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS -m 90 -o /dev/null -w "%{http_code}\n" "${{ vars.RENDER_URL }}" || true

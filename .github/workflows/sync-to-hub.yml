@@ -1,0 +1,30 @@
+name: Sync to Hugging Face Space
+# Runs only when the Actions variable HF_SPACE_ID is set (ZeroGPU route, gate G1).
+# Every push to main rebuilds the Space. After the submission email is sent, do not push to main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  test:
+    if: ${{ vars.HF_SPACE_ID != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-render.txt -r requirements-dev.txt
+      - run: pytest -q
+        env:
+          MODEL_REPO: ${{ vars.MODEL_REPO }}
+  sync:
+    needs: test   # a red build never reaches the Space
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: huggingface/hub-sync@v0.1.0
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: ${{ vars.HF_SPACE_ID }}
+          hf_token: ${{ secrets.HF_SYNC_TOKEN }}
