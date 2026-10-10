@@ -26,3 +26,5 @@ junk_photos/
 submission/private/
 video/*.mp4
 data/prepared/
+data/prepared_run*/
+data/export_*/

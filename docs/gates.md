@@ -5,7 +5,7 @@ Fill in **Decision**, **Date** and **Who** when each gate is decided.
 | Gate | Name | Deadline | Decision | Date | Who |
 |---|---|---|---|---|---|
 | G1 | Hosting route | Sat 10 Oct, 10 PM | TODO-HUMAN: ZeroGPU / Render / both? Which ZeroGPU variant works? URLs? (see "G1 — hosting route" below) | | |
-| G2 | Trained ONNX | Sun 11 Oct, 6 PM | TODO-HUMAN: not trained yet. Needs the raw datasets (step 02), the folder mapping (step 07 Part B) and the Kaggle run (step 10). | | |
+| G2 | Trained ONNX | Sun 11 Oct, 6 PM | **Passed with a changed plan.** Trained ONNX exists (`run9_final`). Trained on the laptop's RTX 4070, not Kaggle. Dhan-Shomadhan had to move into training, so there is no true cross-source blast test any more. Details in "G2 — training" below. | Sun 11 Oct 2026, about 03:00 | Claude Code on Raiyan's laptop; TODO-HUMAN: team to confirm |
 | G3 | Voice on/off | Sun 11 Oct, 10 PM | TODO-HUMAN: not scored yet. Needs `GEMINI_API_KEY` and 10 test notes (step 15). Until then `VOICE_ENABLED=false` (photo-only). | | |
 | G4 | Hosted app works on phones | Mon 12 Oct, noon | | | |
 | G5 | Feature freeze `v1.0` | Mon 12 Oct, 9 PM | | | |
@@ -53,10 +53,71 @@ Target totals kept: bacterial_leaf_blight 335, blast 720, healthy 1,086, other 2
 - **Background confound (seen by eye, 30 random images per source):** BD5 images are detached leaves on a
   white sheet; RiceLeafBD images are taken in the field. All blast comes from BD5 and all BLB from RiceLeafBD,
   so a model can separate them by background alone. The Dhan-Shomadhan **field** blast images are the only
-  check of blast on a field background.
+  check of blast on a field background. Run 1 confirmed the problem (see "G2 — training").
+- **Shipped data (`data/prepared_run3`, `training/results/manifest.csv`):** the above plus all of
+  Dhan-Shomadhan, prepared with `--dhs --dhs-all --phash --dhs-train-frac 0.6 --dhs-val-frac 0.15
+  --accept-count-mismatch`: train 3,974, val 863, test 828, held-out field blast 18 (5,683 images).
+- **Logging (step 14) checked live on 11 Oct 2026:** three `app_version="test"` records reached the private
+  dataset `Raiyan465/kom-bish-logs` (`data/consults_f1e50d178f4b4688b0e0dc48452e129c.jsonl`). Records with
+  `app_version="test"` are not counted on the dashboard.
+- **Gemini key checked on 11 Oct 2026** with one tiny text call per model: `gemini-3.5-flash-lite` answered
+  in 1.2 s; `gemini-3.8-flash` answered but took 96.6 s. No voice note has been tested yet (gate G3).
 - Dhan-Shomadhan (HF mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification`), loaded locally
   with `datasets==5.1.0` on 11 Oct 2026: 1,106 rows in total; **74 field-background "Rice Blast" images**
   (198 more on a white background, which are not used). These 74 are the held-out cross-source blast test.
+
+## G2 — training
+
+All numbers are in `training/results/metrics.json` (shipped model) and `training/results/runs/` (every run;
+`runs/README.md` is the comparison table). Nothing here is rounded up.
+
+**What happened**
+
+1. **Run 1 (the planned recipe) failed the cross-source test.** RiceLeafBD + BD5 only: test macro-F1 0.9208
+   (n = 673), but on the 74 Dhan-Shomadhan field blast photos it recalled 2 of 74 and abstained on 0 of 74.
+   Checked through the app's own code path, 51 of the 74 were called bacterial leaf blight (median confidence
+   0.930). The model had learned the background: blast was only ever on a white sheet, BLB only in the field.
+   Its threshold (t = 0.30, margin 0.0) answered every test image.
+2. **Run 2 (step 10's fallback):** 44 field blast photos moved into training, 12 into validation, 18 held
+   out. Held-out field blast recall 12 of 18.
+3. **Runs 3 to 8** tried: all Dhan-Shomadhan groups on both backgrounds, a stricter threshold rule,
+   class × background sampling, EfficientNet-B0, field-only training, 40 epochs, another seed. Choices were
+   made on validation numbers. Sampling by background, EfficientNet-B0 and field-only training were worse.
+4. **Run 9 (shipped):** all three datasets, 40 epochs, seed 42, and a threshold rule that also requires at
+   most 5% wrong advice on field-background validation photos.
+
+**Shipped model (`run9_final`), from `metrics.json`**
+
+- Model `mobilenetv3_large_100.ra_in1k`; T = 0.6603 (not clamped); t = 0.83; margin = 0.2; target met: yes;
+  spray-relevant precision ok: yes.
+- ONNX parity max |ORT − torch| = 9.54e-06; single file, 17.1 MB. `training/check_parity.py`: preprocessing
+  difference 0.0, logits difference 3.30e-05.
+- Test n = 828: macro-F1 with no abstention 0.9037; coverage 0.8780; selective accuracy 0.9697.
+  Precision on BLB answers 0.946 (n = 37); on blast answers 0.922 (n = 128).
+- Field-background photos (test split plus held-out field blast, n = 272): advice given 77 times, wrong
+  4 times (2 of 37 BLB answers, 2 of 5 blast answers, 0 of 35 healthy answers). All four are other diseases
+  given BLB or blast advice.
+- True field blast, n = 18: correct advice 3, referred 15, wrong advice 0. Without abstention the model
+  recalls 7 of 18. **Kom Bish mostly cannot recognise blast in a field photo; it refers instead.**
+- True field BLB, n = 50: correct advice 35, referred 15, wrong advice 0.
+- A repeat with seed 43 (not shipped): field wrong advice 5 of 87, and 2 of 18 field blast photos got wrong
+  advice. So "0 of 18" is not a guarantee.
+- Training: 313 seconds on an NVIDIA RTX 4070, torch 2.14.1+cu126, timm 1.0.30, onnx 1.23.2,
+  onnxruntime 1.31.0, Python 3.12.10. Kaggle was not used, so Kaggle's torch version is not relevant.
+
+**Changes from the written plan (TODO-HUMAN: team to confirm these are acceptable)**
+
+- Dhan-Shomadhan (all classes, both backgrounds) is now training data: 766 train, 167 validation, 155 test
+  images. "Rice Blast" maps to `blast`; every other disease to `other`. 18 field blast photos stay held out,
+  but they are a held-out slice of a seen source, **not** a cross-source test.
+- The threshold rule is stricter than step 09's: precision ≥ 0.90 overall, on BLB answers and on blast
+  answers, coverage ≥ 0.50, and at most 5% wrong advice on field-background validation photos. The 5% is our
+  choice, not a sourced figure.
+- 40 epochs instead of 20.
+- The test split was looked at while comparing runs and tightening the rule, so the test numbers are
+  somewhat optimistic.
+- The team's own photos and junk photos (step 19) do not exist yet, so the false-trigger and junk-refusal
+  numbers are still missing.
 
 ## Code checks done without the real model (11 Oct 2026)
 

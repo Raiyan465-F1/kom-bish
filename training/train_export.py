@@ -34,6 +34,7 @@ from torchvision.datasets import ImageFolder
 
 CLASSES = ["bacterial_leaf_blight", "blast", "healthy", "other"]
 TRAINED_ON = ["10.17632/kx9rx8p2mz.1", "10.17632/sjkptpgv79.2"]
+DHS_DOI = "10.17632/znsxdctwtt.1"   # Dhan-Shomadhan: listed only when its images are in train/ or val/
 IMG_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 TARGET_PRECISION, TARGET_COVERAGE = 0.90, 0.50
 MARGINS = (0.0, 0.1, 0.2, 0.3)
@@ -66,6 +67,11 @@ def take_subset(ds: ImageFolder, n: int | None, seed: int):
         return ds, list(ds.targets), list(ds.samples)
     idx = sorted(random.Random(seed).sample(range(len(ds)), n))
     return Subset(ds, idx), [ds.targets[i] for i in idx], [ds.samples[i] for i in idx]
+
+
+def keep_background(ds, targets: list, samples: list, background: str):
+    idx = [i for i, (path, _) in enumerate(samples) if background_of(*source_of(path)) == background]
+    return Subset(ds, idx), [targets[i] for i in idx], [samples[i] for i in idx]
 
 
 @torch.no_grad()   # not inference_mode(): fit_temperature needs these tensors in a backward pass
@@ -129,29 +135,97 @@ def selective(p: torch.Tensor, y: torch.Tensor, t: float, margin: float) -> dict
     return out
 
 
-def choose_threshold(pv: torch.Tensor, yv: torch.Tensor) -> tuple[float, float, bool]:
-    """Pick (t, margin) on validation. Returns (t, margin, target_met)."""
-    met = []
-    for margin in MARGINS:
-        for t in THRESHOLDS:   # smallest t that meets the target at this margin
-            s = selective(pv, yv, t, margin)
-            if s["precision"] >= TARGET_PRECISION and s["coverage"] >= TARGET_COVERAGE:
-                met.append((margin, t, s["coverage"]))
-                break
-    if met:
-        margin, t, _ = max(met, key=lambda c: (c[2], -abs(c[0] - 0.2)))
-        return t, margin, True
+FIELD_ADVICE_PRECISION = 0.95   # on field-background validation photos: at most 5% of advice answers wrong
+ADVICE_CLASSES = (0, 1, 2)      # BLB, blast, healthy give advice; "other" and abstain give a referral
+RULE_FIELD = ("field: the strict rule, and on field-background validation photos at most 5% of advice "
+              "answers (BLB, blast, healthy) are wrong")
+RULE_STRICT = "strict: precision >= 0.90 overall, on BLB answers and on blast answers, coverage >= 0.50"
+RULE_BASE = "base: precision >= 0.90 on answered images, coverage >= 0.50"
+RULE_NONE = "none met: margin 0.2, highest precision with coverage >= 0.50"
+
+
+def meets_target(s: dict, strict: bool) -> bool:
+    if not (s["precision"] >= TARGET_PRECISION and s["coverage"] >= TARGET_COVERAGE):
+        return False
+    if strict:   # BLB and blast answers are the costly errors: each must reach the target as well
+        for name in ("blb", "blast"):
+            cell = s[f"precision_{name}_answers"]
+            if cell["n"] and not cell["value"] >= TARGET_PRECISION:
+                return False
+    return True
+
+
+def advice_outcomes(p: torch.Tensor, y: torch.Tensor, t: float, margin: float) -> dict:
+    """What the farmer gets, per true class: correct advice, a referral, or wrong advice.
+
+    Advice = an answered BLB, blast or healthy prediction. An "other" prediction or an abstention is a
+    referral to 16123 or an officer, which is safe. Wrong advice is the harmful outcome.
+    """
+    pred = p.argmax(1)
+    advice = answered_mask(p, t, margin) & (pred != CLASSES.index("other"))
+    by_true = {}
+    for k, cls in enumerate(CLASSES):
+        true = y == k
+        row = {"n": int(true.sum()), "referred": int((true & ~advice).sum()),
+               "wrong_advice": int((true & advice & (pred != k)).sum())}
+        if k in ADVICE_CLASSES:
+            row["correct_advice"] = int((true & advice & (pred == k)).sum())
+        by_true[cls] = row
+    by_answer = {CLASSES[k]: {"given": int((advice & (pred == k)).sum()),
+                              "wrong": int((advice & (pred == k) & (y != k)).sum())} for k in ADVICE_CLASSES}
+    return {"n": int(len(y)), "advice_given": int(advice.sum()), "wrong_advice": int((advice & (pred != y)).sum()),
+            "by_true_class": by_true, "by_answer": by_answer}
+
+
+def field_advice_ok(p: torch.Tensor, y: torch.Tensor, field: torch.Tensor | None, t: float, margin: float) -> bool:
+    if field is None or not field.any():
+        return True
+    o = advice_outcomes(p[field], y[field], t, margin)
+    return o["advice_given"] == 0 or 1 - o["wrong_advice"] / o["advice_given"] >= FIELD_ADVICE_PRECISION
+
+
+def choose_threshold(pv: torch.Tensor, yv: torch.Tensor,
+                     field: torch.Tensor | None = None) -> tuple[float, float, bool, str]:
+    """Pick (t, margin) on validation. Returns (t, margin, target_met, rule).
+
+    Rules are tried from strictest to loosest. The first two are stricter than the original plan (which
+    only warned when BLB or blast answers fell below 0.90): run 1 answered every test image, and a later
+    run picked a low threshold that gave wrong advice on field photos.
+    """
+    has_field = field is not None and bool(field.any())
+    for use_field, strict, rule in ((True, True, RULE_FIELD), (False, True, RULE_STRICT), (False, False, RULE_BASE)):
+        if use_field and not has_field:
+            continue
+        met = []
+        for margin in MARGINS:
+            for t in THRESHOLDS:   # smallest t that meets the target at this margin
+                s = selective(pv, yv, t, margin)
+                if meets_target(s, strict) and (not use_field or field_advice_ok(pv, yv, field, t, margin)):
+                    met.append((margin, t, s["coverage"]))
+                    break
+        if met:
+            margin, t, _ = max(met, key=lambda c: (c[2], -abs(c[0] - 0.2)))
+            return t, margin, True, rule
     margin = 0.2
     covered = [(s["precision"], -t, t) for t in THRESHOLDS
                if (s := selective(pv, yv, t, margin))["coverage"] >= TARGET_COVERAGE and not math.isnan(s["precision"])]
     t = max(covered)[2] if covered else THRESHOLDS[0]
     print(ABSTAIN_SENTENCE)
-    return t, margin, False
+    return t, margin, False, RULE_NONE
 
 
 def source_of(path: str) -> tuple[str, str]:
     parts = Path(path).name.split("__")   # <source>__<source_class_slug>__<stem>_<sha>.jpg (prepare_data.py)
     return (parts[0], parts[1]) if len(parts) >= 3 else ("unknown", "unknown")
+
+
+def background_of(source: str, class_slug: str) -> str:
+    """Seen by eye: BD5 leaves lie on a white sheet, RiceLeafBD photos are taken in the field."""
+    if source == "BD5" or (source == "DhanShomadhan" and class_slug.startswith("white_")):
+        return "white"
+    if source == "RiceLeafBD" or (source == "DhanShomadhan" and class_slug.startswith("field_")):
+        return "field"
+    return "unknown"
 
 
 def save_confusion_png(cm: np.ndarray, path: Path, n: int) -> None:
@@ -190,7 +264,29 @@ def save_risk_coverage_png(p: torch.Tensor, y: torch.Tensor, t: float, margin: f
     fig.tight_layout(); fig.savefig(path, dpi=150); plt.close(fig)
 
 
-def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device) -> dict:
+def background_table(p: torch.Tensor, y: torch.Tensor, backgrounds: list[str], t: float, margin: float,
+                     extra_field_blast: dict | None = None) -> list[dict]:
+    """Recall, abstain rate and confident-wrong rate per (background, true class)."""
+    pred, answered = p.argmax(1), answered_mask(p, t, margin)
+    rows = []
+    for bg in ("field", "white"):
+        for k, cls in enumerate(CLASSES):
+            m = torch.tensor([b == bg for b in backgrounds], dtype=torch.bool) & (y == k)
+            n, correct, abstained = int(m.sum()), int((pred[m] == k).sum()), int((~answered[m]).sum())
+            wrong = int((answered[m] & (pred[m] != k)).sum())
+            if bg == "field" and cls == "blast" and extra_field_blast:
+                d = extra_field_blast
+                n += d["n"]
+                correct += int(round(d["blast_recall"] * d["n"]))
+                abstained += int(round(d["abstain_rate"] * d["n"]))
+                wrong += int(round(d["answered_wrong"] * d["n"]))
+            if n:
+                rows.append({"background": bg, "target": cls, "n": n, "recall": correct / n,
+                             "abstain_rate": abstained / n, "answered_wrong_rate": wrong / n})
+    return rows
+
+
+def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device, va_samples=()) -> dict:
     """Fit T and choose (t, margin) on validation; report every metric on test. Returns the metrics dict."""
     lv, yv = logits_of(model, dl_va, device)
     lt, yt = logits_of(model, dl_te, device)
@@ -200,7 +296,10 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device)
         print("WARNING: temperature was clamped. On the real run this is a warning sign for gate G2.")
     pv, pt = F.softmax(lv / T, dim=1), F.softmax(lt / T, dim=1)
 
-    t, margin, target_met = choose_threshold(pv, yv)
+    val_field = torch.tensor([background_of(*source_of(p)) == "field" for p, _ in va_samples], dtype=torch.bool) \
+        if len(va_samples) == len(yv) else None
+    t, margin, target_met, rule = choose_threshold(pv, yv, val_field)
+    print(f"Threshold rule: {rule}")
     val = selective(pv, yv, t, margin)
     spray_ok = True
     for name in ("blb", "blast"):
@@ -238,27 +337,46 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device)
                            "abstain_rate": float((~answered[m]).float().mean())})
 
     dhs = None
+    pd_, yd = pt[:0], yt[:0]
     if dhs_dl is not None and len(dhs_dl.dataset):
         ld, yd = logits_of(model, dhs_dl, device)
         pd_ = F.softmax(ld / T, dim=1)
         ans = answered_mask(pd_, t, margin)
         is_blast = pd_.argmax(1) == CLASSES.index("blast")
         dhs = {"n": int(len(yd)), "blast_recall": float(is_blast.float().mean()),
-               "abstain_rate": float((~ans).float().mean()), "answered_as_blast": float((ans & is_blast).float().mean())}
+               "abstain_rate": float((~ans).float().mean()), "answered_as_blast": float((ans & is_blast).float().mean()),
+               "answered_wrong": float((ans & ~is_blast).float().mean())}
+
+    # Per background and true class. The held-out Dhan-Shomadhan field blast images count as field blast.
+    by_background = background_table(pt, yt, [background_of(*s) for s in sources], t, margin, extra_field_blast=dhs)
+    val_by_background = background_table(pv, yv, [background_of(*source_of(p)) for p, _ in va_samples], t, margin)
+
+    # Advice-level outcomes. Field = test photos with a field background plus the held-out field blast.
+    test_field = torch.tensor([background_of(*s) == "field" for s in sources], dtype=torch.bool)
+    advice = {
+        "field": advice_outcomes(torch.cat([pt[test_field], pd_]), torch.cat([yt[test_field], yd]), t, margin),
+        "all": advice_outcomes(torch.cat([pt, pd_]), torch.cat([yt, yd]), t, margin),
+        "val_field": advice_outcomes(pv[val_field], yv[val_field], t, margin) if val_field is not None else None,
+    }
 
     save_confusion_png(cm, out / "confusion.png", len(yt))
     save_risk_coverage_png(pt, yt, t, margin, out / "risk_coverage.png")
     return {
         "temperature": T, "temperature_clamped": clamped, "threshold": t, "margin": margin,
         "target": {"precision": TARGET_PRECISION, "coverage": TARGET_COVERAGE},
-        "target_met": target_met, "spray_relevant_precision_ok": spray_ok,
-        "val": val, "test": test, "per_source": per_source, "dhs_field_blast": dhs,
+        "target_met": target_met, "spray_relevant_precision_ok": spray_ok, "threshold_rule": rule,
+        "val": val, "val_macro_f1_no_abstention": float(f1_score(yv, pv.argmax(1), labels=labels, average="macro",
+                                                                 zero_division=0)),
+        "val_by_background": val_by_background,
+        "test": test, "per_source": per_source, "by_background": by_background, "advice": advice,
+        "dhs_field_blast": dhs,
     }
 
 
 # ----------------------------------------------------------------- export
 
-def export_onnx_and_labels(model, cfg, va, out, *, model_name: str, classes: list[str], calib: dict) -> dict:
+def export_onnx_and_labels(model, cfg, va, out, *, model_name: str, classes: list[str], calib: dict,
+                           trained_on: list[str]) -> dict:
     """Export one-file ONNX, assert parity with torch, write labels.json. Returns parity and size."""
     import onnxruntime as ort
 
@@ -301,7 +419,7 @@ def export_onnx_and_labels(model, cfg, va, out, *, model_name: str, classes: lis
         "std": [float(v) for v in cfg["std"]],
         "crop_pct": float(cfg["crop_pct"]), "interpolation": cfg["interpolation"],
         "onnx_input": "input", "onnx_output": "logits",
-        "trained_on": TRAINED_ON, "date": dt.date.today().isoformat(),
+        "trained_on": trained_on, "date": dt.date.today().isoformat(),
     }
     assert labels["classes"] == CLASSES
     assert np.allclose(labels["mean"], [0.485, 0.456, 0.406]) and np.allclose(labels["std"], [0.229, 0.224, 0.225]), \
@@ -343,10 +461,31 @@ def print_summary(m: dict) -> None:
     for r in m["per_source"]:
         print(f"  {r['source']:<12} {r['source_class']:<24} -> {r['target']:<22} n={r['n']:<5} "
               f"recall={r['recall']:.3f} abstain={r['abstain_rate']:.3f}")
+    for title, key in (("VALIDATION per background (use this to choose between runs)", "val_by_background"),
+                       ("TEST per background (test + held-out field blast)", "by_background")):
+        print(f"{title}:")
+        for r in m[key]:
+            print(f"  {r['background']:<6} {r['target']:<22} n={r['n']:<5} recall={r['recall']:.3f} "
+                  f"abstain={r['abstain_rate']:.3f} answered wrong={r['answered_wrong_rate']:.3f}")
+    for title, key in (("VALIDATION field photos", "val_field"), ("TEST field photos + held-out field blast", "field"),
+                       ("TEST all photos + held-out field blast", "all")):
+        a = m["advice"][key]
+        if not a:
+            continue
+        print(f"ADVICE on {title}: advice given {a['advice_given']}/{a['n']}, wrong advice {a['wrong_advice']} | "
+              + ", ".join(f"{c} answers wrong {v['wrong']}/{v['given']}" for c, v in a["by_answer"].items()))
+        for cls, r in a["by_true_class"].items():
+            print(f"    true {cls:<22} n={r['n']:<4} correct advice={r.get('correct_advice', '-'):<4} "
+                  f"referred={r['referred']:<4} wrong advice={r['wrong_advice']}")
+    print(f"validation macro-F1 (no abstention) = {m['val_macro_f1_no_abstention']:.4f} | "
+          f"val coverage = {m['val']['coverage']:.3f} | balance = {m['balance']}")
     d = m["dhs_field_blast"]
-    print("Dhan-Shomadhan field blast: " + (
+    kind = "cross-source" if m["dhs_field_blast_is_cross_source"] else "held-out slice of a seen source"
+    print(f"Dhan-Shomadhan field blast ({kind}): " + (
         f"n={d['n']} blast recall={d['blast_recall']:.3f} abstain rate={d['abstain_rate']:.3f} "
-        f"answered as blast={d['answered_as_blast']:.3f}" if d else "not available (no dhs_field_blast/ folder)"))
+        f"answered as blast={d['answered_as_blast']:.3f} answered wrong={d['answered_wrong']:.3f}"
+        if d else "not available (no dhs_field_blast/ folder)"))
+    print(f"threshold rule: {m['threshold_rule']} | Dhan-Shomadhan images in train/val/test: {m['dhs_images']}")
     print(f"ONNX parity diff = {m['onnx_parity_max_abs_diff']:.2e} | ONNX size = {m['onnx_mb']:.1f} MB | "
           f"exporter = {m['onnx_exporter']} | training seconds = {m['train_seconds']:.0f}")
     print(f"versions: python {v['python']} | torch {v['torch']} | timm {v['timm']} | onnx {v['onnx']} | "
@@ -366,6 +505,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--batch", type=int, default=64)
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--balance", choices=["class", "group"], default="class",
+                   help="sampler balance: per class, or per class x background (field / white sheet)")
+    p.add_argument("--backgrounds", choices=["all", "field", "white"], default="all",
+                   help="experiment: train and tune on one background only (the test split stays complete)")
     p.add_argument("--subset", type=int, help="max images per split (CPU smoke runs only)")
     p.add_argument("--no-pretrained", action="store_true", help="offline smoke test only; never for the real run")
     p.add_argument("--skip-export", action="store_true", help="train and save best.pt only")
@@ -389,23 +532,38 @@ def main(argv: list[str] | None = None) -> int:
     te = ImageFolder(f"{args.data}/test", eval_tf)
     assert tr.classes == va.classes == te.classes == CLASSES, tr.classes
 
-    tr_ds, tr_targets, _ = take_subset(tr, args.subset, args.seed)
-    va_ds, va_targets, _ = take_subset(va, args.subset, args.seed)
+    tr_ds, tr_targets, tr_samples = take_subset(tr, args.subset, args.seed)
+    va_ds, va_targets, va_samples = take_subset(va, args.subset, args.seed)
+    if args.backgrounds != "all":   # experiment: train and tune only on one background; test stays complete
+        tr_ds, tr_targets, tr_samples = keep_background(tr_ds, tr_targets, tr_samples, args.backgrounds)
+        va_ds, va_targets, va_samples = keep_background(va_ds, va_targets, va_samples, args.backgrounds)
     te_ds, te_targets, te_samples = take_subset(te, args.subset, args.seed)
     for name, targets in (("train", tr_targets), ("val", va_targets), ("test", te_targets)):
         per = np.bincount(targets, minlength=4)
         print(f"{name:<5} n={len(targets):<5} " + " ".join(f"{c}={n}" for c, n in zip(CLASSES, per)))
 
     # Class balance through the sampler only (never the sampler and loss weights together).
-    counts = np.bincount(tr_targets, minlength=4)
-    w = counts.sum() / (4 * np.maximum(counts, 1))                    # N / (4 * n_class)
-    sampler = WeightedRandomSampler(torch.tensor(w, dtype=torch.double)[torch.tensor(tr_targets)],
-                                    num_samples=len(tr_targets), replacement=True)
+    if args.balance == "group":
+        # Balance class x background cells, so the background stops predicting the class: in the raw data
+        # blast is almost always on a white sheet and BLB always in the field.
+        cells = [(y, background_of(*source_of(path))) for (path, _), y in zip(tr_samples, tr_targets)]
+        cell_n = {c: cells.count(c) for c in set(cells)}
+        print("sampler cells (class, background): "
+              + ", ".join(f"{CLASSES[k]}/{bg}={n}" for (k, bg), n in sorted(cell_n.items())))
+        weights = torch.tensor([len(cells) / (len(cell_n) * cell_n[c]) for c in cells], dtype=torch.double)
+    else:
+        counts = np.bincount(tr_targets, minlength=4)
+        w = counts.sum() / (4 * np.maximum(counts, 1))                    # N / (4 * n_class)
+        weights = torch.tensor(w, dtype=torch.double)[torch.tensor(tr_targets)]
+    sampler = WeightedRandomSampler(weights, num_samples=len(tr_targets), replacement=True)
     pin = device == "cuda"
+    keep = args.workers > 0   # keep workers alive between epochs (starting them is slow on Windows)
     dl_tr = DataLoader(tr_ds, batch_size=args.batch, sampler=sampler, num_workers=args.workers,
-                       pin_memory=pin, drop_last=len(tr_targets) > args.batch)
-    dl_va = DataLoader(va_ds, batch_size=args.batch, shuffle=False, num_workers=args.workers, pin_memory=pin)
-    dl_te = DataLoader(te_ds, batch_size=args.batch, shuffle=False, num_workers=args.workers, pin_memory=pin)
+                       pin_memory=pin, drop_last=len(tr_targets) > args.batch, persistent_workers=keep)
+    # Evaluation sets are small: load them in the main process. A second set of live worker processes
+    # ran a 24 GB Windows machine out of memory ("bad allocation").
+    dl_va = DataLoader(va_ds, batch_size=args.batch, shuffle=False, num_workers=0, pin_memory=pin)
+    dl_te = DataLoader(te_ds, batch_size=args.batch, shuffle=False, num_workers=0, pin_memory=pin)
     if len(dl_tr) == 0:
         raise SystemExit("Zero training batches: lower --batch for smoke runs.")
     crit = nn.CrossEntropyLoss(label_smoothing=0.1)
@@ -461,16 +619,25 @@ def main(argv: list[str] | None = None) -> int:
     if dhs_dir.is_dir():
         dhs_ds = FolderAsClass(dhs_dir, eval_tf, CLASSES.index("blast"))
         if len(dhs_ds):
-            dhs_dl = DataLoader(dhs_ds, batch_size=args.batch, shuffle=False, num_workers=args.workers)
+            dhs_dl = DataLoader(dhs_ds, batch_size=args.batch, shuffle=False, num_workers=0)
 
     import onnx
     import onnxruntime
 
-    calib = calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, args.out, device)
+    calib = calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, args.out, device, va_samples)
+    dhs_in = {name: sum(source_of(path)[0] == "DhanShomadhan" for path, _ in ds.samples)
+              for name, ds in (("train", tr), ("val", va), ("test", te))}
+    trained_on = TRAINED_ON + ([DHS_DOI] if dhs_in["train"] or dhs_in["val"] else [])
     exported = export_onnx_and_labels(model, cfg, va_ds, args.out, model_name=args.model,
-                                      classes=tr.classes, calib=calib)
+                                      classes=tr.classes, calib=calib, trained_on=trained_on)
     metrics = {
         "model": args.model, "date": dt.date.today().isoformat(), "classes": tr.classes,
+        "trained_on": trained_on, "dhs_images": dhs_in, "balance": args.balance,
+        "train_backgrounds": args.backgrounds, "train_n": len(tr_targets), "val_n": len(va_targets),
+        "epochs": {"head": args.epochs_head, "full": args.epochs},
+        # False once Dhan-Shomadhan images are in train/ or val/: the held-out field blast slice is then
+        # from a source the model has seen.
+        "dhs_field_blast_is_cross_source": not (dhs_in["train"] or dhs_in["val"]),
         **calib, **exported, "train_seconds": train_seconds,
         "versions": {"python": platform.python_version(), "torch": torch.__version__, "timm": timm.__version__,
                      "onnx": onnx.__version__, "onnxruntime": onnxruntime.__version__},

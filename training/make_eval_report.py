@@ -23,6 +23,12 @@ SUMMARY_KEYS = [
     "dhs_blast_n", "dhs_blast_recall", "dhs_blast_abstain_rate", "own_healthy_n", "own_healthy_false_trigger_n",
     "own_healthy_false_trigger_rate", "own_symptomatic_n", "junk_n", "junk_refused_n", "junk_refusal_rate",
     "offscript_n", "offscript_failures", "invented_doses",
+    # Added after run 1: readers must know whether the dhs_blast_* numbers are a true cross-source test.
+    "dhs_is_cross_source", "threshold_rule",
+    # What a farmer with a field photo gets: advice (BLB, blast or healthy answer) or a referral.
+    "field_n", "field_advice_given", "field_wrong_advice", "field_blast_n", "field_blast_correct_advice",
+    "field_blast_referred", "field_blast_wrong_advice", "field_blb_n", "field_blb_correct_advice",
+    "field_blb_referred", "field_blb_wrong_advice",
 ]
 ABSTAIN_SENTENCE = "The model abstains more than we would like."
 
@@ -65,6 +71,18 @@ def run_offscript() -> dict:
     return {**json.loads(out.strip().splitlines()[-1]), "pytest_passed": passed}
 
 
+def first_run_sentence() -> str:
+    """What the run without Dhan-Shomadhan in training measured, read from its own metrics file."""
+    path = RESULTS / "runs" / "run1_no_dhs" / "metrics.json"
+    if not path.exists():
+        return ""
+    d = json.loads(path.read_text("utf-8")).get("dhs_field_blast")
+    if not d:
+        return ""
+    return (f"An earlier run without them recognised {count(d['blast_recall'], d['n'])} of {d['n']} "
+            "field-background blast photos (`results/runs/run1_no_dhs/metrics.json`), so they were added. ")
+
+
 def agronomy_status() -> str:
     gates = ROOT / "docs" / "gates.md"
     if gates.exists():
@@ -104,7 +122,20 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         "junk_refusal_rate": rate(junk["refused_n"], junk["n"]) if junk else None,
         "offscript_n": off["n"], "offscript_failures": off["offscript_failures"],
         "invented_doses": off["invented_doses"],
+        "dhs_is_cross_source": metrics.get("dhs_field_blast_is_cross_source", True),
+        "threshold_rule": metrics.get("threshold_rule"),
     }
+    field = (metrics.get("advice") or {}).get("field") or {}
+    by_true = field.get("by_true_class") or {}
+    f_blast, f_blb = by_true.get("blast") or {}, by_true.get("bacterial_leaf_blight") or {}
+    summary.update({
+        "field_n": field.get("n"), "field_advice_given": field.get("advice_given"),
+        "field_wrong_advice": field.get("wrong_advice"),
+        "field_blast_n": f_blast.get("n"), "field_blast_correct_advice": f_blast.get("correct_advice"),
+        "field_blast_referred": f_blast.get("referred"), "field_blast_wrong_advice": f_blast.get("wrong_advice"),
+        "field_blb_n": f_blb.get("n"), "field_blb_correct_advice": f_blb.get("correct_advice"),
+        "field_blb_referred": f_blb.get("referred"), "field_blb_wrong_advice": f_blb.get("wrong_advice"),
+    })
     assert list(summary) == SUMMARY_KEYS
 
     L: list[str] = ["# Kom Bish evaluation report", ""]
@@ -113,8 +144,10 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     L += [f"Model `{metrics['model']}`, trained {metrics['date']}. Every proportion is shown as k/n with a "
           "Wilson 95% interval.", "",
           "## Method", "",
-          "Images were split once, before any augmentation, into train/validation/test (70/15/15, seed 42, "
-          "stratified by source and class; byte-identical images kept in one split). One temperature "
+          "Byte-identical duplicate files were removed, and photos filed under two classes with different "
+          "targets were dropped. Images were then split once, before any augmentation, into "
+          "train/validation/test (70/15/15, seed 42, stratified by source and class; near-duplicate images "
+          "kept in one split). One temperature "
           f"T = {metrics['temperature']:.4f}" + (" (clamped)" if metrics["temperature_clamped"] else "")
           + " was fitted on validation logits. The abstain threshold "
           f"t = {metrics['threshold']:.2f} and margin = {metrics['margin']} were chosen on validation only "
@@ -122,6 +155,14 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
           f"{metrics['target']['coverage']}), never on test. The app abstains when calibrated top-1 confidence "
           "is below t or top-1 minus top-2 is below the margin, and then refers the farmer to 16123 or an officer.",
           ""]
+    if metrics.get("threshold_rule"):
+        L += [f"Threshold rule used: {metrics['threshold_rule']}.", ""]
+    dhs_in = metrics.get("dhs_images") or {}
+    cross_source = metrics.get("dhs_field_blast_is_cross_source", True)
+    if not cross_source:
+        L += [f"Dhan-Shomadhan images are part of training in this run ({dhs_in.get('train', 0)} train, "
+              f"{dhs_in.get('val', 0)} validation, {dhs_in.get('test', 0)} test). " + first_run_sentence()
+              + "The cost: there is no longer any blast test from a source the model has never seen.", ""]
     if not metrics["target_met"]:
         L += [f"**{ABSTAIN_SENTENCE}** No threshold met the target on validation.", ""]
     if not metrics["spray_relevant_precision_ok"]:
@@ -154,9 +195,43 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     for r in metrics["per_source"]:
         L.append(f"| {r['source']} | {r['source_class']} | {r['target']} | "
                  f"{prop(count(r['recall'], r['n']), r['n'])} | {prop(count(r['abstain_rate'], r['n']), r['n'])} |")
-    L += ["", "## 3. Dhan-Shomadhan field blast (cross-source)", ""]
+    if metrics.get("by_background"):
+        L += ["", "### Recall per background", "",
+              "BD5 leaves lie on a white sheet and RiceLeafBD photos are taken in the field, so the background "
+              "can give the class away. Farmers will send field photos, so the field rows matter most. "
+              "\"Answered wrong\" is the share that got a confident wrong answer instead of a referral.", "",
+              "| Background | True class | Recall (no abstention) | Abstain rate | Answered wrong |",
+              "|---|---|---|---|---|"]
+        for r in metrics["by_background"]:
+            L.append(f"| {r['background']} | {r['target']} | {prop(count(r['recall'], r['n']), r['n'])} | "
+                     f"{prop(count(r['abstain_rate'], r['n']), r['n'])} | "
+                     f"{prop(count(r['answered_wrong_rate'], r['n']), r['n'])} |")
+    if metrics.get("advice"):
+        L += ["", "### What the farmer gets (advice-level outcomes)", "",
+              "A BLB, blast or healthy answer above the threshold is **advice**. An `other` answer or an "
+              "abstention is a **referral** to 16123 or an officer, which is safe. **Wrong advice** is the "
+              "harmful outcome: advice that does not match the true class.", ""]
+        for key, title in (("field", "Field-background photos (test split plus the held-out field blast)"),
+                           ("all", "All test photos (plus the held-out field blast)")):
+            a = metrics["advice"].get(key)
+            if not a:
+                continue
+            L += [f"**{title}, n = {a['n']}.** Advice given: {prop(a['advice_given'], a['n'])}. "
+                  f"Wrong advice among advice given: {prop(a['wrong_advice'], a['advice_given'])}.", "",
+                  "| True class | n | Correct advice | Referred | Wrong advice |", "|---|---|---|---|---|"]
+            for cls, r in a["by_true_class"].items():
+                correct = prop(r["correct_advice"], r["n"]) if "correct_advice" in r else "(a referral is the right outcome)"
+                L.append(f"| {cls} | {r['n']} | {correct} | {prop(r['referred'], r['n'])} | "
+                         f"{prop(r['wrong_advice'], r['n'])} |")
+            L += ["", "Wrong among each kind of advice: " + "; ".join(
+                f"{c} answers {prop(v['wrong'], v['given'])}" for c, v in a["by_answer"].items()) + ".", ""]
+    title = "cross-source" if cross_source else "held-out slice of a source the model has seen"
+    L += ["", f"## 3. Dhan-Shomadhan field blast ({title})", ""]
     if dhs:
-        L += [f"n = {dhs['n']} field-background blast images from a dataset the model never trained on.", "",
+        L += [f"n = {dhs['n']} field-background blast images "
+              + ("from a dataset the model never trained on." if cross_source else
+                 "held out from Dhan-Shomadhan. Other Dhan-Shomadhan images were used for training, so this is "
+                 "**not** a cross-source test; with n this small the interval is wide."), "",
               f"- Blast recall (no abstention): {prop(count(dhs['blast_recall'], dhs['n']), dhs['n'])}",
               f"- Abstain rate: {prop(count(dhs['abstain_rate'], dhs['n']), dhs['n'])}",
               f"- Answered as blast: {prop(count(dhs['answered_as_blast'], dhs['n']), dhs['n'])}", ""]
@@ -183,9 +258,15 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
               f"{off['invented_doses']} answers with a forbidden term in {off['n']} test consultations "
               f"({off['wrong_rule']} with an unexpected rule).", ""]
     L += ["## Limitations", "",
-          "- Single-source confound: every BLB image comes from RiceLeafBD (Sylhet and Dhaka) and every "
-          "training blast image from BD5 (Savar). The model may have learned the source, not the disease. "
-          "Sections 2 and 3 are the honest check.",
+          "- Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most "
+          "blast images from BD5 (leaves on a white sheet). A model can learn the background instead of the "
+          "disease; the first run did exactly that. Sections 2 and 3 are the honest check.",
+          "- The BD5 archive on disk (3,150 images) does not match its published description (2,545 images); "
+          "we do not know why (`docs/gates.md`).",
+          "- The test split was looked at during development: several training runs were compared, and the "
+          "threshold rule was tightened after seeing early results (`docs/gates.md` lists every run). The "
+          "numbers here are therefore somewhat optimistic. Only a new, untouched set of field photos would "
+          "give a clean estimate.",
           "- With this few test images per minority class, one or two images move a recall by several points; "
           "read the intervals, not the point values.",
           "- Own-photo labels are healthy-looking vs symptomatic, not diagnoses.",

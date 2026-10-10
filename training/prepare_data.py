@@ -342,8 +342,56 @@ def write_images(records: list[dict], root: Path, out: Path) -> tuple[list[dict]
     return rows, unreadable
 
 
-def add_dhs(out: Path) -> list[dict]:
-    """Cross-source blast test: Dhan-Shomadhan field-background Rice Blast images, held out entirely."""
+def assign_dhs(images: list, train_frac: float, val_frac: float, seed: int, phash_dist: int,
+               rest: str = DHS_SPLIT) -> list[str]:
+    """Split one Dhan-Shomadhan stratum into train / val / rest, keeping near-duplicates together."""
+    if train_frac <= 0 and val_frac <= 0:
+        return [rest] * len(images)
+    import random
+
+    import imagehash
+
+    hashes = [imagehash.phash(im) for im in images]
+    parent = list(range(len(images)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for a in range(len(images)):
+        for b in range(a + 1, len(images)):
+            if hashes[a] - hashes[b] <= phash_dist:
+                parent[find(a)] = find(b)
+    groups: dict[int, list[int]] = {}
+    for i in range(len(images)):
+        groups.setdefault(find(i), []).append(i)
+    order = sorted(groups.values())
+    random.Random(seed).shuffle(order)
+    n_train, n_val = round(train_frac * len(images)), round(val_frac * len(images))
+    splits = [rest] * len(images)
+    used = Counter()
+    for group in order:
+        split = "train" if used["train"] < n_train else "val" if used["val"] < n_val else rest
+        used[split] += len(group)
+        for i in group:
+            splits[i] = split
+    return splits
+
+
+def add_dhs(out: Path, train_frac: float = 0.0, val_frac: float = 0.0, seed: int = 42,
+            phash_dist: int = 5, include_all: bool = False) -> list[dict]:
+    """Dhan-Shomadhan images (field and white backgrounds; class names are misspelt in the source).
+
+    Default: field-background Rice Blast only, all held out as the cross-source blast test.
+    --dhs-train-frac / --dhs-val-frac move a share of field blast into train/ and val/ (step 10 fallback);
+    the rest stays held out, but it is then a held-out slice of a source the model has seen, no longer a
+    cross-source test. Say so wherever it is reported.
+    --dhs-all also adds every other (background, class) group, split 70/15/15 into train/val/test:
+    "Rice Blast" -> blast, every other disease -> other. In RiceLeafBD and BD5 the background gives the
+    class away (blast only on a white sheet, BLB only in the field); these images break that shortcut.
+    """
     try:
         from datasets import load_dataset
 
@@ -358,18 +406,33 @@ def add_dhs(out: Path) -> list[dict]:
         for (bg, lab), n in sorted(table.items()):
             print(f"{n:6d}  {bg} | {lab}")
 
-        field = ds.filter(lambda bg: bg == "Field", input_columns=["background"])
-        wanted = names.index("Rice Blast") if names else "Rice Blast"
-        blast = field.filter(lambda lab: lab == wanted, input_columns=["label"])
         image_col = next(k for k, v in ds.features.items() if type(v).__name__ == "Image")
+        strata: dict[tuple[str, str], list[int]] = {}
+        for i, (bg, lab) in enumerate(zip(ds["background"], ds["label"])):
+            strata.setdefault((bg, label_name(lab)), []).append(i)
+        field_blast = ("Field", "Rice Blast")
         rows = []
-        for i, example in enumerate(blast):
-            rel_path = f"{DHS_SPLIT}/DhanShomadhan__rice_blast__{i:05d}.jpg"
-            save_resized(example[image_col], out / rel_path)
-            rows.append({"path": rel_path, "source": "DhanShomadhan", "source_class": "Rice Blast",
-                         "target": "blast", "split": DHS_SPLIT, "orig_path": f"hf://datasets/{DHS_REPO}#{i}"})
-        print(f"Dhan-Shomadhan field blast images found: {len(rows)} "
-              "(published Rice Blast total is 272 across both backgrounds; the field share is unknown)")
+        for key in (sorted(strata) if include_all else [field_blast]):
+            bg, lab = key
+            indices = strata.get(key, [])
+            images = [ds[i][image_col] for i in indices]
+            target = "blast" if lab == "Rice Blast" else "other"
+            if key == field_blast:
+                splits = assign_dhs(images, train_frac, val_frac, seed, phash_dist, rest=DHS_SPLIT)
+            else:
+                splits = assign_dhs(images, 0.70, 0.15, seed, phash_dist, rest="test")
+            for i, image, split in zip(indices, images, splits):
+                folder = DHS_SPLIT if split == DHS_SPLIT else f"{split}/{target}"
+                rel_path = f"{folder}/DhanShomadhan__{slug(f'{bg} {lab}')}__{i:05d}.jpg"
+                save_resized(image, out / rel_path)
+                rows.append({"path": rel_path, "source": "DhanShomadhan", "source_class": f"{bg} {lab}",
+                             "target": target, "split": split, "orig_path": f"hf://datasets/{DHS_REPO}#{i}"})
+            placed = Counter(splits)
+            print(f"Dhan-Shomadhan {bg} | {lab} -> {target}: n={len(indices)}, train {placed['train']}, "
+                  f"val {placed['val']}, test {placed['test']}, held out {placed[DHS_SPLIT]}")
+        if any(r["split"] in ("train", "val") for r in rows):
+            print("NOTE: Dhan-Shomadhan images are in training, so the held-out field blast slice is no longer "
+                  "a cross-source test. Report it as a held-out slice of a source the model has seen.")
         return rows
     except Exception as e:
         print(f"{MSG_DHS} ({type(e).__name__}: {e})")
@@ -398,6 +461,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--phash", action="store_true", help="keep near-duplicate images in one split")
     p.add_argument("--phash-dist", type=int, default=5,
                    help="Hamming distance for --phash (unverified threshold; 4-6 is common practice)")
+    p.add_argument("--dhs-train-frac", type=float, default=0.0,
+                   help="step 10 fallback: share of Dhan-Shomadhan field blast moved into train/ (default 0)")
+    p.add_argument("--dhs-val-frac", type=float, default=0.0,
+                   help="share of Dhan-Shomadhan field blast moved into val/ (default 0)")
+    p.add_argument("--dhs-all", action="store_true",
+                   help="also add every other Dhan-Shomadhan group (both backgrounds), split 70/15/15")
     p.add_argument("--accept-count-mismatch", action="store_true")
     p.add_argument("--mapping-json", type=Path,
                    help="JSON {rel_folder: [source, source_class] | null}; overrides FOLDER_TO_TARGET")
@@ -439,7 +508,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {line}")
 
     if args.dhs:
-        rows += add_dhs(out)
+        rows += add_dhs(out, args.dhs_train_frac, args.dhs_val_frac, args.seed, args.phash_dist, args.dhs_all)
     with (out / "manifest.csv").open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["path", "source", "source_class", "target", "split", "orig_path"])
         w.writeheader()

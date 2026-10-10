@@ -28,6 +28,8 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
     blb, blast, dhs = t["precision_blb_answers"], t["precision_blast_answers"], metrics.get("dhs_field_blast")
     size = labels["input_size"][1]
     short = int(size / labels["crop_pct"])
+    dhs_in = metrics.get("dhs_images") or {}
+    dhs_trained = not metrics.get("dhs_field_blast_is_cross_source", True)
     L = ["---", f"license: {licence}", "library_name: onnx",
          "tags: [image-classification, onnx, rice, plant-disease, bangladesh]", "---", "",
          "# Kom Bish rice-leaf classifier", ""]
@@ -50,8 +52,13 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
           "## Training data (CC BY 4.0, credit required)", "",
           "- RiceLeafBD, DOI 10.17632/kx9rx8p2mz.1 (please also cite arXiv 2501.08912)",
           "- RiceLeafDisease-BD5, DOI 10.17632/sjkptpgv79.2",
-          f"- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1: field-background rows only, **held out** as a "
-          f"cross-source blast test (via the HF mirror `{DHS_REPO}`). Not used for training.", "",
+          (f"- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1 (via the HF mirror `{DHS_REPO}`): **used for "
+           f"training** ({dhs_in.get('train', 0)} train, {dhs_in.get('val', 0)} validation, "
+           f"{dhs_in.get('test', 0)} test images; \"Rice Blast\" maps to `blast`, every other disease to "
+           "`other`). Part of its field-background blast images is held out and reported below."
+           if dhs_trained else
+           f"- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1: field-background rows only, **held out** as a "
+           f"cross-source blast test (via the HF mirror `{DHS_REPO}`). Not used for training."), "",
           "| Source | Source class | Target class | Published n |", "|---|---|---|---|"]
     L += [f"| {s} | {c} | {SOURCE_CLASS_TO_TARGET[(s, c)]} | {k} |" for (s, c), k in PUBLISHED_COUNTS.items()]
     L += ["", "## Evaluation", "",
@@ -73,16 +80,27 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
     L += [f"| {r['source']} | {r['source_class']} | {r['target']} | {prop(count(r['recall'], r['n']), r['n'])} | "
           f"{prop(count(r['abstain_rate'], r['n']), r['n'])} |" for r in metrics["per_source"]]
     L += [""]
+    if metrics.get("by_background"):
+        L += ["Recall per background (BD5 leaves lie on a white sheet, RiceLeafBD photos are taken in the "
+              "field, so the background can give the class away):", "",
+              "| Background | True class | Recall | Abstain rate | Answered wrong |", "|---|---|---|---|---|"]
+        L += [f"| {r['background']} | {r['target']} | {prop(count(r['recall'], r['n']), r['n'])} | "
+              f"{prop(count(r['abstain_rate'], r['n']), r['n'])} | "
+              f"{prop(count(r['answered_wrong_rate'], r['n']), r['n'])} |" for r in metrics["by_background"]]
+        L += [""]
     if dhs:
-        L += [f"Dhan-Shomadhan field blast (cross-source, n = {dhs['n']}): blast recall "
+        kind = "held-out slice of a source the model has seen, not a cross-source test" if dhs_trained \
+            else "cross-source"
+        L += [f"Dhan-Shomadhan field blast ({kind}, n = {dhs['n']}): blast recall "
               f"{prop(count(dhs['blast_recall'], dhs['n']), dhs['n'])}; abstain rate "
               f"{prop(count(dhs['abstain_rate'], dhs['n']), dhs['n'])}.", ""]
     else:
         L += ["Dhan-Shomadhan field blast: not measured in this run, so there is no cross-source blast test.", ""]
     L += ["## Limitations", "",
-          "- Every BLB image comes from one dataset (RiceLeafBD, Sylhet and Dhaka) and every training blast image "
-          "from another (BD5, Savar), so the model may have learned the source rather than the disease. The "
-          "per-source and cross-source numbers above are the honest check.",
+          "- Every BLB image comes from one dataset (RiceLeafBD, field photos) and most blast images from "
+          "another (BD5, leaves on a white sheet), so the model can learn the source or the background rather "
+          "than the disease. A first run without Dhan-Shomadhan did exactly that. The per-source and "
+          "per-background numbers above are the honest check.",
           "- Not tested on non-rice photos beyond the team's own junk-photo test (see the project README).",
           f"- Agronomy review: {agronomy_status()}.",
           "- No field trial.", "",

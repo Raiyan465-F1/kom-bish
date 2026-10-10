@@ -2,8 +2,14 @@
 
 ## Unreleased
 
-Built and tested on 10–11 October 2026. Not released: the classifier is not trained, the Bangla is not
-reviewed, the clips are not recorded and nothing is hosted yet (see `docs/gates.md`).
+Built and tested on 10–11 October 2026. Not released: the Bangla is not reviewed, the clips are not
+recorded, the model is not published and nothing is hosted yet (see `docs/gates.md`).
+
+- Classifier trained (gate G2, 11 Oct): ten runs, listed in `training/results/runs/README.md`. The planned
+  recipe learned the photo background and recognised 2 of 74 field blast photos, so Dhan-Shomadhan was added
+  to training, the threshold rule was tightened and training runs 40 epochs. Shipped: `run9_final`
+- Data prep now removes byte-identical duplicates and drops photos filed under two conflicting classes
+- Evaluation report with advice-level outcomes (correct advice, referred, wrong advice) on field photos
 
 - Scaffold (step 03)
 - Hosting probe: ZeroGPU shim with two variants, Render and Space settings (step 04)

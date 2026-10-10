@@ -204,7 +204,9 @@ def build(voice: str, video_url: str, demo_url: str) -> None:
     f1, cov, sel = num("test_macro_f1"), num("coverage"), num("selective_accuracy")
     lines = [f"Test macro-F1 {NA if f1 is None else f'{f1:.3f}'} (n = {S.get('test_n', NA)}); "
              f"answers {pct(cov)} of photos, {pct(sel)} of those correct.",
-             f"Cross-source blast recall {pct(num('dhs_blast_recall'))} (n = {S.get('dhs_blast_n') or NA}).",
+             f"Field photos: wrong advice {k_of_n('field_wrong_advice', 'field_advice_given')} answers.",
+             f"Field blast: {k_of_n('field_blast_correct_advice', 'field_blast_n')} answered, "
+             f"{S.get('field_blast_referred', NA)} referred, {S.get('field_blast_wrong_advice', NA)} wrong.",
              f"Own healthy leaves wrongly sent to a spray class: "
              f"{k_of_n('own_healthy_false_trigger_n', 'own_healthy_n')}.",
              f"Junk photos refused: {k_of_n('junk_refused_n', 'junk_n')}."]
@@ -215,9 +217,10 @@ def build(voice: str, video_url: str, demo_url: str) -> None:
     textbox(s, lines, 0.6, 1.8, 12.1, 4.6, size=20)
     footer(s, "training/eval_report.md; datasets CC BY 4.0 (DOIs 10.17632/kx9rx8p2mz.1, 10.17632/sjkptpgv79.2, "
               "10.17632/znsxdctwtt.1)")
-    notes(s, "Every number comes from training/eval_summary.json and has its n. The cross-source blast test and "
-             "the team's own photos matter most, because all training BLB images come from one dataset and all "
-             "blast images from another.")
+    notes(s, "Every number comes from training/eval_summary.json and has its n. Field photos matter most, "
+             "because that is what farmers send. Our first model learned the photo background instead of the "
+             "disease, so we added a third dataset and a stricter threshold. Blast in field photos is still "
+             "mostly referred, not recognised.")
 
     s = headline_slide("Kom Bish adds a spray-or-not rule that others do not show.")
     rows = [("", "Spray-or-not rule + sprays-avoided count"), ("Kom Bish", "Yes"), ("Rice Solution", VERIFY),
@@ -238,7 +241,7 @@ def build(voice: str, video_url: str, demo_url: str) -> None:
              "needs a pilot.")
 
     s = headline_slide("These are our limits, and this is what we do next.")
-    textbox(s, ["BLB images come from one dataset.", f"{agronomy_line()}.", "No field test.",
+    textbox(s, ["Blast in field photos is mostly referred, not recognised.", f"{agronomy_line()}.", "No field test.",
                 "Next: SAAO review, 30-farmer pilot."], 0.6, 2.0, 12.1, 3.5, size=24)
     footer(s, "training/eval_report.md")
     notes(s, "The model may have learned the source dataset rather than the disease, which is why we report "

@@ -56,12 +56,14 @@ TREE = '''\
 '''
 
 PREP = '''\
-# Add --accept-count-mismatch only if step 07 documented every difference in docs/gates.md.
-!python training/prepare_data.py --root {RAW_ROOT} --out {DATA} --dhs
+# Same flags as the shipped local run (docs/gates.md, gate G2). The count differences are documented there.
+!pip install -q imagehash==4.3.2
+!python training/prepare_data.py --root {RAW_ROOT} --out {DATA} --dhs --dhs-all --phash \\
+    --dhs-train-frac 0.6 --dhs-val-frac 0.15 --accept-count-mismatch
 '''
 
 TRAIN = '''\
-!python training/train_export.py --data {DATA} --out {OUT} --device cuda
+!python training/train_export.py --data {DATA} --out {OUT} --device cuda --epochs 40
 '''
 
 CHECK = '''\

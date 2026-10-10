@@ -1,0 +1,413 @@
+{
+ "model": "mobilenetv3_large_100.ra_in1k",
+ "date": "2026-10-11",
+ "classes": [
+  "bacterial_leaf_blight",
+  "blast",
+  "healthy",
+  "other"
+ ],
+ "trained_on": [
+  "10.17632/kx9rx8p2mz.1",
+  "10.17632/sjkptpgv79.2",
+  "10.17632/znsxdctwtt.1"
+ ],
+ "dhs_images": {
+  "train": 766,
+  "val": 167,
+  "test": 155
+ },
+ "balance": "class",
+ "train_backgrounds": "all",
+ "train_n": 3974,
+ "val_n": 863,
+ "epochs": {
+  "head": 3,
+  "full": 40
+ },
+ "dhs_field_blast_is_cross_source": false,
+ "temperature": 0.6591385006904602,
+ "temperature_clamped": false,
+ "threshold": 0.73,
+ "margin": 0.2,
+ "target": {
+  "precision": 0.9,
+  "coverage": 0.5
+ },
+ "target_met": true,
+ "spray_relevant_precision_ok": true,
+ "threshold_rule": "strict: precision >= 0.90 overall, on BLB answers and on blast answers, coverage >= 0.50",
+ "val": {
+  "n": 863,
+  "coverage": 0.9269988536834717,
+  "precision": 0.9599999785423279,
+  "precision_blb_answers": {
+   "value": 0.9069767594337463,
+   "n": 43
+  },
+  "precision_blast_answers": {
+   "value": 0.9136690497398376,
+   "n": 139
+  },
+  "abstained_pct_by_true_class": {
+   "bacterial_leaf_blight": 0.125,
+   "blast": 0.08843537420034409,
+   "healthy": 0.046783626079559326,
+   "other": 0.07243460416793823
+  }
+ },
+ "val_macro_f1_no_abstention": 0.915332041548709,
+ "val_by_background": [
+  {
+   "background": "field",
+   "target": "bacterial_leaf_blight",
+   "n": 48,
+   "recall": 0.8958333333333334,
+   "abstain_rate": 0.125,
+   "answered_wrong_rate": 0.0625
+  },
+  {
+   "background": "field",
+   "target": "blast",
+   "n": 12,
+   "recall": 0.5833333333333334,
+   "abstain_rate": 0.25,
+   "answered_wrong_rate": 0.3333333333333333
+  },
+  {
+   "background": "field",
+   "target": "healthy",
+   "n": 38,
+   "recall": 1.0,
+   "abstain_rate": 0.0,
+   "answered_wrong_rate": 0.0
+  },
+  {
+   "background": "field",
+   "target": "other",
+   "n": 166,
+   "recall": 0.9337349397590361,
+   "abstain_rate": 0.10843373493975904,
+   "answered_wrong_rate": 0.03614457831325301
+  },
+  {
+   "background": "white",
+   "target": "blast",
+   "n": 135,
+   "recall": 0.9407407407407408,
+   "abstain_rate": 0.07407407407407407,
+   "answered_wrong_rate": 0.022222222222222223
+  },
+  {
+   "background": "white",
+   "target": "healthy",
+   "n": 133,
+   "recall": 0.9548872180451128,
+   "abstain_rate": 0.06015037593984962,
+   "answered_wrong_rate": 0.015037593984962405
+  },
+  {
+   "background": "white",
+   "target": "other",
+   "n": 331,
+   "recall": 0.9305135951661632,
+   "abstain_rate": 0.054380664652567974,
+   "answered_wrong_rate": 0.04229607250755287
+  }
+ ],
+ "test": {
+  "n": 828,
+  "macro_f1_no_abstention": 0.9026232810186533,
+  "per_class": {
+   "bacterial_leaf_blight": {
+    "precision": 0.8333333333333334,
+    "recall": 0.8,
+    "f1": 0.8163265306122449,
+    "support": 50
+   },
+   "blast": {
+    "precision": 0.8590604026845637,
+    "recall": 0.9481481481481482,
+    "f1": 0.9014084507042254,
+    "support": 135
+   },
+   "healthy": {
+    "precision": 0.93125,
+    "recall": 0.9802631578947368,
+    "f1": 0.9551282051282052,
+    "support": 152
+   },
+   "other": {
+    "precision": 0.9575371549893843,
+    "recall": 0.9185336048879837,
+    "f1": 0.9376299376299376,
+    "support": 491
+   }
+  },
+  "confusion_matrix": [
+   [
+    40,
+    0,
+    0,
+    10
+   ],
+   [
+    0,
+    128,
+    0,
+    7
+   ],
+   [
+    0,
+    0,
+    149,
+    3
+   ],
+   [
+    8,
+    21,
+    11,
+    451
+   ]
+  ],
+  "coverage": 0.9214975833892822,
+  "abstained_pct": 0.07850241661071777,
+  "selective_accuracy": 0.9541284441947937,
+  "precision_blb_answers": {
+   "value": 0.8780487775802612,
+   "n": 41
+  },
+  "precision_blast_answers": {
+   "value": 0.9111111164093018,
+   "n": 135
+  },
+  "abstained_pct_by_true_class": {
+   "bacterial_leaf_blight": 0.18000000715255737,
+   "blast": 0.04444444552063942,
+   "healthy": 0.032894738018512726,
+   "other": 0.09164969623088837
+  }
+ },
+ "per_source": [
+  {
+   "source": "BD5",
+   "source_class": "blast",
+   "target": "blast",
+   "n": 106,
+   "recall": 1.0,
+   "abstain_rate": 0.0
+  },
+  {
+   "source": "BD5",
+   "source_class": "narrow_brown_spot",
+   "target": "other",
+   "n": 78,
+   "recall": 0.8589743375778198,
+   "abstain_rate": 0.08974359184503555
+  },
+  {
+   "source": "BD5",
+   "source_class": "normal_leaf",
+   "target": "healthy",
+   "n": 115,
+   "recall": 0.9739130139350891,
+   "abstain_rate": 0.03478260710835457
+  },
+  {
+   "source": "BD5",
+   "source_class": "sheath_blight",
+   "target": "other",
+   "n": 85,
+   "recall": 1.0,
+   "abstain_rate": 0.0117647061124444
+  },
+  {
+   "source": "BD5",
+   "source_class": "tungro",
+   "target": "other",
+   "n": 75,
+   "recall": 0.9866666793823242,
+   "abstain_rate": 0.03999999910593033
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "field_browon_spot",
+   "target": "other",
+   "n": 8,
+   "recall": 0.75,
+   "abstain_rate": 0.25
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "field_leaf_scaled",
+   "target": "other",
+   "n": 11,
+   "recall": 0.6363636255264282,
+   "abstain_rate": 0.27272728085517883
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "field_rice_turgro",
+   "target": "other",
+   "n": 12,
+   "recall": 1.0,
+   "abstain_rate": 0.0833333358168602
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "field_sheath_blight",
+   "target": "other",
+   "n": 9,
+   "recall": 0.7777777910232544,
+   "abstain_rate": 0.4444444477558136
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "white_brown_spot",
+   "target": "other",
+   "n": 13,
+   "recall": 0.9230769276618958,
+   "abstain_rate": 0.1538461595773697
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "white_leaf_scaled",
+   "target": "other",
+   "n": 22,
+   "recall": 0.7272727489471436,
+   "abstain_rate": 0.09090909361839294
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "white_rice_blast",
+   "target": "blast",
+   "n": 29,
+   "recall": 0.7586206793785095,
+   "abstain_rate": 0.2068965584039688
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "white_rice_tungro",
+   "target": "other",
+   "n": 18,
+   "recall": 0.8888888955116272,
+   "abstain_rate": 0.1111111119389534
+  },
+  {
+   "source": "DhanShomadhan",
+   "source_class": "white_shath_blight",
+   "target": "other",
+   "n": 33,
+   "recall": 0.8787878751754761,
+   "abstain_rate": 0.21212121844291687
+  },
+  {
+   "source": "RiceLeafBD",
+   "source_class": "bacterial_leaf_blight",
+   "target": "bacterial_leaf_blight",
+   "n": 50,
+   "recall": 0.800000011920929,
+   "abstain_rate": 0.18000000715255737
+  },
+  {
+   "source": "RiceLeafBD",
+   "source_class": "brown_spot",
+   "target": "other",
+   "n": 52,
+   "recall": 1.0,
+   "abstain_rate": 0.03846153989434242
+  },
+  {
+   "source": "RiceLeafBD",
+   "source_class": "healthy",
+   "target": "healthy",
+   "n": 37,
+   "recall": 1.0,
+   "abstain_rate": 0.027027027681469917
+  },
+  {
+   "source": "RiceLeafBD",
+   "source_class": "tungro_virus",
+   "target": "other",
+   "n": 75,
+   "recall": 0.9066666960716248,
+   "abstain_rate": 0.11999999731779099
+  }
+ ],
+ "by_background": [
+  {
+   "background": "field",
+   "target": "bacterial_leaf_blight",
+   "n": 50,
+   "recall": 0.8,
+   "abstain_rate": 0.18,
+   "answered_wrong_rate": 0.1
+  },
+  {
+   "background": "field",
+   "target": "blast",
+   "n": 18,
+   "recall": 0.3888888888888889,
+   "abstain_rate": 0.6111111111111112,
+   "answered_wrong_rate": 0.2222222222222222
+  },
+  {
+   "background": "field",
+   "target": "healthy",
+   "n": 37,
+   "recall": 1.0,
+   "abstain_rate": 0.02702702702702703,
+   "answered_wrong_rate": 0.0
+  },
+  {
+   "background": "field",
+   "target": "other",
+   "n": 167,
+   "recall": 0.9101796407185628,
+   "abstain_rate": 0.12574850299401197,
+   "answered_wrong_rate": 0.04790419161676647
+  },
+  {
+   "background": "white",
+   "target": "blast",
+   "n": 135,
+   "recall": 0.9481481481481482,
+   "abstain_rate": 0.044444444444444446,
+   "answered_wrong_rate": 0.044444444444444446
+  },
+  {
+   "background": "white",
+   "target": "healthy",
+   "n": 115,
+   "recall": 0.9739130434782609,
+   "abstain_rate": 0.034782608695652174,
+   "answered_wrong_rate": 0.017391304347826087
+  },
+  {
+   "background": "white",
+   "target": "other",
+   "n": 324,
+   "recall": 0.9228395061728395,
+   "abstain_rate": 0.07407407407407407,
+   "answered_wrong_rate": 0.043209876543209874
+  }
+ ],
+ "dhs_field_blast": {
+  "n": 18,
+  "blast_recall": 0.3888888955116272,
+  "abstain_rate": 0.6111111044883728,
+  "answered_as_blast": 0.1666666716337204,
+  "answered_wrong": 0.2222222238779068
+ },
+ "onnx_parity_max_abs_diff": 5.602836608886719e-06,
+ "onnx_mb": 17.088395,
+ "onnx_exporter": "dynamo",
+ "train_seconds": 311.1987726688385,
+ "versions": {
+  "python": "3.12.10",
+  "torch": "2.14.1+cu126",
+  "timm": "1.0.30",
+  "onnx": "1.23.2",
+  "onnxruntime": "1.31.0"
+ }
+}

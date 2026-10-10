@@ -13,10 +13,10 @@ license: mit
 
 # Kom Bish (কম বিষ) — a Bangla rice adviser that says whether to spray at all
 
-> **DRAFT README (11 Oct 2026).** The app, the rule engine and the tests are built and passing. The
-> classifier is **not trained yet**, the Bangla is **not yet reviewed** by native speakers, the audio
-> clips are **not recorded** and nothing is hosted. Every `TODO-HUMAN` below marks a fact that does not
-> exist yet. No number on this page is invented: the evaluation section stays empty until the real run.
+> **DRAFT README (11 Oct 2026).** The app, the rule engine, the tests and a trained classifier exist.
+> The Bangla is **not yet reviewed** by native speakers, the audio clips are **not recorded**, the model is
+> **not published** and nothing is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
+> No number on this page is invented: each comes from `training/eval_summary.json`.
 
 TODO-HUMAN (C): one-line pitch in Bangla. DRAFT — needs native speaker review.
 
@@ -36,7 +36,7 @@ How to try: tick the consent box, upload a rice-leaf photo, press **পরাম
 
 | Part | Status |
 |---|---|
-| Photo classifier | TODO-HUMAN: not trained yet. Planned: ONNX MobileNetV3-Large, fine-tuned on CC BY 4.0 Bangladeshi rice-leaf images (step 10). The app refuses to start without a real model; there is no dummy model. |
+| Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 3,974 CC BY 4.0 Bangladeshi rice-leaf images. **Weak on blast in field photos: it mostly refers instead of answering** (see Evaluation). TODO-HUMAN: not yet published to a model repo (step 11). |
 | Rule engine | Real: pure Python, six rules, [`kombish/rules.py`](kombish/rules.py), tested |
 | Voice parsing | Code is real (Gemini returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
 | Spoken answer | TODO-HUMAN: pre-recorded human clips, not recorded yet (step 16). No live text-to-speech. |
@@ -101,20 +101,28 @@ flowchart LR
 
 ## Evaluation
 
-TODO-HUMAN: no real numbers yet. The classifier has not been trained (step 10) and the team's own photos
-have not been collected (step 19). `training/make_eval_report.py` writes `training/eval_report.md` and
-`training/eval_summary.json`, and this section is then filled from those files only, each number with its n:
+Every number is from [`training/eval_summary.json`](training/eval_summary.json); the full tables with
+Wilson 95% intervals are in [`training/eval_report.md`](training/eval_report.md), and every training run is
+listed in [`training/results/runs/README.md`](training/results/runs/README.md).
 
-- test n and macro-F1 with no abstention
-- threshold, margin, coverage and selective accuracy
-- precision on BLB answers and on blast answers
-- Dhan-Shomadhan field blast (a dataset never used for training): n, recall, abstain rate
-- the team's own healthy-looking leaves wrongly answered as BLB or blast (k of n)
-- junk photos refused (k of n)
+- **Test split, n = 828:** macro-F1 0.904 with no abstention.
+- **Threshold 0.83, margin 0.2** (chosen on validation only): the app answers 87.8% of test photos and is
+  right on 97.0% of those. Precision on BLB answers 0.946 (n = 37); on blast answers 0.922 (n = 128).
+- **Field photos, n = 272** (what farmers will send): advice was given 77 times and was wrong 4 times. All
+  4 were other diseases given BLB or blast advice.
+- **Blast in field photos, n = 18:** 3 got the right advice, 15 were referred to 16123 or an officer, 0 got
+  wrong advice. Kom Bish mostly cannot recognise blast in a field photo yet; it refers instead.
+- **BLB in field photos, n = 50:** 35 got the right advice, 15 were referred, 0 got wrong advice.
+- **The team's own leaves and junk photos:** TODO-HUMAN, not collected yet (step 19).
 
-Known in advance: every BLB image comes from one dataset and every training blast image from another, so
-the model may learn the source rather than the disease. Recall per source and the cross-source blast test
-are reported for that reason.
+What went wrong first, and what it means: our first model scored 0.921 macro-F1 on its own test split and
+then recognised 2 of 74 field blast photos from a third dataset. In the two training datasets, blast leaves
+lie on a white sheet and BLB leaves are photographed in the field, so the model had learned the background.
+We added the third dataset (Dhan-Shomadhan) to training and tightened the threshold. The cost: the 18 field
+blast photos above are held out from a dataset the model has seen, so there is no blast test from a truly
+unseen source any more. We also looked at the test split while comparing runs, so these numbers are
+somewhat optimistic. A repeat run with another random seed gave wrong advice on 2 of its 18 field blast
+photos.
 
 ## Privacy
 
@@ -148,14 +156,18 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
 
 - RiceLeafBD, DOI 10.17632/kx9rx8p2mz.1, CC BY 4.0 (please also cite arXiv 2501.08912)
 - RiceLeafDisease-BD5, DOI 10.17632/sjkptpgv79.2, CC BY 4.0
-- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1, CC BY 4.0, via the Hugging Face mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification`
+- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1, CC BY 4.0, via the Hugging Face mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification` (used for training; 18 field blast photos held out)
 - Base weights: `timm/mobilenetv3_large_100.ra_in1k` (Apache-2.0)
 - Advice sources: BRRI, DAE/BAMIS, FAO, Ali et al. 2017
 - Model repository: TODO-HUMAN (step 11)
 
 ## Limitations
 
-- Single-source confound: all BLB training images come from one dataset and all blast images from another.
+- Blast in field photos is mostly referred, not recognised (3 of 18 answered). Only 44 field blast photos
+  exist to train on.
+- Source and background confound: all BLB training images come from one dataset (field photos) and most
+  blast images from another (leaves on a white sheet).
+- The BD5 archive we downloaded holds 3,150 images; its published description says 2,545. We do not know why.
 - No field test. Nobody has checked what a farmer did after an answer.
 - The rules are not yet signed off by an agronomist.
 - TODO-HUMAN: who reviewed the Bangla (step 06).
