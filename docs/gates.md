@@ -12,6 +12,12 @@ Fill in **Decision**, **Date** and **Who** when each gate is decided.
 | G6 | All files final | Tue 13 Oct, 8 PM | | | |
 | G7 | Email hard stop | Wed 14 Oct, 10:00 PM | | | |
 
+## Reviews
+
+- Agronomy review: none yet; rules and scripts are not reviewed by an agronomist (TODO-HUMAN: name, role and date once someone reads the six rules and four answer scripts)
+- Bangla review: TODO-HUMAN (step 06). All farmer-facing Bangla is still DRAFT; `data/clips.csv` and
+  `data/rules.csv` hold the review status per row.
+
 ## Data counts
 
 - RiceLeafBD and BD5: TODO-HUMAN. Counts are checked against the published figures when
