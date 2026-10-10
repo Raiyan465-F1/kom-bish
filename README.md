@@ -14,8 +14,8 @@ license: mit
 # Kom Bish (কম বিষ) — a Bangla rice adviser that says whether to spray at all
 
 > **DRAFT README (11 Oct 2026).** The app, the rule engine, the tests and a trained classifier exist.
-> The Bangla is **not yet reviewed** by native speakers, the audio clips are **not recorded**, the model is
-> **not published** and nothing is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
+> The Bangla is **not yet reviewed** by native speakers, the audio clips are **not recorded** and nothing
+> is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
 > No number on this page is invented: each comes from `training/eval_summary.json`.
 
 TODO-HUMAN (C): one-line pitch in Bangla. DRAFT — needs native speaker review.
@@ -36,9 +36,9 @@ How to try: tick the consent box, upload a rice-leaf photo, press **পরাম
 
 | Part | Status |
 |---|---|
-| Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 3,974 CC BY 4.0 Bangladeshi rice-leaf images. **Weak on blast in field photos: it mostly refers instead of answering** (see Evaluation). TODO-HUMAN: not yet published to a model repo (step 11). |
+| Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 3,974 CC BY 4.0 Bangladeshi rice-leaf images. **Weak on blast in field photos: it mostly refers instead of answering** (see Evaluation). Published with its model card at [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT). |
 | Rule engine | Real: pure Python, six rules, [`kombish/rules.py`](kombish/rules.py), tested |
-| Voice parsing | Code is real (Gemini returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
+| Voice parsing | Code is real (Gemini `gemini-3.5-flash-lite` returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
 | Spoken answer | TODO-HUMAN: pre-recorded human clips, not recorded yet (step 16). No live text-to-speech. |
 | "Estimated sprays avoided" | Advice-based count, unverified: nobody checked what the farmer did next |
 | Telegram, WhatsApp, phone call | Not built |
@@ -118,11 +118,23 @@ listed in [`training/results/runs/README.md`](training/results/runs/README.md).
 What went wrong first, and what it means: our first model scored 0.921 macro-F1 on its own test split and
 then recognised 2 of 74 field blast photos from a third dataset. In the two training datasets, blast leaves
 lie on a white sheet and BLB leaves are photographed in the field, so the model had learned the background.
-We added the third dataset (Dhan-Shomadhan) to training and tightened the threshold. The cost: the 18 field
-blast photos above are held out from a dataset the model has seen, so there is no blast test from a truly
-unseen source any more. We also looked at the test split while comparing runs, so these numbers are
-somewhat optimistic. A repeat run with another random seed gave wrong advice on 2 of its 18 field blast
-photos.
+We added the third dataset (Dhan-Shomadhan) to training and tightened the threshold.
+
+**This removed our only external test.** Dhan-Shomadhan was the one dataset the model had never seen. Now
+that it is training data, no number on this page comes from an unseen source: the 18 field blast photos
+above are held out from a dataset the model has seen. We also looked at the test split while comparing
+runs, so these numbers are somewhat optimistic. A repeat run with another random seed gave wrong advice on
+2 of its 18 field blast photos.
+
+The 4 field photos that got wrong advice were all other diseases: a tungro photo and a brown spot photo
+were told "no insecticide needed, fix the fertiliser" (the BLB answer), and a leaf scald photo and a sheath
+blight photo were told "spray correctly" (the blast answer). Each was answered at a confidence between
+0.848 and 0.856, just above the 0.83 threshold.
+
+A near-duplicate check across the splits (perceptual hash, any class, any source) found 2 of 846 test and
+held-out images with a near-copy in training. Removing them moves macro-F1 from 0.9026 to 0.9036 through
+the app's own ONNX code path and changes no field number
+([`training/results/leak_check.json`](training/results/leak_check.json)).
 
 ## Privacy
 
@@ -159,7 +171,7 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
 - Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1, CC BY 4.0, via the Hugging Face mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification` (used for training; 18 field blast photos held out)
 - Base weights: `timm/mobilenetv3_large_100.ra_in1k` (Apache-2.0)
 - Advice sources: BRRI, DAE/BAMIS, FAO, Ali et al. 2017
-- Model repository: TODO-HUMAN (step 11)
+- Model repository: [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT)
 
 ## Limitations
 
@@ -167,7 +179,9 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
   exist to train on.
 - Source and background confound: all BLB training images come from one dataset (field photos) and most
   blast images from another (leaves on a white sheet).
-- The BD5 archive we downloaded holds 3,150 images; its published description says 2,545. We do not know why.
+- No external test: Dhan-Shomadhan, the only dataset the model had never seen, is now training data.
+- BD5's official archive (version 2, SHA-256 verified) holds 3,150 images; its own description says 2,545.
+  We used what the archive contains.
 - No field test. Nobody has checked what a farmer did after an answer.
 - The rules are not yet signed off by an agronomist.
 - TODO-HUMAN: who reviewed the Bangla (step 06).

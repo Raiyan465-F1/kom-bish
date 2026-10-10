@@ -1,6 +1,8 @@
 """Cache the parse of the team's scripted demo clip, so the demo works even when the Gemini quota is gone.
 
-  python scripts/cache_voice.py <audio_file> [--model gemini-3.8-flash]
+  python scripts/cache_voice.py <audio_file>
+
+Team decision (11 Oct 2026): Kom Bish uses gemini-3.5-flash-lite only (GEMINI_MODEL in .env).
 
 Use only for a clip recorded by a teammate who agrees. In the video and live pitch, UPLOAD that saved
 file instead of recording live: the cache is keyed by the file's bytes, so only the same file hits it.

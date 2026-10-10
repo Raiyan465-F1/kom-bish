@@ -6,7 +6,7 @@ Fill in **Decision**, **Date** and **Who** when each gate is decided.
 |---|---|---|---|---|---|
 | G1 | Hosting route | Sat 10 Oct, 10 PM | TODO-HUMAN: ZeroGPU / Render / both? Which ZeroGPU variant works? URLs? (see "G1 — hosting route" below) | | |
 | G2 | Trained ONNX | Sun 11 Oct, 6 PM | **Passed with a changed plan.** Trained ONNX exists (`run9_final`). Trained on the laptop's RTX 4070, not Kaggle. Dhan-Shomadhan had to move into training, so there is no true cross-source blast test any more. Details in "G2 — training" below. | Sun 11 Oct 2026, about 03:00 | Claude Code on Raiyan's laptop; TODO-HUMAN: team to confirm |
-| G3 | Voice on/off | Sun 11 Oct, 10 PM | TODO-HUMAN: not scored yet. Needs `GEMINI_API_KEY` and 10 test notes (step 15). Until then `VOICE_ENABLED=false` (photo-only). | | |
+| G3 | Voice on/off | Sun 11 Oct, 10 PM | TODO-HUMAN: not scored yet. Needs 10 test notes (step 15). Until then `VOICE_ENABLED=false` (photo-only). Model decided: `gemini-3.5-flash-lite` only (Raiyan, 11 Oct), so the score is run on that model alone. | | |
 | G4 | Hosted app works on phones | Mon 12 Oct, noon | | | |
 | G5 | Feature freeze `v1.0` | Mon 12 Oct, 9 PM | | | |
 | G6 | All files final | Tue 13 Oct, 8 PM | | | |
@@ -42,11 +42,16 @@ Target totals kept: bacterial_leaf_blight 335, blast 720, healthy 1,086, other 2
 - **Label conflicts (dropped, never guessed):** 21 RiceLeafBD photos exist byte-for-byte in two class folders
   with different targets: 18 in both "Bacterial Leaf Blight" and "Tungro Virus", 3 in both "Bacterial Leaf
   Blight" and "Brown Spot". Both copies of each were dropped (42 files). The prep log lists every pair.
-- **BD5 does not match its own description.** The folder holds 3,150 JPEGs, all 300×300 px. The PDFs inside it
-  and the Mendeley page for version 2 (DOI 10.17632/sjkptpgv79.2, checked 11 Oct 2026) both say 2,545 images
-  (Blast 339, Narrow Brown Spot 329, Sheath Blight 454, Tungro 500, Normal Leaf 923) resized to 224×224. We
-  do not know why the download differs. TODO-HUMAN: confirm where this archive came from and whether it is
-  the official "Download All" file.
+- **BD5 is the official version 2 archive; the publisher's description is what does not match.** The folder
+  holds 3,150 JPEGs, all 300×300 px. The PDFs inside it and the Mendeley page for version 2
+  (DOI 10.17632/sjkptpgv79.2) both say 2,545 images (Blast 339, Narrow Brown Spot 329, Sheath Blight 454,
+  Tungro 500, Normal Leaf 923) resized to 224×224. Checked on 11 Oct 2026: Mendeley's API lists one file for
+  version 2, `RiceLeafDisease-BD5.rar`, 21,642,468 bytes, SHA-256
+  `ea5da4b300af32998d4d2c396f5033b3d82843f5e9629a15bfc1131f744c9d2b`. We downloaded it, the hash matched, and
+  its listing holds 3,150 images with exactly our per-folder counts (720 / 476 / 834 / 626 / 494). Version 1
+  (`RiceLeafBD.rar`, published 22 Jun 2026) has the same size and the same SHA-256, so versions 1 and 2 are
+  the same archive under two names. The "Unexplained" rows above are therefore the publisher's description
+  disagreeing with the publisher's own archive. We train on what the archive contains.
 - **Near-duplicates:** with `--phash` (Hamming distance ≤ 5, an unverified threshold) 1,200 images fell into
   531 groups (burst shots of the same leaf). Each group is kept inside one split so the test split does not
   contain near-copies of training images.
@@ -105,7 +110,37 @@ All numbers are in `training/results/metrics.json` (shipped model) and `training
 - Training: 313 seconds on an NVIDIA RTX 4070, torch 2.14.1+cu126, timm 1.0.30, onnx 1.23.2,
   onnxruntime 1.31.0, Python 3.12.10. Kaggle was not used, so Kaggle's torch version is not relevant.
 
-**Changes from the written plan (TODO-HUMAN: team to confirm these are acceptable)**
+**The 4 field photos that got wrong advice** (shipped model, app code path; `training/results/leak_check.json`)
+
+| Photo | True class | Answered as | Advice the farmer would get | Confidence |
+|---|---|---|---|---|
+| `RiceLeafBD/Tungro Virus/312624486_675060277291867_7528285692741017397_n.jpg` | Tungro (other) | bacterial_leaf_blight | R1: no insecticide needed, fix the fertiliser | 0.8487 |
+| Dhan-Shomadhan mirror row 15 | Field brown spot (other) | bacterial_leaf_blight | R1: no insecticide needed, fix the fertiliser | 0.8551 |
+| Dhan-Shomadhan mirror row 136 | Field leaf scald (other) | blast | R2: spray correctly (tricyclazole-group fungicide) | 0.8533 |
+| Dhan-Shomadhan mirror row 244 | Field sheath blight (other) | blast | R2: spray correctly (tricyclazole-group fungicide) | 0.8500 |
+
+All four should have been referred. None has a near-duplicate in training.
+
+**Near-duplicate leak check** (`python training/check_leakage.py --data data/prepared_run3`, 11 Oct 2026):
+8 pairs within perceptual-hash distance 5 cross a split boundary. 2 of 846 test and held-out images and 6 of
+863 validation images have a near-copy in training (7 of the 8 pairs are BD5 burst shots; one BD5 pair and
+one RiceLeafBD pair carry two different class labels). Through the app's ONNX code path: all test images
+n = 828, macro-F1 0.9026, coverage 0.8804, selective accuracy 0.9684; without the 2 leaked images n = 826,
+macro-F1 0.9036, coverage 0.8814, selective accuracy 0.9684. Field numbers are identical in both
+(wrong advice 4 of 77; field blast 3 correct, 15 referred, 0 wrong). The split was not redone. Cause:
+`prepare_data.py --phash` only groups near-duplicates inside one (source, class) folder and hashes the raw
+files, not the resized ones. These ONNX-on-CPU numbers differ from `metrics.json` (PyTorch on the GPU:
+macro-F1 0.9037, coverage 0.8780) by one or two borderline images; the app runs the ONNX model.
+
+**Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
+https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice). A download with no token
+and an empty cache returned the four classes and a 17,088,395-byte `model.onnx`, the same size as the local
+file. `best.pt` was not uploaded. TODO-HUMAN: add the GitHub Actions variable `MODEL_REPO`.
+
+**Confirmed by Raiyan on 11 Oct 2026:** keep Dhan-Shomadhan in training, and say in the README and the model
+card that this removed the external test. Both now say so.
+
+**Changes from the written plan**
 
 - Dhan-Shomadhan (all classes, both backgrounds) is now training data: 766 train, 167 validation, 155 test
   images. "Rice Blast" maps to `blast`; every other disease to `other`. 18 field blast photos stay held out,

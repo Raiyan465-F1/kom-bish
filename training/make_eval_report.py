@@ -238,6 +238,29 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     else:
         L += ["Not measured: the Dhan-Shomadhan images were not available in this run, so there is no "
               "cross-source blast test.", ""]
+    leak_path = RESULTS / "leak_check.json"
+    if leak_path.exists():
+        k = json.loads(leak_path.read_text("utf-8"))
+        full, clean = k["full"], k["without_leaked"]
+        L += ["### Near-duplicate leak check", "",
+              f"`training/check_leakage.py` compared every validation, test and held-out image with every "
+              f"training image (64-bit perceptual hash, Hamming distance ≤ {k['phash_distance']}, any class, any "
+              f"source). {k['leaked_test_images']} of {k['test_and_heldout_images']} test and held-out images and "
+              f"{k['leaked_val_images']} of {k['val_images']} validation images have a near-duplicate in "
+              "training. The shipped model through the app's own ONNX code path:", "",
+              "| | Test n | Macro-F1 (no abstention) | Coverage | Selective accuracy | Field wrong advice |",
+              "|---|---|---|---|---|---|"]
+        for name, r in (("All test images", full), ("Without leaked test images", clean)):
+            L.append(f"| {name} | {r['test_n']} | {r['macro_f1_no_abstention']:.4f} | {r['coverage']:.4f} | "
+                     f"{r['selective_accuracy']:.4f} | {r['field']['wrong_advice']}/{r['field']['advice_given']} |")
+        L += ["", "These ONNX-on-CPU numbers differ from the tables above (computed in PyTorch on the GPU) by one "
+              "or two borderline images; the app runs the ONNX model.", ""]
+        if k.get("field_wrong_advice"):
+            L += ["Field photos that got wrong advice:", "", "| Photo | True class | Answered as | Confidence |",
+                  "|---|---|---|---|"]
+            L += [f"| `{w['photo']}` | {w['true_class']} | {w['answered_as']} | {w['confidence']} |"
+                  for w in k["field_wrong_advice"]]
+            L += [""]
     L += ["## 4. The team's own photos and junk photos", ""]
     if own:
         L += ["Own-photo labels are \"healthy-looking\" vs \"symptomatic\" as judged by the team, not diagnoses.", "",
@@ -261,8 +284,10 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
           "- Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most "
           "blast images from BD5 (leaves on a white sheet). A model can learn the background instead of the "
           "disease; the first run did exactly that. Sections 2 and 3 are the honest check.",
-          "- The BD5 archive on disk (3,150 images) does not match its published description (2,545 images); "
-          "we do not know why (`docs/gates.md`).",
+          "- BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description "
+          "says 2,545. We used what the archive contains (`docs/gates.md`).",
+          "- Dhan-Shomadhan is in the training data, which removed the only external test: no number in this "
+          "report comes from a dataset the model has never seen.",
           "- The test split was looked at during development: several training runs were compared, and the "
           "threshold rule was tightened after seeing early results (`docs/gates.md` lists every run). The "
           "numbers here are therefore somewhat optimistic. Only a new, untouched set of field photos would "

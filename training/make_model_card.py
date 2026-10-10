@@ -88,6 +88,18 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
               f"{prop(count(r['abstain_rate'], r['n']), r['n'])} | "
               f"{prop(count(r['answered_wrong_rate'], r['n']), r['n'])} |" for r in metrics["by_background"]]
         L += [""]
+    field = (metrics.get("advice") or {}).get("field")
+    if field:
+        bt = field["by_true_class"]
+        L += [f"What a farmer with a field photo gets (n = {field['n']}; advice = a BLB, blast or healthy answer "
+              "above the threshold, everything else is a referral): advice given "
+              f"{prop(field['advice_given'], field['n'])}; wrong advice among advice given "
+              f"{prop(field['wrong_advice'], field['advice_given'])}. True field blast (n = {bt['blast']['n']}): "
+              f"{bt['blast']['correct_advice']} correct advice, {bt['blast']['referred']} referred, "
+              f"{bt['blast']['wrong_advice']} wrong advice. True field BLB (n = {bt['bacterial_leaf_blight']['n']}): "
+              f"{bt['bacterial_leaf_blight']['correct_advice']} correct advice, "
+              f"{bt['bacterial_leaf_blight']['referred']} referred, "
+              f"{bt['bacterial_leaf_blight']['wrong_advice']} wrong advice.", ""]
     if dhs:
         kind = "held-out slice of a source the model has seen, not a cross-source test" if dhs_trained \
             else "cross-source"
@@ -101,7 +113,16 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
           "another (BD5, leaves on a white sheet), so the model can learn the source or the background rather "
           "than the disease. A first run without Dhan-Shomadhan did exactly that. The per-source and "
           "per-background numbers above are the honest check.",
-          "- Not tested on non-rice photos beyond the team's own junk-photo test (see the project README).",
+          *(["- **No external test.** Dhan-Shomadhan was added to the training data because the first model "
+             "failed on its field photos. That removed the only test from a dataset the model had never seen. "
+             "The held-out field blast photos reported above come from a source the model has seen."]
+            if dhs_trained else []),
+          "- **Blast in field photos is mostly not recognised.** At the shipped threshold the model refers most "
+          "field blast photos instead of answering (see the per-background table)."
+          if dhs_trained else "- Blast on field backgrounds is the weakest case; see the cross-source numbers.",
+          "- The test split was looked at while comparing training runs, so the numbers are somewhat optimistic.",
+          "- BD5's official archive holds 3,150 images although its description says 2,545; we used the archive.",
+          "- Not tested on non-rice photos. The team's own leaf and junk-photo tests are not done yet.",
           f"- Agronomy review: {agronomy_status()}.",
           "- No field trial.", "",
           "## Files", "", "`model.onnx`, `labels.json`."]

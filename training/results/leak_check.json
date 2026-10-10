@@ -1,0 +1,120 @@
+{
+ "phash_distance": 5,
+ "cross_split_pairs": 8,
+ "pairs_by_distance": {
+  "2": 1,
+  "4": 7
+ },
+ "leaked_test_images": 2,
+ "test_and_heldout_images": 846,
+ "leaked_val_images": 6,
+ "val_images": 863,
+ "leaked_test_files": [
+  "test/other/BD5__narrow_brown_spot__img_20241031_133652_d041d326.jpg",
+  "test/healthy/BD5__normal_leaf__img_20241031_141309_5e885736.jpg"
+ ],
+ "full": {
+  "test_n": 828,
+  "macro_f1_no_abstention": 0.9026232810186533,
+  "coverage": 0.8804347826086957,
+  "selective_accuracy": 0.9684499314128944,
+  "precision_blb_answers": {
+   "value": 0.9459459459459459,
+   "n": 37
+  },
+  "precision_blast_answers": {
+   "value": 0.9147286821705426,
+   "n": 129
+  },
+  "field": {
+   "n": 272,
+   "advice_given": 77,
+   "wrong_advice": 4,
+   "blast": {
+    "n": 18,
+    "correct_advice": 3,
+    "referred": 15,
+    "wrong_advice": 0
+   },
+   "blb": {
+    "n": 50,
+    "correct_advice": 35,
+    "referred": 15,
+    "wrong_advice": 0
+   }
+  }
+ },
+ "without_leaked": {
+  "test_n": 826,
+  "macro_f1_no_abstention": 0.9035673507630473,
+  "coverage": 0.8813559322033898,
+  "selective_accuracy": 0.9684065934065934,
+  "precision_blb_answers": {
+   "value": 0.9459459459459459,
+   "n": 37
+  },
+  "precision_blast_answers": {
+   "value": 0.9147286821705426,
+   "n": 129
+  },
+  "field": {
+   "n": 272,
+   "advice_given": 77,
+   "wrong_advice": 4,
+   "blast": {
+    "n": 18,
+    "correct_advice": 3,
+    "referred": 15,
+    "wrong_advice": 0
+   },
+   "blb": {
+    "n": 50,
+    "correct_advice": 35,
+    "referred": 15,
+    "wrong_advice": 0
+   }
+  }
+ },
+ "field_wrong_advice": [
+  {
+   "photo": "RiceLeafBD/Tungro Virus/312624486_675060277291867_7528285692741017397_n.jpg",
+   "prepared_file": "test/other/RiceLeafBD__tungro_virus__312624486_675060277291867_7528285692741017397_n_e32fd7a0.jpg",
+   "true_class": "RiceLeafBD | Tungro Virus",
+   "true_target": "other",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8487,
+   "margin": 0.7808,
+   "has_near_duplicate_in_train_or_val": false
+  },
+  {
+   "photo": "hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#15",
+   "prepared_file": "test/other/DhanShomadhan__field_browon_spot__00015.jpg",
+   "true_class": "DhanShomadhan | Field Browon Spot",
+   "true_target": "other",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8551,
+   "margin": 0.7184,
+   "has_near_duplicate_in_train_or_val": false
+  },
+  {
+   "photo": "hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#136",
+   "prepared_file": "test/other/DhanShomadhan__field_leaf_scaled__00136.jpg",
+   "true_class": "DhanShomadhan | Field Leaf Scaled",
+   "true_target": "other",
+   "answered_as": "blast",
+   "confidence": 0.8533,
+   "margin": 0.7139,
+   "has_near_duplicate_in_train_or_val": false
+  },
+  {
+   "photo": "hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#244",
+   "prepared_file": "test/other/DhanShomadhan__field_sheath_blight__00244.jpg",
+   "true_class": "DhanShomadhan | Field Sheath Blight",
+   "true_target": "other",
+   "answered_as": "blast",
+   "confidence": 0.85,
+   "margin": 0.7061,
+   "has_near_duplicate_in_train_or_val": false
+  }
+ ]
+}

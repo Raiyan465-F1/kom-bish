@@ -117,6 +117,26 @@ n = 18 field-background blast images held out from Dhan-Shomadhan. Other Dhan-Sh
 - Abstain rate: 12/18 = 0.667 (95% CI 0.437–0.837)
 - Answered as blast: 3/18 = 0.167 (95% CI 0.058–0.392)
 
+### Near-duplicate leak check
+
+`training/check_leakage.py` compared every validation, test and held-out image with every training image (64-bit perceptual hash, Hamming distance ≤ 5, any class, any source). 2 of 846 test and held-out images and 6 of 863 validation images have a near-duplicate in training. The shipped model through the app's own ONNX code path:
+
+| | Test n | Macro-F1 (no abstention) | Coverage | Selective accuracy | Field wrong advice |
+|---|---|---|---|---|---|
+| All test images | 828 | 0.9026 | 0.8804 | 0.9684 | 4/77 |
+| Without leaked test images | 826 | 0.9036 | 0.8814 | 0.9684 | 4/77 |
+
+These ONNX-on-CPU numbers differ from the tables above (computed in PyTorch on the GPU) by one or two borderline images; the app runs the ONNX model.
+
+Field photos that got wrong advice:
+
+| Photo | True class | Answered as | Confidence |
+|---|---|---|---|
+| `RiceLeafBD/Tungro Virus/312624486_675060277291867_7528285692741017397_n.jpg` | RiceLeafBD | Tungro Virus | bacterial_leaf_blight | 0.8487 |
+| `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#15` | DhanShomadhan | Field Browon Spot | bacterial_leaf_blight | 0.8551 |
+| `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#136` | DhanShomadhan | Field Leaf Scaled | blast | 0.8533 |
+| `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#244` | DhanShomadhan | Field Sheath Blight | blast | 0.85 |
+
 ## 4. The team's own photos and junk photos
 
 Not measured yet: `training/results/own_photos.json` does not exist (steps 19 and 20).
@@ -128,7 +148,8 @@ Not measured yet: `training/results/own_photos.json` does not exist (steps 19 an
 ## Limitations
 
 - Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most blast images from BD5 (leaves on a white sheet). A model can learn the background instead of the disease; the first run did exactly that. Sections 2 and 3 are the honest check.
-- The BD5 archive on disk (3,150 images) does not match its published description (2,545 images); we do not know why (`docs/gates.md`).
+- BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description says 2,545. We used what the archive contains (`docs/gates.md`).
+- Dhan-Shomadhan is in the training data, which removed the only external test: no number in this report comes from a dataset the model has never seen.
 - The test split was looked at during development: several training runs were compared, and the threshold rule was tightened after seeing early results (`docs/gates.md` lists every run). The numbers here are therefore somewhat optimistic. Only a new, untouched set of field photos would give a clean estimate.
 - With this few test images per minority class, one or two images move a recall by several points; read the intervals, not the point values.
 - Own-photo labels are healthy-looking vs symptomatic, not diagnoses.

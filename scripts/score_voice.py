@@ -1,7 +1,8 @@
 """Score Gemini voice parsing on the team's test notes (gate G3).
 
-  python scripts/score_voice.py --dir voice_tests --model gemini-3.5-flash-lite
-  python scripts/score_voice.py --dir voice_tests --model gemini-3.8-flash
+  python scripts/score_voice.py --dir voice_tests
+
+Team decision (11 Oct 2026): Kom Bish uses gemini-3.5-flash-lite only (GEMINI_MODEL in .env).
 
 voice_tests/expected.csv has columns: file, expected_symptoms (semicolon-separated enum values,
 e.g. brown_spots;yellowing). Transcripts are printed to the terminal only, never written to a file.
