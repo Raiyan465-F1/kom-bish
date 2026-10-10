@@ -5,12 +5,31 @@ Fill in **Decision**, **Date** and **Who** when each gate is decided.
 | Gate | Name | Deadline | Decision | Date | Who |
 |---|---|---|---|---|---|
 | G1 | Hosting route | Sat 10 Oct, 10 PM | TODO-HUMAN: ZeroGPU / Render / both? Which ZeroGPU variant works? URLs? (see "G1 — hosting route" below) | | |
-| G2 | Trained ONNX | Sun 11 Oct, 6 PM | | | |
-| G3 | Voice on/off | Sun 11 Oct, 10 PM | | | |
+| G2 | Trained ONNX | Sun 11 Oct, 6 PM | TODO-HUMAN: not trained yet. Needs the raw datasets (step 02), the folder mapping (step 07 Part B) and the Kaggle run (step 10). | | |
+| G3 | Voice on/off | Sun 11 Oct, 10 PM | TODO-HUMAN: not scored yet. Needs `GEMINI_API_KEY` and 10 test notes (step 15). Until then `VOICE_ENABLED=false` (photo-only). | | |
 | G4 | Hosted app works on phones | Mon 12 Oct, noon | | | |
 | G5 | Feature freeze `v1.0` | Mon 12 Oct, 9 PM | | | |
 | G6 | All files final | Tue 13 Oct, 8 PM | | | |
 | G7 | Email hard stop | Wed 14 Oct, 10:00 PM | | | |
+
+## Data counts
+
+- RiceLeafBD and BD5: TODO-HUMAN. Counts are checked against the published figures when
+  `training/prepare_data.py` runs on the real folders (step 07 Part B). Write one line here per mismatch.
+- Dhan-Shomadhan (HF mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification`), loaded locally
+  with `datasets==5.1.0` on 11 Oct 2026: 1,106 rows in total; **74 field-background "Rice Blast" images**
+  (198 more on a white background, which are not used). These 74 are the held-out cross-source blast test.
+
+## Code checks done without the real model (11 Oct 2026)
+
+These prove the code runs. They are not results and must never be reported as accuracy.
+
+- Full pipeline on synthetic random-noise images (`training/make_synthetic_data.py`): prepare → train →
+  temperature → threshold → ONNX export. ONNX parity max |ORT − torch| = 1.57e-05; `model.onnx` is one
+  17.1 MB file; batch 1 and 4 run.
+- `training/check_parity.py` on that synthetic export: app preprocessing vs timm eval transform,
+  max difference 0.0 over 5 image sizes.
+- Local torch for these checks: 2.14.1+cpu. Kaggle's torch version is still unknown (the notebook prints it).
 
 ## G1 — hosting route
 
