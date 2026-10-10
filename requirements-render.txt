@@ -1,0 +1,7 @@
+gradio==6.29.1
+onnxruntime==1.31.0
+numpy<3
+pillow==12.3.0
+huggingface_hub==2.2.0
+google-genai==2.29.0
+pydantic>=2.11
