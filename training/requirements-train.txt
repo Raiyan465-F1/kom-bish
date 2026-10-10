@@ -1,0 +1,19 @@
+# Training, parity check and deck (.venv-train and Kaggle). Never install this into .venv.
+#
+# The default PyPI torch wheel pulls several GB of CUDA libraries. For the local CPU venv, install with
+#   pip install --extra-index-url https://download.pytorch.org/whl/cpu -r training/requirements-train.txt
+# and fall back to plain PyPI if that fails.
+# datasets==5.1.0 is current on PyPI but the Dhan-Shomadhan load call is untested.
+torch==2.14.1
+torchvision==0.29.1
+timm==1.0.30
+onnx==1.23.2
+onnxscript==0.7.2
+onnxruntime==1.31.0
+scikit-learn==1.9.1
+pillow==12.3.0
+numpy<3
+matplotlib==3.11.2
+imagehash==4.3.2
+datasets==5.1.0
+python-pptx==1.0.2
