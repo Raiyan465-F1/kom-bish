@@ -12,7 +12,7 @@ from kombish.voice import VoiceQuery
 ROOT = Path(__file__).resolve().parent.parent
 T = 0.70
 ORDER = ["R0_NO_CONSENT", "R0_NO_PHOTO", "R5_ABSTAIN", "R6_VOICE_REDFLAG",
-         "R1_BLB", "R2_BLAST", "R3_HEALTHY", "R4_OTHER"]
+         "R1_BLB", "R0_CONFIRM_BLAST", "R7_BLAST_UNCONFIRMED", "R2_BLAST", "R3_HEALTHY", "R4_OTHER"]
 SYMPTOMS = ["brown_spots", "spindle_lesions", "yellowing", "leaf_tip_drying",
             "insects_seen", "hopper_burn", "wilting", "none", "unclear"]
 
@@ -58,9 +58,88 @@ def test_low_confidence_always_refers(label):
 
 
 def test_label_mapping_when_confident():
-    got = {lab: decide(lab, 0.99, True, None, None, threshold=T).decision for lab in rules.CLASSES}
+    got = {lab: decide(lab, 0.99, True, None, None, threshold=T, blast_confirmed=True).decision
+           for lab in rules.CLASSES}
     assert got == {"bacterial_leaf_blight": "no_insecticide_fix_fertiliser", "blast": "spray_correctly",
                    "healthy": "no_spray_monitor", "other": "consult_officer"}
+
+
+# ---- spray advice is stricter than no-spray advice ----
+BLAST_T = 0.95
+
+
+def blast(conf, confirmed, voice=None, margin_ok=True):
+    return decide("blast", conf, margin_ok, voice, None, threshold=T, blast_threshold=BLAST_T,
+                  blast_confirmed=confirmed)
+
+
+def test_blast_needs_the_farmers_yes():
+    asked = blast(0.99, None)
+    assert asked.rule_id == "R0_CONFIRM_BLAST" and asked.decision == "none" and asked.clips == ()
+    assert asked.text_md == f"## {load_rules()['R0_CONFIRM_BLAST']['headline_bn']}"   # the question, nothing else
+    yes = blast(0.99, True)
+    assert yes.rule_id == "R2_BLAST" and yes.decision == "spray_correctly"
+    no = blast(0.99, False)
+    assert no.rule_id == "R7_BLAST_UNCONFIRMED" and no.decision == "consult_officer"
+    assert no.clips == ("audio/not_sure.mp3",)
+
+
+@pytest.mark.parametrize("confirmed", [None, False, True])
+def test_blast_below_its_own_threshold_always_refers(confirmed):
+    # Confident enough for a no-spray answer (>= T), not confident enough for spray advice (< BLAST_T).
+    for conf in (T, 0.83, 0.90, BLAST_T - 0.001):
+        assert blast(conf, confirmed).rule_id == "R5_ABSTAIN"
+    assert blast(BLAST_T, True).rule_id == "R2_BLAST"   # the threshold itself is enough
+
+
+@pytest.mark.parametrize("label", ["bacterial_leaf_blight", "healthy", "other"])
+def test_blast_threshold_and_question_do_not_touch_other_classes(label):
+    plain = decide(label, 0.80, True, None, None, threshold=T)
+    for confirmed in (None, False, True):
+        gated = decide(label, 0.80, True, None, None, threshold=T, blast_threshold=BLAST_T,
+                       blast_confirmed=confirmed)
+        assert gated == plain
+
+
+def test_spray_is_only_reachable_through_a_confirmed_confident_blast():
+    for label in list(rules.CLASSES) + [None, "not_a_class"]:
+        for conf in (0.0, 0.5, T, 0.9, BLAST_T, 0.999):
+            for margin_ok in (True, False):
+                for confirmed in (None, False, True):
+                    for consent in (True, False):
+                        d = decide(label, conf, margin_ok, None, True, threshold=T, consent=consent,
+                                   blast_threshold=BLAST_T, blast_confirmed=confirmed).decision
+                        allowed = (label == "blast" and conf >= BLAST_T and margin_ok and confirmed is True
+                                   and consent)
+                        assert (d == "spray_correctly") == allowed, (label, conf, margin_ok, confirmed, consent)
+
+
+@pytest.mark.parametrize("confirmed", [None, False, True])
+def test_voice_never_changes_a_blast_outcome_except_towards_referral(confirmed):
+    base = blast(0.99, confirmed).decision
+    for v in all_voices():
+        assert blast(0.99, confirmed, voice=v).decision in {base, "consult_officer"}
+        assert blast(0.80, confirmed, voice=v).decision == "consult_officer"   # below the blast threshold
+
+
+def test_classifier_abstain_flag_uses_the_blast_threshold():
+    from kombish.classifier import should_abstain
+
+    m = {"threshold": 0.83, "margin": 0.2, "blast_threshold": 0.95}
+    assert should_abstain("blast", 0.90, 0.8, m) is True            # fine for no-spray advice, not for spray
+    assert should_abstain("blast", 0.95, 0.8, m) is False
+    assert should_abstain("bacterial_leaf_blight", 0.90, 0.8, m) is False
+    assert should_abstain("healthy", 0.82, 0.8, m) is True          # general threshold
+    assert should_abstain("blast", 0.99, 0.1, m) is True            # margin
+    old = {"threshold": 0.83, "margin": 0.2}                         # a labels.json without the new key
+    assert should_abstain("blast", 0.90, 0.8, old) is False
+
+
+def test_prompt_and_referral_sets_cover_the_new_rules():
+    assert "R0_CONFIRM_BLAST" in rules.PROMPT_RULES and "R7_BLAST_UNCONFIRMED" in rules.REFERRAL_RULES
+    rows = load_rules()
+    assert rows["R0_CONFIRM_BLAST"]["decision"] == "none" and not rows["R0_CONFIRM_BLAST"]["clip"]
+    assert rows["R7_BLAST_UNCONFIRMED"]["headline_bn"] == rows["R5_ABSTAIN"]["headline_bn"]
 
 
 def test_prompts_have_no_clips():
@@ -95,7 +174,7 @@ def test_every_decision_rule_has_text_and_declared_clip():
 
 
 def test_blast_includes_safety_and_neck_blast_line():
-    a = decide("blast", 0.99, True, None, None, threshold=T)
+    a = decide("blast", 0.99, True, None, None, threshold=T, blast_confirmed=True)
     assert a.clips == ("audio/blast.mp3", "audio/safety.mp3")
     assert nfc("শীষ") in nfc(load_clips()["blast"]["text_bn"])   # update deliberately if reviewers reword
 

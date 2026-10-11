@@ -12,9 +12,12 @@ from kombish.voice import VoiceQuery
 FAKE = {  # image width -> (label, conf, margin)
     101: ("bacterial_leaf_blight", 0.95, 0.9), 102: ("blast", 0.95, 0.9),
     103: ("healthy", 0.95, 0.9), 104: ("other", 0.95, 0.9), 105: ("blast", 0.40, 0.1),
+    106: ("blast", 0.85, 0.8),   # above the general threshold, below the blast-only threshold
 }
-EXPECTED_RULE = {101: "R1_BLB", 102: "R2_BLAST", 103: "R3_HEALTHY", 104: "R4_OTHER", 105: "R5_ABSTAIN"}
-T, MARGIN = 0.7, 0.2
+EXPECTED_RULE = {101: "R1_BLB", 102: "R2_BLAST", 103: "R3_HEALTHY", 104: "R4_OTHER", 105: "R5_ABSTAIN",
+                 106: "R5_ABSTAIN"}
+T, MARGIN, BLAST_T = 0.7, 0.2, 0.9
+YES = {102: texts.YES_BN}   # a blast answer needs the farmer's "yes" to the lesion-shape question
 RED_FLAG = VoiceQuery(transcript_bn="x", symptoms=["insects_seen"], growth_stage="unknown",
                       farmer_wants_to_spray=False, confidence="high")
 
@@ -25,7 +28,7 @@ def fake_predict(img):
 
 
 def fake_meta():
-    return {"threshold": T, "margin": MARGIN}
+    return {"threshold": T, "margin": MARGIN, "blast_threshold": BLAST_T}
 
 
 class Harness:
@@ -55,10 +58,10 @@ class Harness:
         return {"total": len(self.records), "no_spray": 0, "correct_use": 0, "referrals": 0, "sprays_avoided": 0}
 
 
-def expected_text(width, voice=None, voice_failed=False, planning=None) -> str:
+def expected_text(width, voice=None, voice_failed=False, planning=None, confirmed=True) -> str:
     label, conf, margin = FAKE[width]
-    return rules.decide(label, conf, margin >= MARGIN, voice, planning, threshold=T,
-                        voice_failed=voice_failed).text_md
+    return rules.decide(label, conf, margin >= MARGIN, voice, planning, threshold=T, voice_failed=voice_failed,
+                        blast_threshold=BLAST_T, blast_confirmed=confirmed).text_md
 
 
 def assert_only_allowed_keys(record: dict) -> None:
@@ -85,7 +88,7 @@ def img(width: int) -> Image.Image:
 
 @pytest.mark.parametrize("width", sorted(FAKE))
 def test_each_label_path(advise, harness, width):
-    out = advise(True, img(width), None, None)
+    out = advise(True, img(width), None, None, YES.get(width))
     assert out[0] == expected_text(width)
     (rec,) = harness.records
     assert rec["rule_id"] == EXPECTED_RULE[width]
@@ -94,12 +97,51 @@ def test_each_label_path(advise, harness, width):
     assert_only_allowed_keys(rec)
     assert out[4] == "id1"            # consult id kept in gr.State for the feedback button
     assert out[5].visible is True     # feedback button
+    assert out[7].visible is False and out[7].value is None   # the lesion question is cleared after an answer
+
+
+def test_blast_asks_the_lesion_question_first_and_logs_nothing(advise, harness):
+    out = advise(True, img(102), None, texts.YES_BN)   # no answer to the question yet
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLAST']['headline_bn']}"
+    assert harness.records == []                        # no advice was given, so nothing is logged
+    assert out[7].visible is True and out[7].value is None
+    assert out[2] is None and out[4] is None and out[5].visible is False
+
+
+@pytest.mark.parametrize("answer", [texts.NO_BN, texts.NOT_SURE_BN, "anything else"])
+def test_blast_without_a_yes_refers(advise, harness, answer):
+    out = advise(True, img(102), None, None, answer)
+    if answer == "anything else":                       # an unknown value is treated as unanswered
+        assert harness.records == [] and out[7].visible is True
+        return
+    assert out[0] == expected_text(102, confirmed=False)
+    rec = harness.records[0]
+    assert rec["rule_id"] == "R7_BLAST_UNCONFIRMED" and rec["decision"] == "consult_officer"
+    assert_only_allowed_keys(rec)
+
+
+@pytest.mark.parametrize("answer", [None, texts.YES_BN, texts.NO_BN])
+def test_blast_below_the_blast_threshold_refers_whatever_the_farmer_says(advise, harness, answer):
+    out = advise(True, img(106), None, None, answer)
+    assert out[0] == expected_text(106)
+    assert harness.records[0]["rule_id"] == "R5_ABSTAIN"
+    assert out[7].visible is False                      # the question is never asked
+
+
+@pytest.mark.parametrize("width", [101, 103, 104])
+def test_a_stray_yes_does_nothing_for_other_classes(advise, harness, width):
+    assert advise(True, img(width), None, None, texts.YES_BN)[0] == expected_text(width)
+    assert harness.records[0]["rule_id"] == EXPECTED_RULE[width]
+
+
+def test_only_yes_confirms():
+    assert app_module.BLAST_ANSWERS == {texts.YES_BN: True, texts.NO_BN: False, texts.NOT_SURE_BN: False}
 
 
 def test_blast_shows_second_audio_when_clips_exist(harness, monkeypatch):
     monkeypatch.setattr(app_module, "_clip", lambda rel: f"/clips/{rel}" if rel else None)
     advise = app_module.make_advise(fake_predict, fake_meta, harness.voice, harness.log, True)
-    out = advise(True, img(102), None, None)
+    out = advise(True, img(102), None, None, texts.YES_BN)
     assert out[2] == "/clips/audio/blast.mp3"
     assert out[3].visible is True and "safety.mp3" in str(out[3].value)
     out = advise(True, img(103), None, None)
@@ -202,20 +244,35 @@ def api(server):
     h, client, images, wav = server
     h.reset()
 
-    def call(consent=True, width=None, audio=False, planning=None):
+    def call(consent=True, width=None, audio=False, planning=None, blast=None):
         return client.predict(consent, images[width] if width else None, wav if audio else None, planning,
-                              api_name="/advise")
+                              blast, api_name="/advise")
     return h, call
 
 
 @pytest.mark.parametrize("width", sorted(FAKE))
 def test_api_each_label_path(api, width):
     h, call = api
-    out = call(width=width)
+    out = call(width=width, blast=YES.get(width))
     assert out[0] == expected_text(width)
     (rec,) = h.records
     assert rec["rule_id"] == EXPECTED_RULE[width]
     assert_only_allowed_keys(rec)
+
+
+def test_api_blast_question_then_answer(api):
+    h, call = api
+    out = call(width=102)                                  # first press: the question, no advice, no log
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLAST']['headline_bn']}"
+    assert h.records == []
+    out = call(width=102, blast=texts.NOT_SURE_BN)         # "not sure" refers
+    assert out[0] == expected_text(102, confirmed=False)
+    assert h.records[-1]["rule_id"] == "R7_BLAST_UNCONFIRMED"
+    out = call(width=102, blast=texts.NO_BN)               # "no" refers
+    assert h.records[-1]["rule_id"] == "R7_BLAST_UNCONFIRMED"
+    out = call(width=102, blast=texts.YES_BN)              # only "yes" gives the spray answer
+    assert out[0] == expected_text(102, confirmed=True)
+    assert h.records[-1]["rule_id"] == "R2_BLAST" and h.records[-1]["decision"] == "spray_correctly"
 
 
 def test_api_voice_red_flag(api):

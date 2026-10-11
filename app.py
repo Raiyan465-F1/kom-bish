@@ -37,20 +37,33 @@ def _echo(transcript: str) -> str:
     return texts.VOICE_ECHO_BN.format(transcript=MD_SPECIAL.sub(r"\\\1", t))
 
 
+BLAST_ANSWERS = {texts.YES_BN: True, texts.NO_BN: False, texts.NOT_SURE_BN: False}   # only "yes" confirms
+
+
+def _question(visible: bool):
+    """The lesion-shape question. It is cleared after every use so an old answer never reaches a new photo."""
+    return gr.Radio(value=None, visible=visible)
+
+
 def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
-    def advise(consent, img, audio_path, planning):
+    def advise(consent, img, audio_path, planning, blast_answer=None):
         t0 = time.perf_counter()
         planning_to_spray = {texts.YES_BN: True, texts.NO_BN: False}.get(planning)
+        no_answer = (gr.Markdown(value="", visible=False), None, gr.Audio(value=None, visible=False), None,
+                     gr.Button(visible=False), gr.Markdown(visible=False))
         if not consent or img is None:
             adv = rules.decide(None, 0.0, False, None, planning_to_spray, threshold=1.0, consent=bool(consent))
-            return (adv.text_md, gr.Markdown(value="", visible=False), None,
-                    gr.Audio(value=None, visible=False), None, gr.Button(visible=False), gr.Markdown(visible=False))
+            return (adv.text_md, *no_answer, _question(False))
         m = meta_fn()
         pred = predict_fn(img)
         voice_used = bool(voice_on and audio_path)
         vq = voice_fn(audio_path) if voice_used else None
         adv = rules.decide(pred.label, pred.conf, pred.margin >= m["margin"], vq, planning_to_spray,
-                           threshold=m["threshold"], consent=True, voice_failed=voice_used and vq is None)
+                           threshold=m["threshold"], consent=True, voice_failed=voice_used and vq is None,
+                           blast_threshold=m.get("blast_threshold"),
+                           blast_confirmed=BLAST_ANSWERS.get(blast_answer))
+        if adv.rule_id in rules.PROMPT_RULES:   # ask the lesion-shape question first; no advice, no log yet
+            return (adv.text_md, *no_answer, _question(True))
         consult_id = log_fn({
             "app_version": APP_VERSION, "predicted_class": pred.label, "confidence": round(pred.conf, 4),
             "probs": pred.probs, "abstained": pred.abstained, "voice_used": voice_used,
@@ -66,7 +79,7 @@ def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
         echo = _echo(vq.transcript_bn) if vq else ""
         return (adv.text_md, gr.Markdown(value=echo, visible=bool(echo)), main,
                 gr.Audio(value=extra, visible=extra is not None), consult_id,
-                gr.Button(visible=True), gr.Markdown(visible=False))
+                gr.Button(visible=True), gr.Markdown(visible=False), _question(False))
     return advise
 
 
@@ -108,6 +121,9 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
                     gr.Markdown(texts.VOICE_PRIVACY_NOTE_BN, visible=voice_on)
                     planning = gr.Radio(choices=[texts.YES_BN, texts.NO_BN], value=None,
                                         label=texts.SPRAY_INTENT_Q_BN)
+                    # Shown only when the photo looks like blast: spray advice needs the farmer's own "yes".
+                    blast_q = gr.Radio(choices=[texts.YES_BN, texts.NO_BN, texts.NOT_SURE_BN], value=None,
+                                       label=rules.load_rules()["R0_CONFIRM_BLAST"]["headline_bn"], visible=False)
                     btn = gr.Button(texts.BUTTON_ADVISE_BN, variant="primary", interactive=False)
                 with gr.Column():
                     answer = gr.Markdown()
@@ -121,9 +137,10 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
             if EXAMPLES:
                 gr.Examples(examples=[[p] for p in EXAMPLES], inputs=[img])
             consent.change(lambda c: gr.Button(interactive=bool(c)), inputs=consent, outputs=btn)
+            img.change(lambda: _question(False), outputs=blast_q)   # a new photo starts with no answer
             btn.click(make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on),
-                      inputs=[consent, img, aud, planning],
-                      outputs=[answer, echo, out_audio, out_audio2, consult_id, fb_btn, fb_md],
+                      inputs=[consent, img, aud, planning, blast_q],
+                      outputs=[answer, echo, out_audio, out_audio2, consult_id, fb_btn, fb_md, blast_q],
                       api_name="advise")
             fb_btn.click(make_feedback(feedback_fn), inputs=consult_id, outputs=[fb_md, fb_btn],
                          api_name="feedback")

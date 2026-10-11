@@ -52,7 +52,7 @@ print the step file's "missing prerequisite" message.
 | UI | `gradio==6.29.1` (not 6.30.0). In Gradio 6, `theme`, `css`, `head` go in `demo.launch()`, not `gr.Blocks()` |
 | Inference | `onnxruntime==1.31.0`, `numpy<3`, `pillow==12.3.0`. **No torch in the app.** |
 | Hub | `huggingface_hub==2.2.0` (`hf_hub_download`, `CommitScheduler`, `snapshot_download`) |
-| Voice | `google-genai==2.29.0`, `pydantic>=2.11`; model from `GEMINI_MODEL` (default `gemini-3.5-flash-lite`, switch `gemini-3.8-flash`) |
+| Voice | `google-genai==2.29.0`, `pydantic>=2.11`; model from `GEMINI_MODEL`: `gemini-3.5-flash-lite` only (team decision, 11 Oct 2026) |
 | ZeroGPU only | `spaces` (unpinned; in `requirements.txt` only, not in `requirements-render.txt`) |
 | Dev | `pytest`, `ruff`, `python-dotenv` (no versions verified in sources; pin what installs) |
 | Training (Kaggle T4) | `torch 2.14.1`, `torchvision 0.29.1`, `timm==1.0.30`, `onnx==1.23.2`, `onnxscript==0.7.2`, `scikit-learn==1.9.1` |
@@ -71,7 +71,7 @@ Two virtual environments:
 | `LOG_REPO` | variable | Private HF dataset repo, `<hf-user>/kom-bish-logs` |
 | `HF_TOKEN` | **secret** | Fine-grained HF token, write access to the log repo only |
 | `GEMINI_API_KEY` | **secret** | Gemini API key (free tier) |
-| `GEMINI_MODEL` | variable | Default `gemini-3.5-flash-lite` |
+| `GEMINI_MODEL` | variable | `gemini-3.5-flash-lite` (the only model used) |
 | `VOICE_ENABLED` | variable | `true` / `false`. `false` hides the microphone entirely |
 | `APP_VERSION` | variable | e.g. `0.1.0`, `1.0.0` |
 | `ZEROGPU_MODE` | variable | `noop` (default) or `wrap`. Only matters on a ZeroGPU Space |

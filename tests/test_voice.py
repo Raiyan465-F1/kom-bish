@@ -119,7 +119,9 @@ def test_red_flag_with_rules(note):
     fake.result = vq(["insects_seen"], "high")
     parsed = parse_voice(str(path))
     assert decide("healthy", 0.99, True, parsed, None, threshold=T).rule_id == "R6_VOICE_REDFLAG"
-    # Voice never adds or removes a spray.
-    assert decide("blast", 0.99, True, parsed, None, threshold=T).decision == "spray_correctly"
+    # Voice never adds or removes a spray: with or without it, blast needs the farmer's own "yes".
+    assert decide("blast", 0.99, True, parsed, None, threshold=T, blast_confirmed=True).decision == "spray_correctly"
+    assert decide("blast", 0.99, True, parsed, None, threshold=T).rule_id == "R0_CONFIRM_BLAST"
+    assert decide("blast", 0.99, True, parsed, None, threshold=T, blast_confirmed=False).decision == "consult_officer"
     assert decide("bacterial_leaf_blight", 0.99, True, parsed, None, threshold=T).decision \
         == "no_insecticide_fix_fertiliser"

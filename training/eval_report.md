@@ -8,6 +8,8 @@ Byte-identical duplicate files were removed, and photos filed under two classes 
 
 Threshold rule used: field: the strict rule, and on field-background validation photos at most 5% of advice answers (BLB, blast, healthy) are wrong.
 
+**Spray advice is held to a stricter standard than no-spray advice.** Blast is the only answer that tells a farmer to spray, so it has its own threshold: 0.995, the smallest value at which no blast answer on validation was wrong (35 validation blast answers remain). This lowered test coverage from 0.8780 to 0.7585. Zero wrong on validation is not zero wrong everywhere: see the blast row in the tables below. In the app, a blast answer also needs the farmer's own "yes" to a lesion-shape question; that question cannot be measured on photo datasets and is not part of any number here.
+
 Dhan-Shomadhan images are part of training in this run (766 train, 167 validation, 155 test). An earlier run without them recognised 2 of 74 field-background blast photos (`results/runs/run1_no_dhs/metrics.json`), so they were added. The cost: there is no longer any blast test from a source the model has never seen.
 
 ## 1. In-distribution test split
@@ -23,12 +25,12 @@ n = 828. Macro-F1 with no abstention: **0.9037**.
 
 At t = 0.83, margin = 0.2:
 
-- Coverage (images answered): 727/828 = 0.878 (95% CI 0.854–0.899)
-- Selective accuracy (correct among answered): 705/727 = 0.970 (95% CI 0.955–0.980)
+- Coverage (images answered): 628/828 = 0.758 (95% CI 0.728–0.786)
+- Selective accuracy (correct among answered): 615/628 = 0.979 (95% CI 0.965–0.988)
 - Precision on BLB answers: 35/37 = 0.946 (95% CI 0.823–0.985)
-- Precision on blast answers: 118/128 = 0.922 (95% CI 0.862–0.957)
+- Precision on blast answers: 28/29 = 0.966 (95% CI 0.828–0.994)
 
-Abstained share by true class: bacterial_leaf_blight 0.260, blast 0.096, healthy 0.066, other 0.132.
+Abstained share by true class: bacterial_leaf_blight 0.260, blast 0.763, healthy 0.066, other 0.151.
 
 Confusion matrix (rows = true class, columns = predicted, no abstention):
 
@@ -49,20 +51,20 @@ Every BLB image comes from RiceLeafBD and every training blast image from BD5, s
 
 | Source | Source class | Target | Recall (no abstention) | Abstain rate |
 |---|---|---|---|---|
-| BD5 | blast | blast | 106/106 = 1.000 (95% CI 0.965–1.000) | 3/106 = 0.028 (95% CI 0.010–0.080) |
+| BD5 | blast | blast | 106/106 = 1.000 (95% CI 0.965–1.000) | 83/106 = 0.783 (95% CI 0.695–0.851) |
 | BD5 | narrow_brown_spot | other | 67/78 = 0.859 (95% CI 0.765–0.919) | 9/78 = 0.115 (95% CI 0.062–0.205) |
 | BD5 | normal_leaf | healthy | 112/115 = 0.974 (95% CI 0.926–0.991) | 8/115 = 0.070 (95% CI 0.036–0.131) |
 | BD5 | sheath_blight | other | 85/85 = 1.000 (95% CI 0.957–1.000) | 2/85 = 0.024 (95% CI 0.006–0.082) |
 | BD5 | tungro | other | 74/75 = 0.987 (95% CI 0.928–0.998) | 4/75 = 0.053 (95% CI 0.021–0.129) |
 | DhanShomadhan | field_browon_spot | other | 6/8 = 0.750 (95% CI 0.409–0.929) | 3/8 = 0.375 (95% CI 0.137–0.694) |
-| DhanShomadhan | field_leaf_scaled | other | 7/11 = 0.636 (95% CI 0.354–0.848) | 6/11 = 0.545 (95% CI 0.280–0.787) |
+| DhanShomadhan | field_leaf_scaled | other | 7/11 = 0.636 (95% CI 0.354–0.848) | 7/11 = 0.636 (95% CI 0.354–0.848) |
 | DhanShomadhan | field_rice_turgro | other | 12/12 = 1.000 (95% CI 0.757–1.000) | 1/12 = 0.083 (95% CI 0.015–0.354) |
-| DhanShomadhan | field_sheath_blight | other | 7/9 = 0.778 (95% CI 0.453–0.937) | 5/9 = 0.556 (95% CI 0.267–0.811) |
+| DhanShomadhan | field_sheath_blight | other | 7/9 = 0.778 (95% CI 0.453–0.937) | 6/9 = 0.667 (95% CI 0.354–0.879) |
 | DhanShomadhan | white_brown_spot | other | 12/13 = 0.923 (95% CI 0.667–0.986) | 4/13 = 0.308 (95% CI 0.127–0.576) |
-| DhanShomadhan | white_leaf_scaled | other | 17/22 = 0.773 (95% CI 0.566–0.899) | 4/22 = 0.182 (95% CI 0.073–0.385) |
-| DhanShomadhan | white_rice_blast | blast | 22/29 = 0.759 (95% CI 0.579–0.878) | 10/29 = 0.345 (95% CI 0.199–0.527) |
-| DhanShomadhan | white_rice_tungro | other | 16/18 = 0.889 (95% CI 0.672–0.969) | 2/18 = 0.111 (95% CI 0.031–0.328) |
-| DhanShomadhan | white_shath_blight | other | 29/33 = 0.879 (95% CI 0.727–0.952) | 7/33 = 0.212 (95% CI 0.107–0.378) |
+| DhanShomadhan | white_leaf_scaled | other | 17/22 = 0.773 (95% CI 0.566–0.899) | 8/22 = 0.364 (95% CI 0.197–0.570) |
+| DhanShomadhan | white_rice_blast | blast | 22/29 = 0.759 (95% CI 0.579–0.878) | 20/29 = 0.690 (95% CI 0.508–0.827) |
+| DhanShomadhan | white_rice_tungro | other | 16/18 = 0.889 (95% CI 0.672–0.969) | 3/18 = 0.167 (95% CI 0.058–0.392) |
+| DhanShomadhan | white_shath_blight | other | 29/33 = 0.879 (95% CI 0.727–0.952) | 9/33 = 0.273 (95% CI 0.151–0.442) |
 | RiceLeafBD | bacterial_leaf_blight | bacterial_leaf_blight | 40/50 = 0.800 (95% CI 0.670–0.888) | 13/50 = 0.260 (95% CI 0.159–0.396) |
 | RiceLeafBD | brown_spot | other | 52/52 = 1.000 (95% CI 0.931–1.000) | 5/52 = 0.096 (95% CI 0.042–0.206) |
 | RiceLeafBD | healthy | healthy | 37/37 = 1.000 (95% CI 0.906–1.000) | 2/37 = 0.054 (95% CI 0.015–0.177) |
@@ -75,38 +77,38 @@ BD5 leaves lie on a white sheet and RiceLeafBD photos are taken in the field, so
 | Background | True class | Recall (no abstention) | Abstain rate | Answered wrong |
 |---|---|---|---|---|
 | field | bacterial_leaf_blight | 40/50 = 0.800 (95% CI 0.670–0.888) | 13/50 = 0.260 (95% CI 0.159–0.396) | 2/50 = 0.040 (95% CI 0.011–0.135) |
-| field | blast | 7/18 = 0.389 (95% CI 0.203–0.614) | 12/18 = 0.667 (95% CI 0.437–0.837) | 3/18 = 0.167 (95% CI 0.058–0.392) |
+| field | blast | 7/18 = 0.389 (95% CI 0.203–0.614) | 15/18 = 0.833 (95% CI 0.608–0.942) | 3/18 = 0.167 (95% CI 0.058–0.392) |
 | field | healthy | 37/37 = 1.000 (95% CI 0.906–1.000) | 2/37 = 0.054 (95% CI 0.015–0.177) | 0/37 = 0.000 (95% CI 0.000–0.094) |
-| field | other | 152/167 = 0.910 (95% CI 0.857–0.945) | 33/167 = 0.198 (95% CI 0.144–0.265) | 4/167 = 0.024 (95% CI 0.009–0.060) |
-| white | blast | 128/135 = 0.948 (95% CI 0.897–0.975) | 13/135 = 0.096 (95% CI 0.057–0.158) | 4/135 = 0.030 (95% CI 0.012–0.074) |
+| field | other | 152/167 = 0.910 (95% CI 0.857–0.945) | 35/167 = 0.210 (95% CI 0.155–0.277) | 2/167 = 0.012 (95% CI 0.003–0.043) |
+| white | blast | 128/135 = 0.948 (95% CI 0.897–0.975) | 103/135 = 0.763 (95% CI 0.685–0.827) | 4/135 = 0.030 (95% CI 0.012–0.074) |
 | white | healthy | 112/115 = 0.974 (95% CI 0.926–0.991) | 8/115 = 0.070 (95% CI 0.036–0.131) | 0/115 = 0.000 (95% CI -0.000–0.032) |
-| white | other | 300/324 = 0.926 (95% CI 0.892–0.950) | 32/324 = 0.099 (95% CI 0.071–0.136) | 12/324 = 0.037 (95% CI 0.021–0.064) |
+| white | other | 300/324 = 0.926 (95% CI 0.892–0.950) | 39/324 = 0.120 (95% CI 0.089–0.160) | 5/324 = 0.015 (95% CI 0.007–0.036) |
 
 ### What the farmer gets (advice-level outcomes)
 
 A BLB, blast or healthy answer above the threshold is **advice**. An `other` answer or an abstention is a **referral** to 16123 or an officer, which is safe. **Wrong advice** is the harmful outcome: advice that does not match the true class.
 
-**Field-background photos (test split plus the held-out field blast), n = 272.** Advice given: 77/272 = 0.283 (95% CI 0.233–0.339). Wrong advice among advice given: 4/77 = 0.052 (95% CI 0.020–0.126).
+**Field-background photos (test split plus the held-out field blast), n = 272.** Advice given: 72/272 = 0.265 (95% CI 0.216–0.320). Wrong advice among advice given: 2/72 = 0.028 (95% CI 0.008–0.096).
 
 | True class | n | Correct advice | Referred | Wrong advice |
 |---|---|---|---|---|
 | bacterial_leaf_blight | 50 | 35/50 = 0.700 (95% CI 0.562–0.809) | 15/50 = 0.300 (95% CI 0.191–0.438) | 0/50 = 0.000 (95% CI 0.000–0.071) |
-| blast | 18 | 3/18 = 0.167 (95% CI 0.058–0.392) | 15/18 = 0.833 (95% CI 0.608–0.942) | 0/18 = 0.000 (95% CI 0.000–0.176) |
+| blast | 18 | 0/18 = 0.000 (95% CI 0.000–0.176) | 18/18 = 1.000 (95% CI 0.824–1.000) | 0/18 = 0.000 (95% CI 0.000–0.176) |
 | healthy | 37 | 35/37 = 0.946 (95% CI 0.823–0.985) | 2/37 = 0.054 (95% CI 0.015–0.177) | 0/37 = 0.000 (95% CI 0.000–0.094) |
-| other | 167 | (a referral is the right outcome) | 163/167 = 0.976 (95% CI 0.940–0.991) | 4/167 = 0.024 (95% CI 0.009–0.060) |
+| other | 167 | (a referral is the right outcome) | 165/167 = 0.988 (95% CI 0.957–0.997) | 2/167 = 0.012 (95% CI 0.003–0.043) |
 
-Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95% CI 0.015–0.177); blast answers 2/5 = 0.400 (95% CI 0.118–0.769); healthy answers 0/35 = 0.000 (95% CI 0.000–0.099).
+Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95% CI 0.015–0.177); blast answers n = 0; healthy answers 0/35 = 0.000 (95% CI 0.000–0.099).
 
-**All test photos (plus the held-out field blast), n = 846.** Advice given: 314/846 = 0.371 (95% CI 0.339–0.404). Wrong advice among advice given: 16/314 = 0.051 (95% CI 0.032–0.081).
+**All test photos (plus the held-out field blast), n = 846.** Advice given: 212/846 = 0.251 (95% CI 0.223–0.281). Wrong advice among advice given: 7/212 = 0.033 (95% CI 0.016–0.067).
 
 | True class | n | Correct advice | Referred | Wrong advice |
 |---|---|---|---|---|
 | bacterial_leaf_blight | 50 | 35/50 = 0.700 (95% CI 0.562–0.809) | 15/50 = 0.300 (95% CI 0.191–0.438) | 0/50 = 0.000 (95% CI 0.000–0.071) |
-| blast | 153 | 121/153 = 0.791 (95% CI 0.720–0.848) | 32/153 = 0.209 (95% CI 0.152–0.280) | 0/153 = 0.000 (95% CI 0.000–0.024) |
+| blast | 153 | 28/153 = 0.183 (95% CI 0.130–0.252) | 125/153 = 0.817 (95% CI 0.748–0.870) | 0/153 = 0.000 (95% CI 0.000–0.024) |
 | healthy | 152 | 142/152 = 0.934 (95% CI 0.883–0.964) | 10/152 = 0.066 (95% CI 0.036–0.117) | 0/152 = 0.000 (95% CI 0.000–0.025) |
-| other | 491 | (a referral is the right outcome) | 475/491 = 0.967 (95% CI 0.948–0.980) | 16/491 = 0.033 (95% CI 0.020–0.052) |
+| other | 491 | (a referral is the right outcome) | 484/491 = 0.986 (95% CI 0.971–0.993) | 7/491 = 0.014 (95% CI 0.007–0.029) |
 
-Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95% CI 0.015–0.177); blast answers 10/131 = 0.076 (95% CI 0.042–0.135); healthy answers 4/146 = 0.027 (95% CI 0.011–0.068).
+Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95% CI 0.015–0.177); blast answers 1/29 = 0.034 (95% CI 0.006–0.172); healthy answers 4/146 = 0.027 (95% CI 0.011–0.068).
 
 
 ## 3. Dhan-Shomadhan field blast (held-out slice of a source the model has seen)
@@ -114,8 +116,8 @@ Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95%
 n = 18 field-background blast images held out from Dhan-Shomadhan. Other Dhan-Shomadhan images were used for training, so this is **not** a cross-source test; with n this small the interval is wide.
 
 - Blast recall (no abstention): 7/18 = 0.389 (95% CI 0.203–0.614)
-- Abstain rate: 12/18 = 0.667 (95% CI 0.437–0.837)
-- Answered as blast: 3/18 = 0.167 (95% CI 0.058–0.392)
+- Abstain rate: 15/18 = 0.833 (95% CI 0.608–0.942)
+- Answered as blast: 0/18 = 0.000 (95% CI 0.000–0.176)
 
 ### Near-duplicate leak check
 
@@ -123,8 +125,8 @@ n = 18 field-background blast images held out from Dhan-Shomadhan. Other Dhan-Sh
 
 | | Test n | Macro-F1 (no abstention) | Coverage | Selective accuracy | Field wrong advice |
 |---|---|---|---|---|---|
-| All test images | 828 | 0.9026 | 0.8804 | 0.9684 | 4/77 |
-| Without leaked test images | 826 | 0.9036 | 0.8814 | 0.9684 | 4/77 |
+| All test images | 828 | 0.9026 | 0.7597 | 0.9793 | 2/72 |
+| Without leaked test images | 826 | 0.9036 | 0.7603 | 0.9793 | 2/72 |
 
 These ONNX-on-CPU numbers differ from the tables above (computed in PyTorch on the GPU) by one or two borderline images; the app runs the ONNX model.
 
@@ -134,8 +136,6 @@ Field photos that got wrong advice:
 |---|---|---|---|
 | `RiceLeafBD/Tungro Virus/312624486_675060277291867_7528285692741017397_n.jpg` | RiceLeafBD | Tungro Virus | bacterial_leaf_blight | 0.8487 |
 | `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#15` | DhanShomadhan | Field Browon Spot | bacterial_leaf_blight | 0.8551 |
-| `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#136` | DhanShomadhan | Field Leaf Scaled | blast | 0.8533 |
-| `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#244` | DhanShomadhan | Field Sheath Blight | blast | 0.85 |
 
 ## 4. The team's own photos and junk photos
 

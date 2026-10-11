@@ -25,7 +25,7 @@ class Prediction:
     conf: float                # calibrated top-1 probability
     probs: dict[str, float]
     margin: float              # top-1 minus top-2 probability
-    abstained: bool            # conf < threshold or margin < labels.json "margin"
+    abstained: bool            # conf < threshold, margin < "margin", or blast below "blast_threshold"
 
 
 def _artifact_paths() -> tuple[Path, Path]:
@@ -69,6 +69,13 @@ def preprocess(img: Image.Image, m: dict) -> np.ndarray:
     return x.transpose(2, 0, 1)[None]
 
 
+def should_abstain(label: str, conf: float, margin: float, m: dict) -> bool:
+    """Abstain below the threshold or margin. Blast (the only spray answer) has its own, stricter threshold."""
+    if conf < m["threshold"] or margin < m["margin"]:
+        return True
+    return label == "blast" and conf < m.get("blast_threshold", m["threshold"])
+
+
 def predict(img: Image.Image) -> Prediction:
     sess, m = load()
     logits = sess.run([m["onnx_output"]], {m["onnx_input"]: preprocess(img, m)})[0][0].astype(np.float64)
@@ -82,5 +89,5 @@ def predict(img: Image.Image) -> Prediction:
         label=m["classes"][k], conf=conf,
         probs={c: round(float(v), 4) for c, v in zip(m["classes"], p)},
         margin=margin,
-        abstained=conf < m["threshold"] or margin < m["margin"],
+        abstained=should_abstain(m["classes"][k], conf, margin, m),
     )

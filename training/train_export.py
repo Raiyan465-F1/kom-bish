@@ -115,15 +115,38 @@ def fit_temperature(lv: torch.Tensor, yv: torch.Tensor) -> tuple[float, bool]:
     return T, (T != raw)                         # expect roughly 1-3 for a trained model
 
 
-def answered_mask(p: torch.Tensor, t: float, margin: float) -> torch.Tensor:
+def threshold_for(t, pred: torch.Tensor):
+    """t is one threshold, or a tensor with one threshold per predicted class (blast has its own)."""
+    return t[pred] if torch.is_tensor(t) else t
+
+
+def answered_mask(p: torch.Tensor, t, margin: float) -> torch.Tensor:
     top2 = p.topk(2, dim=1).values
-    return (top2[:, 0] >= t) & ((top2[:, 0] - top2[:, 1]) >= margin)
+    return (top2[:, 0] >= threshold_for(t, p.argmax(1))) & ((top2[:, 0] - top2[:, 1]) >= margin)
 
 
-def selective(p: torch.Tensor, y: torch.Tensor, t: float, margin: float) -> dict:
+def choose_blast_threshold(pv: torch.Tensor, yv: torch.Tensor, t: float, margin: float) -> tuple[float, int]:
+    """Spray advice is stricter than no-spray advice: blast gets its own threshold.
+
+    The smallest threshold (never below t) at which NO blast answer on validation is wrong.
+    Returns (blast_threshold, number of validation blast answers left). 1.01 means "never answer blast".
+    """
+    blast = CLASSES.index("blast")
+    conf, pred = pv.max(1)
+    top2 = pv.topk(2, dim=1).values
+    candidate = (pred == blast) & ((top2[:, 0] - top2[:, 1]) >= margin)
+    grid = [round(t + 0.005 * i, 3) for i in range(int((0.999 - t) / 0.005) + 1)] + [0.999]
+    for bt in grid:
+        sel = candidate & (conf >= bt)
+        if int((yv[sel] != blast).sum()) == 0:
+            return bt, int(sel.sum())
+    return 1.01, 0
+
+
+def selective(p: torch.Tensor, y: torch.Tensor, t, margin: float) -> dict:
     top2 = p.topk(2, dim=1).values
     conf, pred = p.max(1)
-    answered = (conf >= t) & ((top2[:, 0] - top2[:, 1]) >= margin)
+    answered = (conf >= threshold_for(t, pred)) & ((top2[:, 0] - top2[:, 1]) >= margin)
     out = {"n": int(len(y)), "coverage": float(answered.float().mean())}
     out["precision"] = float((pred[answered] == y[answered]).float().mean()) if answered.any() else float("nan")
     for name, k in (("blb", 0), ("blast", 1)):
@@ -298,8 +321,17 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device,
 
     val_field = torch.tensor([background_of(*source_of(p)) == "field" for p, _ in va_samples], dtype=torch.bool) \
         if len(va_samples) == len(yv) else None
-    t, margin, target_met, rule = choose_threshold(pv, yv, val_field)
+    t_general, margin, target_met, rule = choose_threshold(pv, yv, val_field)
     print(f"Threshold rule: {rule}")
+    blast_t, val_blast_answers = choose_blast_threshold(pv, yv, t_general, margin)
+    print(f"Blast-only threshold = {blast_t} (general threshold {t_general}); validation blast answers left: "
+          f"{val_blast_answers}, none of them wrong")
+    if blast_t > 1:
+        print("WARNING: no threshold gives zero wrong blast answers on validation. Blast is never answered.")
+    coverage_before = {"val": selective(pv, yv, t_general, margin)["coverage"],
+                       "test": selective(pt, yt, t_general, margin)["coverage"]}
+    # From here on t is per predicted class: every table below uses the blast-only threshold for blast.
+    t = torch.tensor([blast_t if c == "blast" else t_general for c in CLASSES], dtype=pv.dtype)
     val = selective(pv, yv, t, margin)
     spray_ok = True
     for name in ("blb", "blast"):
@@ -360,9 +392,11 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device,
     }
 
     save_confusion_png(cm, out / "confusion.png", len(yt))
-    save_risk_coverage_png(pt, yt, t, margin, out / "risk_coverage.png")
+    save_risk_coverage_png(pt, yt, t_general, margin, out / "risk_coverage.png")
     return {
-        "temperature": T, "temperature_clamped": clamped, "threshold": t, "margin": margin,
+        "temperature": T, "temperature_clamped": clamped, "threshold": t_general, "margin": margin,
+        "blast_threshold": blast_t, "val_blast_answers_at_blast_threshold": val_blast_answers,
+        "coverage_before_blast_threshold": coverage_before,
         "target": {"precision": TARGET_PRECISION, "coverage": TARGET_COVERAGE},
         "target_met": target_met, "spray_relevant_precision_ok": spray_ok, "threshold_rule": rule,
         "val": val, "val_macro_f1_no_abstention": float(f1_score(yv, pv.argmax(1), labels=labels, average="macro",
@@ -415,6 +449,8 @@ def export_onnx_and_labels(model, cfg, va, out, *, model_name: str, classes: lis
         "classes": classes,
         "temperature": round(calib["temperature"], 4), "threshold": round(calib["threshold"], 2),
         "margin": calib["margin"],
+        # Blast is the only spray answer, so it has its own stricter threshold (never below "threshold").
+        "blast_threshold": round(calib["blast_threshold"], 3),
         "input_size": list(cfg["input_size"]), "mean": [float(v) for v in cfg["mean"]],
         "std": [float(v) for v in cfg["std"]],
         "crop_pct": float(cfg["crop_pct"]), "interpolation": cfg["interpolation"],
@@ -453,8 +489,11 @@ def print_summary(m: dict) -> None:
     print(f"T = {m['temperature']:.4f} (clamped: {m['temperature_clamped']}) | t = {m['threshold']:.2f} | "
           f"margin = {m['margin']} | target met: {m['target_met']} | "
           f"spray-relevant precision ok: {m['spray_relevant_precision_ok']}")
+    before = m["coverage_before_blast_threshold"]
+    print(f"blast-only threshold = {m['blast_threshold']} ({m['val_blast_answers_at_blast_threshold']} validation "
+          f"blast answers left, none wrong) | coverage before it: val {before['val']:.4f}, test {before['test']:.4f}")
     print(f"test n = {t['n']} | macro-F1 (no abstention) = {t['macro_f1_no_abstention']:.4f} | "
-          f"coverage = {t['coverage']:.3f} | selective accuracy = {t['selective_accuracy']:.3f}")
+          f"coverage = {t['coverage']:.4f} | selective accuracy = {t['selective_accuracy']:.4f}")
     print(f"precision on BLB answers = {cell(t['precision_blb_answers'])} | "
           f"on blast answers = {cell(t['precision_blast_answers'])}")
     print("per source (test, recall without abstention):")
@@ -512,6 +551,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--subset", type=int, help="max images per split (CPU smoke runs only)")
     p.add_argument("--no-pretrained", action="store_true", help="offline smoke test only; never for the real run")
     p.add_argument("--skip-export", action="store_true", help="train and save best.pt only")
+    p.add_argument("--weights", type=Path,
+                   help="re-evaluate and re-export an existing best.pt instead of training (same --data and flags)")
     args = p.parse_args(argv)
 
     device = args.device
@@ -588,21 +629,28 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{name} epoch {epoch}/{epochs}  loss {loss:.4f}  val macro-F1 {f1:.4f}  "
                   f"{time.time() - t0:.0f}s{mark}")
 
-    # Stage 1: classifier head only.
-    for param in model.parameters():
-        param.requires_grad = False
-    head = list(model.get_classifier().parameters())
-    for param in head:
-        param.requires_grad = True
-    run_stage("head", args.epochs_head, torch.optim.AdamW(head, lr=1e-3), None)
+    if args.weights:
+        # Re-evaluate existing weights (new threshold rule, new metrics) without training again.
+        model.load_state_dict(torch.load(args.weights, map_location=device))
+        previous = args.weights.parent / "metrics.json"
+        train_seconds = json.loads(previous.read_text("utf-8")).get("train_seconds", 0.0) if previous.exists() else 0.0
+        print(f"Loaded {args.weights}; no training in this run (original training took {train_seconds:.0f}s).")
+    else:
+        # Stage 1: classifier head only.
+        for param in model.parameters():
+            param.requires_grad = False
+        head = list(model.get_classifier().parameters())
+        for param in head:
+            param.requires_grad = True
+        run_stage("head", args.epochs_head, torch.optim.AdamW(head, lr=1e-3), None)
 
-    # Stage 2: everything, cosine schedule stepped per batch.
-    for param in model.parameters():
-        param.requires_grad = True
-    opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.05)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(args.epochs * len(dl_tr), 1))
-    run_stage("full", args.epochs, opt, sched)
-    train_seconds = time.time() - t_start
+        # Stage 2: everything, cosine schedule stepped per batch.
+        for param in model.parameters():
+            param.requires_grad = True
+        opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.05)
+        sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(args.epochs * len(dl_tr), 1))
+        run_stage("full", args.epochs, opt, sched)
+        train_seconds = time.time() - t_start
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -610,7 +658,8 @@ def main(argv: list[str] | None = None) -> int:
     manifest = args.data / "manifest.csv"
     if manifest.exists():
         shutil.copyfile(manifest, args.out / "manifest.csv")
-    print(f"Saved best.pt (best val macro-F1 {best_f1:.4f}) after {train_seconds:.0f}s of training")
+    if not args.weights:
+        print(f"Saved best.pt (best val macro-F1 {best_f1:.4f}) after {train_seconds:.0f}s of training")
     if args.skip_export:
         return 0
 
@@ -638,7 +687,7 @@ def main(argv: list[str] | None = None) -> int:
         # False once Dhan-Shomadhan images are in train/ or val/: the held-out field blast slice is then
         # from a source the model has seen.
         "dhs_field_blast_is_cross_source": not (dhs_in["train"] or dhs_in["val"]),
-        **calib, **exported, "train_seconds": train_seconds,
+        **calib, **exported, "train_seconds": train_seconds, "re_evaluated_from_weights": bool(args.weights),
         "versions": {"python": platform.python_version(), "torch": torch.__version__, "timm": timm.__version__,
                      "onnx": onnx.__version__, "onnxruntime": onnxruntime.__version__},
     }

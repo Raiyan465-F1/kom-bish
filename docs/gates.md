@@ -91,7 +91,10 @@ All numbers are in `training/results/metrics.json` (shipped model) and `training
 4. **Run 9 (shipped):** all three datasets, 40 epochs, seed 42, and a threshold rule that also requires at
    most 5% wrong advice on field-background validation photos.
 
-**Shipped model (`run9_final`), from `metrics.json`**
+**Shipped model (`run9_final`), with one threshold for every class**
+
+These are the numbers from before the blast-only threshold was added (same weights). The current numbers are
+in the table under "Spray advice made stricter" below.
 
 - Model `mobilenetv3_large_100.ra_in1k`; T = 0.6603 (not clamped); t = 0.83; margin = 0.2; target met: yes;
   spray-relevant precision ok: yes.
@@ -132,8 +135,41 @@ macro-F1 0.9036, coverage 0.8814, selective accuracy 0.9684. Field numbers are i
 files, not the resized ones. These ONNX-on-CPU numbers differ from `metrics.json` (PyTorch on the GPU:
 macro-F1 0.9037, coverage 0.8780) by one or two borderline images; the app runs the ONNX model.
 
+**Spray advice made stricter than no-spray advice (Raiyan's instruction, 11 Oct 2026)**
+
+Two of the four wrong field answers above were "spray correctly". Two changes followed. The weights did not
+change; `run9_final` was re-evaluated with `train_export.py --weights`
+(`runs/run9_final_before_blast_threshold/metrics.json` keeps the numbers from before).
+
+1. **Blast-only threshold = 0.995** (`blast_threshold` in `labels.json`): the smallest value, searched upward
+   from 0.83 in steps of 0.005, at which no blast answer on validation is wrong. Validation blast answers:
+   130 with 8 wrong before, 35 with 0 wrong after (app code path).
+
+   | Shipped model, from `metrics.json` | One threshold (0.83) | With the blast-only threshold |
+   |---|---|---|
+   | Test coverage (n = 828) | 0.8780 | 0.7585 |
+   | Test selective accuracy | 0.9697 | 0.9793 |
+   | Precision on blast answers (test) | 0.922 (n = 128) | 0.966 (n = 29) |
+   | Field photos (n = 272): wrong advice / advice given | 4 / 77 | 2 / 72 |
+   | Field photos that got a blast answer | 5 (2 wrong) | 0 |
+   | True field blast (n = 18): correct / referred / wrong | 3 / 15 / 0 | 0 / 18 / 0 |
+   | True blast, all backgrounds (n = 153): correct / referred / wrong | 121 / 32 / 0 | 28 / 125 / 0 |
+
+   Zero wrong on validation is not zero wrong on test: 1 of the 29 remaining blast answers is wrong
+   (Dhan-Shomadhan mirror row 727, a tungro leaf on a white sheet, confidence 0.9994). **The cost is large:**
+   no field photo in the test set reaches the spray answer any more, and most true blast photos are referred.
+   The two remaining wrong field answers are the BLB ones (tungro and field brown spot).
+2. **Lesion-shape question before any blast answer.** New rule rows in `data/rules.csv`: `R0_CONFIRM_BLAST`
+   (the question; a prompt, nothing is logged) and `R7_BLAST_UNCONFIRMED` (referral, same text and clip as
+   "not sure"). Only "yes" leads to `R2_BLAST`; "no" and "not sure" refer. The question's Bangla and the
+   "not sure" option (`texts.NOT_SURE_BN`) are **DRAFTS written by Claude Code for the team's review**
+   (TODO-HUMAN: native-speaker review in step 06). The question cannot be evaluated on photo datasets, so no
+   number in the reports includes it. TODO-HUMAN: `CLAUDE.md` section 6 still lists the old rule IDs; add
+   `R0_CONFIRM_BLAST` and `R7_BLAST_UNCONFIRMED` there if the team keeps them.
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
-https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice). A download with no token
+https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
+with `blast_threshold` in `labels.json` and the updated card. A download with no token
 and an empty cache returned the four classes and a 17,088,395-byte `model.onnx`, the same size as the local
 file. `best.pt` was not uploaded. TODO-HUMAN: add the GitHub Actions variable `MODEL_REPO`.
 

@@ -8,6 +8,11 @@ recorded, the model is not published and nothing is hosted yet (see `docs/gates.
 - Classifier trained (gate G2, 11 Oct): ten runs, listed in `training/results/runs/README.md`. The planned
   recipe learned the photo background and recognised 2 of 74 field blast photos, so Dhan-Shomadhan was added
   to training, the threshold rule was tightened and training runs 40 epochs. Shipped: `run9_final`
+- Spray advice is stricter than no-spray advice: a blast-only threshold (0.995, chosen on validation) and a
+  lesion-shape question the farmer must answer "yes" to before any blast answer (rules `R0_CONFIRM_BLAST`,
+  `R7_BLAST_UNCONFIRMED`; draft Bangla awaiting review). Test coverage fell from 0.8780 to 0.7585
+- Model published with its card (MIT) at huggingface.co/Raiyan465/kom-bish-rice-leaf; near-duplicate leak
+  check (`training/check_leakage.py`); Gemini fixed to `gemini-3.5-flash-lite`
 - Data prep now removes byte-identical duplicates and drops photos filed under two conflicting classes
 - Evaluation report with advice-level outcomes (correct advice, referred, wrong advice) on field photos
 

@@ -30,6 +30,12 @@
  "temperature_clamped": false,
  "threshold": 0.83,
  "margin": 0.2,
+ "blast_threshold": 0.995,
+ "val_blast_answers_at_blast_threshold": 35,
+ "coverage_before_blast_threshold": {
+  "val": 0.8644264340400696,
+  "test": 0.8780193328857422
+ },
  "target": {
   "precision": 0.9,
   "coverage": 0.5
@@ -39,21 +45,21 @@
  "threshold_rule": "field: the strict rule, and on field-background validation photos at most 5% of advice answers (BLB, blast, healthy) are wrong",
  "val": {
   "n": 863,
-  "coverage": 0.8644264340400696,
-  "precision": 0.9731903672218323,
+  "coverage": 0.7543452978134155,
+  "precision": 0.981566846370697,
   "precision_blb_answers": {
    "value": 0.939393937587738,
    "n": 33
   },
   "precision_blast_answers": {
-   "value": 0.9384615421295166,
-   "n": 130
+   "value": 1.0,
+   "n": 35
   },
   "abstained_pct_by_true_class": {
    "bacterial_leaf_blight": 0.2916666567325592,
-   "blast": 0.14965985715389252,
+   "blast": 0.7414966225624084,
    "healthy": 0.07017543911933899,
-   "other": 0.13883300125598907
+   "other": 0.15492957830429077
   }
  },
  "val_macro_f1_no_abstention": 0.9158302217483246,
@@ -71,7 +77,7 @@
    "target": "blast",
    "n": 12,
    "recall": 0.5833333333333334,
-   "abstain_rate": 0.5,
+   "abstain_rate": 0.75,
    "answered_wrong_rate": 0.16666666666666666
   },
   {
@@ -87,15 +93,15 @@
    "target": "other",
    "n": 166,
    "recall": 0.9337349397590361,
-   "abstain_rate": 0.1927710843373494,
-   "answered_wrong_rate": 0.018072289156626505
+   "abstain_rate": 0.19879518072289157,
+   "answered_wrong_rate": 0.012048192771084338
   },
   {
    "background": "white",
    "target": "blast",
    "n": 135,
    "recall": 0.9407407407407408,
-   "abstain_rate": 0.11851851851851852,
+   "abstain_rate": 0.7407407407407407,
    "answered_wrong_rate": 0.007407407407407408
   },
   {
@@ -111,8 +117,8 @@
    "target": "other",
    "n": 331,
    "recall": 0.9305135951661632,
-   "abstain_rate": 0.11178247734138973,
-   "answered_wrong_rate": 0.03323262839879154
+   "abstain_rate": 0.13293051359516617,
+   "answered_wrong_rate": 0.012084592145015106
   }
  ],
  "test": {
@@ -170,22 +176,22 @@
     452
    ]
   ],
-  "coverage": 0.8780193328857422,
-  "abstained_pct": 0.12198066711425781,
-  "selective_accuracy": 0.9697386622428894,
+  "coverage": 0.7584540843963623,
+  "abstained_pct": 0.2415459156036377,
+  "selective_accuracy": 0.9792993664741516,
   "precision_blb_answers": {
    "value": 0.9459459185600281,
    "n": 37
   },
   "precision_blast_answers": {
-   "value": 0.921875,
-   "n": 128
+   "value": 0.9655172228813171,
+   "n": 29
   },
   "abstained_pct_by_true_class": {
    "bacterial_leaf_blight": 0.25999999046325684,
-   "blast": 0.0962962955236435,
+   "blast": 0.7629629373550415,
    "healthy": 0.06578947603702545,
-   "other": 0.13238288462162018
+   "other": 0.15071283280849457
   }
  },
  "per_source": [
@@ -195,7 +201,7 @@
    "target": "blast",
    "n": 106,
    "recall": 1.0,
-   "abstain_rate": 0.028301887214183807
+   "abstain_rate": 0.7830188870429993
   },
   {
    "source": "BD5",
@@ -243,7 +249,7 @@
    "target": "other",
    "n": 11,
    "recall": 0.6363636255264282,
-   "abstain_rate": 0.5454545617103577
+   "abstain_rate": 0.6363636255264282
   },
   {
    "source": "DhanShomadhan",
@@ -259,7 +265,7 @@
    "target": "other",
    "n": 9,
    "recall": 0.7777777910232544,
-   "abstain_rate": 0.5555555820465088
+   "abstain_rate": 0.6666666865348816
   },
   {
    "source": "DhanShomadhan",
@@ -275,7 +281,7 @@
    "target": "other",
    "n": 22,
    "recall": 0.7727272510528564,
-   "abstain_rate": 0.1818181872367859
+   "abstain_rate": 0.3636363744735718
   },
   {
    "source": "DhanShomadhan",
@@ -283,7 +289,7 @@
    "target": "blast",
    "n": 29,
    "recall": 0.7586206793785095,
-   "abstain_rate": 0.3448275923728943
+   "abstain_rate": 0.6896551847457886
   },
   {
    "source": "DhanShomadhan",
@@ -291,7 +297,7 @@
    "target": "other",
    "n": 18,
    "recall": 0.8888888955116272,
-   "abstain_rate": 0.1111111119389534
+   "abstain_rate": 0.1666666716337204
   },
   {
    "source": "DhanShomadhan",
@@ -299,7 +305,7 @@
    "target": "other",
    "n": 33,
    "recall": 0.8787878751754761,
-   "abstain_rate": 0.21212121844291687
+   "abstain_rate": 0.27272728085517883
   },
   {
    "source": "RiceLeafBD",
@@ -348,7 +354,7 @@
    "target": "blast",
    "n": 18,
    "recall": 0.3888888888888889,
-   "abstain_rate": 0.6666666666666666,
+   "abstain_rate": 0.8333333333333334,
    "answered_wrong_rate": 0.16666666666666666
   },
   {
@@ -364,15 +370,15 @@
    "target": "other",
    "n": 167,
    "recall": 0.9101796407185628,
-   "abstain_rate": 0.19760479041916168,
-   "answered_wrong_rate": 0.023952095808383235
+   "abstain_rate": 0.20958083832335328,
+   "answered_wrong_rate": 0.011976047904191617
   },
   {
    "background": "white",
    "target": "blast",
    "n": 135,
    "recall": 0.9481481481481482,
-   "abstain_rate": 0.0962962962962963,
+   "abstain_rate": 0.762962962962963,
    "answered_wrong_rate": 0.02962962962962963
   },
   {
@@ -388,15 +394,15 @@
    "target": "other",
    "n": 324,
    "recall": 0.9259259259259259,
-   "abstain_rate": 0.09876543209876543,
-   "answered_wrong_rate": 0.037037037037037035
+   "abstain_rate": 0.12037037037037036,
+   "answered_wrong_rate": 0.015432098765432098
   }
  ],
  "advice": {
   "field": {
    "n": 272,
-   "advice_given": 77,
-   "wrong_advice": 4,
+   "advice_given": 72,
+   "wrong_advice": 2,
    "by_true_class": {
     "bacterial_leaf_blight": {
      "n": 50,
@@ -406,9 +412,9 @@
     },
     "blast": {
      "n": 18,
-     "referred": 15,
+     "referred": 18,
      "wrong_advice": 0,
-     "correct_advice": 3
+     "correct_advice": 0
     },
     "healthy": {
      "n": 37,
@@ -418,8 +424,8 @@
     },
     "other": {
      "n": 167,
-     "referred": 163,
-     "wrong_advice": 4
+     "referred": 165,
+     "wrong_advice": 2
     }
    },
    "by_answer": {
@@ -428,8 +434,8 @@
      "wrong": 2
     },
     "blast": {
-     "given": 5,
-     "wrong": 2
+     "given": 0,
+     "wrong": 0
     },
     "healthy": {
      "given": 35,
@@ -439,8 +445,8 @@
   },
   "all": {
    "n": 846,
-   "advice_given": 314,
-   "wrong_advice": 16,
+   "advice_given": 212,
+   "wrong_advice": 7,
    "by_true_class": {
     "bacterial_leaf_blight": {
      "n": 50,
@@ -450,9 +456,9 @@
     },
     "blast": {
      "n": 153,
-     "referred": 32,
+     "referred": 125,
      "wrong_advice": 0,
-     "correct_advice": 121
+     "correct_advice": 28
     },
     "healthy": {
      "n": 152,
@@ -462,8 +468,8 @@
     },
     "other": {
      "n": 491,
-     "referred": 475,
-     "wrong_advice": 16
+     "referred": 484,
+     "wrong_advice": 7
     }
    },
    "by_answer": {
@@ -472,8 +478,8 @@
      "wrong": 2
     },
     "blast": {
-     "given": 131,
-     "wrong": 10
+     "given": 29,
+     "wrong": 1
     },
     "healthy": {
      "given": 146,
@@ -483,8 +489,8 @@
   },
   "val_field": {
    "n": 264,
-   "advice_given": 75,
-   "wrong_advice": 3,
+   "advice_given": 71,
+   "wrong_advice": 2,
    "by_true_class": {
     "bacterial_leaf_blight": {
      "n": 48,
@@ -494,9 +500,9 @@
     },
     "blast": {
      "n": 12,
-     "referred": 8,
+     "referred": 11,
      "wrong_advice": 0,
-     "correct_advice": 4
+     "correct_advice": 1
     },
     "healthy": {
      "n": 38,
@@ -506,8 +512,8 @@
     },
     "other": {
      "n": 166,
-     "referred": 163,
-     "wrong_advice": 3
+     "referred": 164,
+     "wrong_advice": 2
     }
    },
    "by_answer": {
@@ -516,8 +522,8 @@
      "wrong": 2
     },
     "blast": {
-     "given": 5,
-     "wrong": 1
+     "given": 1,
+     "wrong": 0
     },
     "healthy": {
      "given": 37,
@@ -529,14 +535,15 @@
  "dhs_field_blast": {
   "n": 18,
   "blast_recall": 0.3888888955116272,
-  "abstain_rate": 0.6666666865348816,
-  "answered_as_blast": 0.1666666716337204,
+  "abstain_rate": 0.8333333134651184,
+  "answered_as_blast": 0.0,
   "answered_wrong": 0.1666666716337204
  },
  "onnx_parity_max_abs_diff": 9.5367431640625e-06,
  "onnx_mb": 17.088395,
  "onnx_exporter": "dynamo",
  "train_seconds": 312.75445652008057,
+ "re_evaluated_from_weights": true,
  "versions": {
   "python": "3.12.10",
   "torch": "2.14.1+cu126",

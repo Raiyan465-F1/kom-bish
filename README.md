@@ -59,9 +59,9 @@ The person who sells the spray is often the person who gives the advice.
 | Answer (Bangla, DRAFT) | In English | When | Source |
 |---|---|---|---|
 | কীটনাশক লাগবে না, সার ঠিক করুন | No insecticide needed, fix the fertiliser | `R1_BLB`: bacterial leaf blight | [BRRI notice, 19 Mar 2023](https://brri.portal.gov.bd/sites/default/files/files/brri.portal.gov.bd/news/245bba32_a089_4da8_9845_d9afcddf455f/2023-04-05-05-24-b9fb45272dcf3a51acb0e89254944725.pdf); [DAE/BAMIS bulletin](https://www.bamis.gov.bd/res/pages/2023/03/19/26691.pdf) |
-| স্প্রে লাগবে, তবে ঠিকভাবে | Spray correctly: tricyclazole-group fungicide, label dose, safety script | `R2_BLAST`: blast | BRRI notice; DAE/BAMIS bulletin; [FAO PPE guidelines](https://fao.org/fileadmin/templates/agphome/documents/Pests_Pesticides/Code/Old_guidelines/PROTECT.pdf) |
+| স্প্রে লাগবে, তবে ঠিকভাবে | Spray correctly: tricyclazole-group fungicide, label dose, safety script | `R2_BLAST`: blast, very high confidence, and the farmer answers "yes" to the lesion-shape question | BRRI notice; DAE/BAMIS bulletin; [FAO PPE guidelines](https://fao.org/fileadmin/templates/agphome/documents/Pests_Pesticides/Code/Old_guidelines/PROTECT.pdf) |
 | এখন কোনো স্প্রে লাগবে না | No spray now, keep watching | `R3_HEALTHY`: healthy leaf | [Ali et al. 2017](https://www.frontiersin.org/journals/environmental-science/articles/10.3389/fenvs.2017.00016/pdf) |
-| ছবিটা দেখে আমি নিশ্চিত হতে পারছি না। কৃষি কল সেন্টার: 16123 | Not sure: call 16123 or the Sub-Assistant Agriculture Officer | `R4_OTHER`, `R5_ABSTAIN`, `R6_VOICE_REDFLAG` | [BSS 2026](https://www.bssnews.net/special-stories/401845) |
+| ছবিটা দেখে আমি নিশ্চিত হতে পারছি না। কৃষি কল সেন্টার: 16123 | Not sure: call 16123 or the Sub-Assistant Agriculture Officer | `R4_OTHER`, `R5_ABSTAIN`, `R6_VOICE_REDFLAG`, `R7_BLAST_UNCONFIRMED` | [BSS 2026](https://www.bssnews.net/special-stories/401845) |
 
 Every sentence a farmer reads or hears is in [`data/rules.csv`](data/rules.csv) or [`data/clips.csv`](data/clips.csv).
 
@@ -75,6 +75,9 @@ flowchart LR
   D --> E{"Calibrated confidence above threshold and margin?"}
   E -- "no" --> R5["Not sure: call 16123 or officer"]
   E -- "yes" --> F["decide() in kombish/rules.py"]
+  F -- "looks like blast" --> Q{"Farmer: lesions eye or spindle shaped, grey centre, brown edge?"}
+  Q -- "no / not sure" --> R5
+  Q -- "yes" --> H
   V["Optional Bangla voice note"] --> G["Gemini: fixed symptom list, or nothing"]
   G -- "can only add caution" --> F
   F --> H["Reviewed Bangla text (data/clips.csv)"]
@@ -93,6 +96,10 @@ flowchart LR
 - **Closed rule table.** The app cannot say anything that is not in the two CSV files.
 - **Code decides; the model only recognises.** No language-model output is shown or spoken as advice.
 - **Confidence gate.** One temperature is fitted on validation data; below the threshold or margin the app refers the farmer to 16123 or an officer.
+- **Spray advice is stricter than no-spray advice.** "Spray correctly" needs three things: the general
+  confidence gate, a blast-only threshold (0.995), and the farmer's own "yes" to one question about the
+  lesion shape (eye or spindle shaped, grey centre, brown edge). "No" or "not sure" gives a referral. The
+  question's Bangla is a draft awaiting review. Tests: [`tests/test_rules.py`](tests/test_rules.py).
 - **Voice can only add caution.** With a voice note the decision is the same as without it, or a referral. Tests enforce this: [`tests/test_rules.py`](tests/test_rules.py).
 - **Bacterial leaf blight.** The official notice also lists a sulphur-based foliar mix; Kom Bish deliberately omits it and refers the farmer instead.
 - **No brands, no doses.** Kom Bish names active-ingredient groups only as they appear in BRRI/DAE advisories, never brands or doses, and takes no money from input sellers. Dose and harvest wait are "follow the label".
@@ -106,12 +113,17 @@ Wilson 95% intervals are in [`training/eval_report.md`](training/eval_report.md)
 listed in [`training/results/runs/README.md`](training/results/runs/README.md).
 
 - **Test split, n = 828:** macro-F1 0.904 with no abstention.
-- **Threshold 0.83, margin 0.2** (chosen on validation only): the app answers 87.8% of test photos and is
-  right on 97.0% of those. Precision on BLB answers 0.946 (n = 37); on blast answers 0.922 (n = 128).
-- **Field photos, n = 272** (what farmers will send): advice was given 77 times and was wrong 4 times. All
-  4 were other diseases given BLB or blast advice.
-- **Blast in field photos, n = 18:** 3 got the right advice, 15 were referred to 16123 or an officer, 0 got
-  wrong advice. Kom Bish mostly cannot recognise blast in a field photo yet; it refers instead.
+- **Threshold 0.83, margin 0.2, and a blast-only threshold of 0.995** (all chosen on validation only): the
+  app answers 75.8% of test photos and is right on 97.9% of those. Before the blast-only threshold it
+  answered 87.8%.
+- **Blast answers ("spray correctly"):** 29 across the test and held-out photos, 1 wrong (a tungro leaf on a
+  white sheet, confidence 0.9994). With one threshold for every class it was 132 blast answers, 11 wrong. The blast-only
+  threshold is the smallest value with no wrong blast answer on validation; that is not a guarantee.
+- **BLB answers:** precision 0.946 (n = 37).
+- **Field photos, n = 272** (what farmers will send): advice was given 72 times and was wrong 2 times. Both
+  were other diseases given the BLB answer. **No field photo got a spray answer.**
+- **Blast in field photos, n = 18:** all 18 were referred to 16123 or an officer; 0 got wrong advice and 0
+  got the blast answer. Kom Bish cannot recognise blast in a field photo yet; it refers instead.
 - **BLB in field photos, n = 50:** 35 got the right advice, 15 were referred, 0 got wrong advice.
 - **The team's own leaves and junk photos:** TODO-HUMAN, not collected yet (step 19).
 
@@ -126,10 +138,12 @@ above are held out from a dataset the model has seen. We also looked at the test
 runs, so these numbers are somewhat optimistic. A repeat run with another random seed gave wrong advice on
 2 of its 18 field blast photos.
 
-The 4 field photos that got wrong advice were all other diseases: a tungro photo and a brown spot photo
-were told "no insecticide needed, fix the fertiliser" (the BLB answer), and a leaf scald photo and a sheath
-blight photo were told "spray correctly" (the blast answer). Each was answered at a confidence between
-0.848 and 0.856, just above the 0.83 threshold.
+Before the blast-only threshold, 4 field photos got wrong advice, all other diseases: a tungro photo and a
+brown spot photo were told "no insecticide needed, fix the fertiliser" (the BLB answer), and a leaf scald
+photo and a sheath blight photo were told "spray correctly" (the blast answer), each at a confidence
+between 0.848 and 0.856. Wrong spray advice is the worse mistake, so spray advice is now held to a stricter
+standard: the blast-only threshold refers those two photos, and the app asks the farmer a lesion-shape
+question before any spray answer. The two wrong BLB answers remain.
 
 A near-duplicate check across the splits (perceptual hash, any class, any source) found 2 of 846 test and
 held-out images with a near-copy in training. Removing them moves macro-F1 from 0.9026 to 0.9036 through
@@ -175,8 +189,10 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
 
 ## Limitations
 
-- Blast in field photos is mostly referred, not recognised (3 of 18 answered). Only 44 field blast photos
-  exist to train on.
+- Blast in field photos is referred, not recognised (0 of 18 answered). Only 44 field blast photos exist to
+  train on. In practice the spray answer is reached only by very clear photos, and in our test set those
+  were all leaves on a white sheet.
+- The lesion-shape question relies on the farmer's own judgement and has not been tested with farmers.
 - Source and background confound: all BLB training images come from one dataset (field photos) and most
   blast images from another (leaves on a white sheet).
 - No external test: Dhan-Shomadhan, the only dataset the model had never seen, is now training data.

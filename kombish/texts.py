@@ -24,6 +24,9 @@ TAB_ADVICE_BN = "পরামর্শ"
 TAB_DASHBOARD_BN = "ড্যাশবোর্ড"
 SPRAY_INTENT_Q_BN = "আপনি কি স্প্রে করার কথা ভাবছিলেন?"
 YES_BN, NO_BN = "হ্যাঁ", "না"
+NOT_SURE_BN = "নিশ্চিত নই"                           # NEW ("not sure"), DRAFT written 11 Oct 2026 for review.
+# The lesion-shape question asked before any blast (spray) answer is the R0_CONFIRM_BLAST headline in
+# data/rules.csv. Yes -> the blast answer. No or not sure -> referral.
 CONFIRM_TEMPLATE_BN = "ছবি দেখে মনে হচ্ছে আপনার ধানে {disease}।"
 DISEASE_NAME_BN = {"bacterial_leaf_blight": "পাতাপোড়া রোগ", "blast": "ব্লাস্ট রোগ"}
 VOICE_ECHO_BN = "আপনি বলছেন: “{transcript}”"     # from the draft "আপনি বলছেন, ..."

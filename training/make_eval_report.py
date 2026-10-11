@@ -29,6 +29,9 @@ SUMMARY_KEYS = [
     "field_n", "field_advice_given", "field_wrong_advice", "field_blast_n", "field_blast_correct_advice",
     "field_blast_referred", "field_blast_wrong_advice", "field_blb_n", "field_blb_correct_advice",
     "field_blb_referred", "field_blb_wrong_advice",
+    # Spray advice is stricter: blast has its own threshold.
+    "blast_threshold", "coverage_before_blast_threshold", "blast_answers_n", "blast_answers_wrong",
+    "field_blast_answers_n",
 ]
 ABSTAIN_SENTENCE = "The model abstains more than we would like."
 
@@ -136,6 +139,13 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         "field_blb_n": f_blb.get("n"), "field_blb_correct_advice": f_blb.get("correct_advice"),
         "field_blb_referred": f_blb.get("referred"), "field_blb_wrong_advice": f_blb.get("wrong_advice"),
     })
+    all_blast = (((metrics.get("advice") or {}).get("all") or {}).get("by_answer") or {}).get("blast") or {}
+    summary.update({
+        "blast_threshold": metrics.get("blast_threshold"),
+        "coverage_before_blast_threshold": (metrics.get("coverage_before_blast_threshold") or {}).get("test"),
+        "blast_answers_n": all_blast.get("given"), "blast_answers_wrong": all_blast.get("wrong"),
+        "field_blast_answers_n": ((field.get("by_answer") or {}).get("blast") or {}).get("given"),
+    })
     assert list(summary) == SUMMARY_KEYS
 
     L: list[str] = ["# Kom Bish evaluation report", ""]
@@ -157,6 +167,16 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
           ""]
     if metrics.get("threshold_rule"):
         L += [f"Threshold rule used: {metrics['threshold_rule']}.", ""]
+    if metrics.get("blast_threshold") is not None:
+        before = metrics["coverage_before_blast_threshold"]
+        L += ["**Spray advice is held to a stricter standard than no-spray advice.** Blast is the only answer "
+              f"that tells a farmer to spray, so it has its own threshold: {metrics['blast_threshold']}, the "
+              "smallest value at which no blast answer on validation was wrong "
+              f"({metrics['val_blast_answers_at_blast_threshold']} validation blast answers remain). This lowered "
+              f"test coverage from {before['test']:.4f} to {t['coverage']:.4f}. Zero wrong on validation is not "
+              "zero wrong everywhere: see the blast row in the tables below. In the app, a blast answer also "
+              "needs the farmer's own \"yes\" to a lesion-shape question; that question cannot be measured on "
+              "photo datasets and is not part of any number here.", ""]
     dhs_in = metrics.get("dhs_images") or {}
     cross_source = metrics.get("dhs_field_blast_is_cross_source", True)
     if not cross_source:

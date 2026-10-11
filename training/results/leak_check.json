@@ -16,24 +16,24 @@
  "full": {
   "test_n": 828,
   "macro_f1_no_abstention": 0.9026232810186533,
-  "coverage": 0.8804347826086957,
-  "selective_accuracy": 0.9684499314128944,
+  "coverage": 0.7596618357487923,
+  "selective_accuracy": 0.9793322734499205,
   "precision_blb_answers": {
    "value": 0.9459459459459459,
    "n": 37
   },
   "precision_blast_answers": {
-   "value": 0.9147286821705426,
-   "n": 129
+   "value": 0.9655172413793104,
+   "n": 29
   },
   "field": {
    "n": 272,
-   "advice_given": 77,
-   "wrong_advice": 4,
+   "advice_given": 72,
+   "wrong_advice": 2,
    "blast": {
     "n": 18,
-    "correct_advice": 3,
-    "referred": 15,
+    "correct_advice": 0,
+    "referred": 18,
     "wrong_advice": 0
    },
    "blb": {
@@ -47,24 +47,24 @@
  "without_leaked": {
   "test_n": 826,
   "macro_f1_no_abstention": 0.9035673507630473,
-  "coverage": 0.8813559322033898,
-  "selective_accuracy": 0.9684065934065934,
+  "coverage": 0.7602905569007264,
+  "selective_accuracy": 0.9792993630573248,
   "precision_blb_answers": {
    "value": 0.9459459459459459,
    "n": 37
   },
   "precision_blast_answers": {
-   "value": 0.9147286821705426,
-   "n": 129
+   "value": 0.9655172413793104,
+   "n": 29
   },
   "field": {
    "n": 272,
-   "advice_given": 77,
-   "wrong_advice": 4,
+   "advice_given": 72,
+   "wrong_advice": 2,
    "blast": {
     "n": 18,
-    "correct_advice": 3,
-    "referred": 15,
+    "correct_advice": 0,
+    "referred": 18,
     "wrong_advice": 0
    },
    "blb": {
@@ -94,26 +94,6 @@
    "answered_as": "bacterial_leaf_blight",
    "confidence": 0.8551,
    "margin": 0.7184,
-   "has_near_duplicate_in_train_or_val": false
-  },
-  {
-   "photo": "hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#136",
-   "prepared_file": "test/other/DhanShomadhan__field_leaf_scaled__00136.jpg",
-   "true_class": "DhanShomadhan | Field Leaf Scaled",
-   "true_target": "other",
-   "answered_as": "blast",
-   "confidence": 0.8533,
-   "margin": 0.7139,
-   "has_near_duplicate_in_train_or_val": false
-  },
-  {
-   "photo": "hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#244",
-   "prepared_file": "test/other/DhanShomadhan__field_sheath_blight__00244.jpg",
-   "true_class": "DhanShomadhan | Field Sheath Blight",
-   "true_target": "other",
-   "answered_as": "blast",
-   "confidence": 0.85,
-   "margin": 0.7061,
    "has_near_duplicate_in_train_or_val": false
   }
  ]

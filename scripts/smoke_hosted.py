@@ -39,9 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     client = Client(args.base_url, verbose=False, httpx_kwargs={"timeout": 90})   # Render can take ~1 min to wake
     print(f"connected to {args.base_url} in {time.perf_counter() - t0:.1f}s")
 
-    cases = [("consent off", (False, handle_file(str(images[0])) if images else None, None, None)),
-             ("no photo", (True, None, None, None))]
-    cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN)) for q in images]
+    # The last input is the lesion-shape question. Left unanswered, a blast photo shows the question itself.
+    cases = [("consent off", (False, handle_file(str(images[0])) if images else None, None, None, None)),
+             ("no photo", (True, None, None, None, None))]
+    cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN, None)) for q in images]
 
     errors = 0
     for name, inputs in cases:

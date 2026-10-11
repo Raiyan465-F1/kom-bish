@@ -49,6 +49,11 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
           f"Calibrated probabilities: `softmax(logits / temperature)` with temperature {labels['temperature']}. "
           f"Abstain if top-1 < {labels['threshold']} (`threshold`) or top-1 − top-2 < {labels['margin']} "
           "(`margin`). All three values are in `labels.json`.", "",
+          *([f"**Blast has a stricter threshold.** Blast is the only class that leads to spray advice, so a "
+             f"blast prediction is also refused when top-1 < {labels['blast_threshold']} (`blast_threshold`), "
+             "the smallest value at which no blast answer on validation was wrong. In the Kom Bish app a blast "
+             "answer additionally needs the farmer's \"yes\" to a lesion-shape question.", ""]
+            if labels.get("blast_threshold") is not None else []),
           "## Training data (CC BY 4.0, credit required)", "",
           "- RiceLeafBD, DOI 10.17632/kx9rx8p2mz.1 (please also cite arXiv 2501.08912)",
           "- RiceLeafDisease-BD5, DOI 10.17632/sjkptpgv79.2",
