@@ -218,6 +218,62 @@ results in `training/results/external_test.json`, sampled files in
 - `junk_photos/` does not exist, so the junk test was skipped.
 - The Kaggle token lives only in `.env` (git-ignored).
 
+**Two candidate models (Raiyan's instruction, 11 Oct 2026) — NOT published; waiting for approval**
+
+- **Data rules checked.** Competition rules, section 7.A (read through the Kaggle API on 11 Oct 2026): "You
+  may access and use the Competition Data for any purpose, whether commercial or non-commercial, including
+  for participating in the Competition and on Kaggle.com forums, and for academic research and education."
+  The rules add: "By downloading the Competition Data you also agree to the terms in the Creative Commons
+  Attribution 4.0 International (CC BY 4.0)." The summary line reads "DATA ACCESS AND USE: Competition and
+  Academic Research". We read this as allowing a non-commercial hackathon prototype, with credit.
+- **Held-out set** (`training/results/paddy_heldout_manifest.csv`): the 200 external-test photos plus 300
+  more (seed 11), 125 per class. Never used for training, validation or thresholds. 228 other Paddy photos
+  within perceptual-hash distance 5 of a held-out photo were removed from the training pool. No held-out
+  photo is within distance 5 of our own training or validation photos (closest: 12).
+- **Candidate A** (`runs/candA_strong_aug/`): the run 9 recipe with stronger augmentation: random zoom-out
+  (leaf at 25–100% of the frame, the rest filled with crops of our 773 field-background `other` training
+  photos), RandomResizedCrop scale 0.35–1.0, rotation ±20°, mild blur, JPEG re-compression,
+  brightness/contrast jitter, no hue shift. Training 723 s.
+- **Candidate B** (`runs/candB_strong_aug_plus_paddy/`): A plus 8,227 Paddy Doctor training photos and
+  1,452 Paddy Doctor validation photos (used for early stopping and thresholds). Training 3,174 s.
+- **Thresholds** (validation only): general threshold and margin by the same field rule as before; blast-only
+  threshold = smallest value with no wrong blast answer on validation (so 0 wrong spray on field validation
+  photos); new BLB-only threshold = smallest value with at most 5% wrong BLB answers on validation (the 5% is
+  our choice). A: 0.94 / blast 0.985 / BLB 0.945. B: 0.91 / blast 0.999 / BLB 0.94. Current model: 0.83 /
+  blast 0.995 / no BLB threshold.
+- **Comparison through the app's code path** (`python training/compare_candidates.py`;
+  `runs/candidates_comparison.json`). Answered = the app gives advice; the lesion question is counted as
+  unanswered. CPU latency is the median of 30 predictions on a 1024×768 image.
+
+  | Model | Set | n | Answered | Right when answered | Wrong advice | Wrong spray | CPU latency |
+  |---|---|---|---|---|---|---|---|
+  | Current | Our test split | 828 | 212 (25.6%) | 205 of 212 | 7 | 1 | 9.4 ms |
+  | Current | Our field photos | 272 | 72 (26.5%) | 70 of 72 | 2 | 0 | |
+  | Current | Paddy Doctor held-out | 500 | 20 (4.0%) | 7 of 20 | 13 | 0 | |
+  | A | Our test split | 828 | 219 (26.4%) | 212 of 219 | 7 | 0 | 12.5 ms |
+  | A | Our field photos | 272 | 71 (26.1%) | 67 of 71 | 4 | 0 | |
+  | A | Paddy Doctor held-out | 500 | 3 (0.6%) | 0 of 3 | 3 | 0 | |
+  | B | Our test split | 828 | 185 (22.3%) | 172 of 185 | 13 | 0 | 12.6 ms |
+  | B | Our field photos | 272 | 71 (26.1%) | 69 of 71 | 2 | 0 | |
+  | B | Paddy Doctor held-out (**same source as some of B's training data**) | 500 | 227 (45.4%) | 226 of 227 | 1 | 0 | |
+
+- **Reading.** Augmentation alone (A) does not make the model transfer: 0 right answers on the held-out set
+  and more wrong BLB answers on our field photos. Rejected. B meets all three acceptance rules: more right
+  answers on the held-out set (226 vs 7), no more wrong spray on any set (0 / 0 / 0 vs 1 / 0 / 0), and no
+  clear loss on our field photos (69 right, 2 wrong vs 70 right, 2 wrong).
+- **What B costs, stated plainly.**
+  1. The held-out result is not an external test for B: those photos come from the same source as 8,227 of
+     B's training photos. It shows B has learned Paddy Doctor, not that it will work on a new source. No
+     unseen-source test exists for B.
+  2. On our full test split B gives more wrong advice (13 vs 7). 11 of the 13 are BD5 narrow brown spot
+     leaves on a white sheet answered "no spray now" (the current model does this 4 times). The other 2 are
+     RiceLeafBD tungro answered as BLB.
+  3. B never gives the blast answer on our own test photos (blast threshold 0.999): right blast answers
+     28 → 0 on our test split. On the held-out set it gives 6 right blast answers out of 125 blast photos.
+  4. Latency differs only by run-to-run noise (same architecture, same file size).
+- **Recommendation: B, if the team accepts point 2.** Nothing has been published and `models/` is unchanged.
+  TODO-HUMAN: approve or reject.
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
 with `blast_threshold` in `labels.json` and the updated card. A download with no token

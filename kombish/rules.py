@@ -53,7 +53,7 @@ def load_clips() -> dict[str, dict]:
 
 def select_rule(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQuery | None",
                 *, threshold: float, consent: bool = True, blast_threshold: float | None = None,
-                blast_confirmed: bool | None = None) -> str:
+                blast_confirmed: bool | None = None, blb_threshold: float | None = None) -> str:
     """Return the rule_id. Priority order is fixed here and mirrored in rules.csv.
 
     Spray advice is held to a stricter standard than no-spray advice. A blast answer needs (1) confidence
@@ -68,6 +68,8 @@ def select_rule(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQu
         return "R5_ABSTAIN"
     if label == "blast" and blast_threshold is not None and conf < blast_threshold:
         return "R5_ABSTAIN"
+    if label == "bacterial_leaf_blight" and blb_threshold is not None and conf < blb_threshold:
+        return "R5_ABSTAIN"   # "no insecticide needed" also has its own threshold when labels.json gives one
     if (label == "healthy" and voice is not None
             and voice.confidence in ("medium", "high")
             and RED_FLAG_SYMPTOMS & set(voice.symptoms)):
@@ -83,10 +85,11 @@ def select_rule(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQu
 def decide(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQuery | None",
            planning_to_spray: bool | None, *, threshold: float, consent: bool = True,
            voice_failed: bool = False, blast_threshold: float | None = None,
-           blast_confirmed: bool | None = None) -> Advice:
+           blast_confirmed: bool | None = None, blb_threshold: float | None = None) -> Advice:
     """planning_to_spray is logged and counted only; it never changes the decision (tested)."""
     rule_id = select_rule(label, conf, margin_ok, voice, threshold=threshold, consent=consent,
-                          blast_threshold=blast_threshold, blast_confirmed=blast_confirmed)
+                          blast_threshold=blast_threshold, blast_confirmed=blast_confirmed,
+                          blb_threshold=blb_threshold)
     row = load_rules()[rule_id]
     clip_rows = load_clips()
     clip_ids = [c for c in (row["clip"], row["extra_clip"]) if c]

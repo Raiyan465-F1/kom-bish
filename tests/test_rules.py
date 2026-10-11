@@ -135,6 +135,22 @@ def test_classifier_abstain_flag_uses_the_blast_threshold():
     assert should_abstain("blast", 0.90, 0.8, old) is False
 
 
+def test_blb_threshold_refers_below_it_and_touches_nothing_else():
+    from kombish.classifier import should_abstain
+
+    kw = {"threshold": T, "blb_threshold": 0.93}
+    assert decide("bacterial_leaf_blight", 0.90, True, None, None, **kw).rule_id == "R5_ABSTAIN"
+    assert decide("bacterial_leaf_blight", 0.93, True, None, None, **kw).rule_id == "R1_BLB"
+    assert decide("bacterial_leaf_blight", 0.90, True, None, None, threshold=T).rule_id == "R1_BLB"   # no key: as before
+    for label in ("healthy", "other"):
+        assert decide(label, 0.80, True, None, None, **kw) == decide(label, 0.80, True, None, None, threshold=T)
+    assert decide("blast", 0.99, True, None, None, blast_confirmed=True, **kw).rule_id == "R2_BLAST"
+    m = {"threshold": 0.83, "margin": 0.2, "blast_threshold": 0.995, "blb_threshold": 0.93}
+    assert should_abstain("bacterial_leaf_blight", 0.90, 0.8, m) is True
+    assert should_abstain("bacterial_leaf_blight", 0.95, 0.8, m) is False
+    assert should_abstain("healthy", 0.90, 0.8, m) is False
+
+
 def test_prompt_and_referral_sets_cover_the_new_rules():
     assert "R0_CONFIRM_BLAST" in rules.PROMPT_RULES and "R7_BLAST_UNCONFIRMED" in rules.REFERRAL_RULES
     rows = load_rules()

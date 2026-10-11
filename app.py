@@ -60,7 +60,7 @@ def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
         vq = voice_fn(audio_path) if voice_used else None
         adv = rules.decide(pred.label, pred.conf, pred.margin >= m["margin"], vq, planning_to_spray,
                            threshold=m["threshold"], consent=True, voice_failed=voice_used and vq is None,
-                           blast_threshold=m.get("blast_threshold"),
+                           blast_threshold=m.get("blast_threshold"), blb_threshold=m.get("blb_threshold"),
                            blast_confirmed=BLAST_ANSWERS.get(blast_answer))
         if adv.rule_id in rules.PROMPT_RULES:   # ask the lesion-shape question first; no advice, no log yet
             return (adv.text_md, *no_answer, _question(True))

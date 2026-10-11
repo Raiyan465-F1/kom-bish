@@ -70,10 +70,12 @@ def preprocess(img: Image.Image, m: dict) -> np.ndarray:
 
 
 def should_abstain(label: str, conf: float, margin: float, m: dict) -> bool:
-    """Abstain below the threshold or margin. Blast (the only spray answer) has its own, stricter threshold."""
+    """Abstain below the threshold or margin. Blast (the only spray answer) has its own, stricter threshold;
+    BLB may have one too (labels.json "blb_threshold")."""
     if conf < m["threshold"] or margin < m["margin"]:
         return True
-    return label == "blast" and conf < m.get("blast_threshold", m["threshold"])
+    class_threshold = {"blast": m.get("blast_threshold"), "bacterial_leaf_blight": m.get("blb_threshold")}.get(label)
+    return class_threshold is not None and conf < class_threshold
 
 
 def predict(img: Image.Image) -> Prediction:

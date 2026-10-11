@@ -69,6 +69,72 @@ def take_subset(ds: ImageFolder, n: int | None, seed: int):
     return Subset(ds, idx), [ds.targets[i] for i in idx], [ds.samples[i] for i in idx]
 
 
+class ZoomOut:
+    """Shrink the photo to 25-100% of the frame and fill the rest with a real field-background crop.
+
+    The model only knew a leaf that fills the frame (docs/gates.md, "Why it fails"). The backgrounds are
+    crops of our own field-background `other` training photos, never black padding.
+    """
+
+    def __init__(self, backgrounds: list[str], p: float = 0.7, scale: tuple[float, float] = (0.25, 1.0)):
+        self.backgrounds, self.p, self.scale = backgrounds, p, scale
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if not self.backgrounds or random.random() > self.p:
+            return img
+        s = random.uniform(*self.scale)
+        if s > 0.97:
+            return img
+        img = img.convert("RGB")
+        w, h = img.size
+        with Image.open(random.choice(self.backgrounds)) as bg:
+            bg = bg.convert("RGB")
+        bw, bh = bg.size
+        frac = random.uniform(0.5, 1.0)
+        cw, ch = max(int(bw * frac), 8), max(int(bh * frac), 8)
+        left, top = random.randint(0, bw - cw), random.randint(0, bh - ch)
+        canvas = bg.crop((left, top, left + cw, top + ch)).resize((w, h), Image.BICUBIC)
+        small = img.resize((max(int(w * s), 8), max(int(h * s), 8)), Image.BICUBIC)
+        canvas.paste(small, (random.randint(0, w - small.width), random.randint(0, h - small.height)))
+        return canvas
+
+
+class RandomJPEG:
+    """Re-encode as JPEG at a random quality, like a photo sent through a messaging app."""
+
+    def __init__(self, p: float = 0.5, quality: tuple[int, int] = (35, 90)):
+        self.p, self.quality = p, quality
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() > self.p:
+            return img
+        import io
+
+        buf = io.BytesIO()
+        img.convert("RGB").save(buf, "JPEG", quality=random.randint(*self.quality))
+        return Image.open(io.BytesIO(buf.getvalue())).convert("RGB")
+
+
+def strong_train_transform(cfg: dict, backgrounds: list[str]):
+    """Stronger augmentation (candidates A and B). No hue shift: lesion colour carries the diagnosis."""
+    from torchvision import transforms as Tv
+    from torchvision.transforms import InterpolationMode as Mode
+
+    size = cfg["input_size"][1]
+    fill = tuple(int(255 * v) for v in cfg["mean"])
+    return Tv.Compose([
+        ZoomOut(backgrounds, p=0.7, scale=(0.25, 1.0)),
+        Tv.RandomApply([Tv.RandomRotation(20, interpolation=Mode.BICUBIC, fill=fill)], p=0.5),
+        Tv.RandomResizedCrop(size, scale=(0.35, 1.0), ratio=(3 / 4, 4 / 3), interpolation=Mode.BICUBIC),
+        Tv.RandomHorizontalFlip(), Tv.RandomVerticalFlip(),
+        Tv.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.1, hue=0.0),
+        Tv.RandomApply([Tv.GaussianBlur(5, sigma=(0.1, 1.5))], p=0.2),
+        RandomJPEG(p=0.5),
+        Tv.ToTensor(), Tv.Normalize(cfg["mean"], cfg["std"]),
+        Tv.RandomErasing(p=0.2),
+    ])
+
+
 def keep_background(ds, targets: list, samples: list, background: str):
     idx = [i for i, (path, _) in enumerate(samples) if background_of(*source_of(path)) == background]
     return Subset(ds, idx), [targets[i] for i in idx], [samples[i] for i in idx]
@@ -125,22 +191,33 @@ def answered_mask(p: torch.Tensor, t, margin: float) -> torch.Tensor:
     return (top2[:, 0] >= threshold_for(t, p.argmax(1))) & ((top2[:, 0] - top2[:, 1]) >= margin)
 
 
-def choose_blast_threshold(pv: torch.Tensor, yv: torch.Tensor, t: float, margin: float) -> tuple[float, int]:
-    """Spray advice is stricter than no-spray advice: blast gets its own threshold.
+BLB_MAX_WRONG_SHARE = 0.05   # BLB answers ("no insecticide needed"): at most 5% wrong on validation (our choice)
 
-    The smallest threshold (never below t) at which NO blast answer on validation is wrong.
-    Returns (blast_threshold, number of validation blast answers left). 1.01 means "never answer blast".
+
+def choose_class_threshold(pv: torch.Tensor, yv: torch.Tensor, cls: str, t: float, margin: float,
+                           max_wrong_share: float) -> tuple[float, int]:
+    """A class-only threshold: the smallest value (never below t) at which the share of wrong answers of
+    this class on validation is at most max_wrong_share. Returns (threshold, validation answers left).
+    1.01 means "never answer this class".
     """
-    blast = CLASSES.index("blast")
+    k = CLASSES.index(cls)
     conf, pred = pv.max(1)
     top2 = pv.topk(2, dim=1).values
-    candidate = (pred == blast) & ((top2[:, 0] - top2[:, 1]) >= margin)
+    candidate = (pred == k) & ((top2[:, 0] - top2[:, 1]) >= margin)
     grid = [round(t + 0.005 * i, 3) for i in range(int((0.999 - t) / 0.005) + 1)] + [0.999]
-    for bt in grid:
-        sel = candidate & (conf >= bt)
-        if int((yv[sel] != blast).sum()) == 0:
-            return bt, int(sel.sum())
+    for ct in grid:
+        sel = candidate & (conf >= ct)
+        if int((yv[sel] != k).sum()) <= max_wrong_share * int(sel.sum()):
+            return ct, int(sel.sum())
     return 1.01, 0
+
+
+def choose_blast_threshold(pv: torch.Tensor, yv: torch.Tensor, t: float, margin: float) -> tuple[float, int]:
+    """Spray advice is stricter than no-spray advice: NO blast answer on validation may be wrong.
+
+    Validation includes every field-background validation photo, so wrong spray is 0 on those too.
+    """
+    return choose_class_threshold(pv, yv, "blast", t, margin, 0.0)
 
 
 def selective(p: torch.Tensor, y: torch.Tensor, t, margin: float) -> dict:
@@ -246,8 +323,8 @@ def background_of(source: str, class_slug: str) -> str:
     """Seen by eye: BD5 leaves lie on a white sheet, RiceLeafBD photos are taken in the field."""
     if source == "BD5" or (source == "DhanShomadhan" and class_slug.startswith("white_")):
         return "white"
-    if source == "RiceLeafBD" or (source == "DhanShomadhan" and class_slug.startswith("field_")):
-        return "field"
+    if source in ("RiceLeafBD", "PaddyDoctor") or (source == "DhanShomadhan" and class_slug.startswith("field_")):
+        return "field"   # Paddy Doctor photos are wide shots of plants in the field
     return "unknown"
 
 
@@ -309,7 +386,8 @@ def background_table(p: torch.Tensor, y: torch.Tensor, backgrounds: list[str], t
     return rows
 
 
-def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device, va_samples=()) -> dict:
+def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device, va_samples=(),
+                           class_thresholds_for_blb: bool = False) -> dict:
     """Fit T and choose (t, margin) on validation; report every metric on test. Returns the metrics dict."""
     lv, yv = logits_of(model, dl_va, device)
     lt, yt = logits_of(model, dl_te, device)
@@ -330,8 +408,15 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device,
         print("WARNING: no threshold gives zero wrong blast answers on validation. Blast is never answered.")
     coverage_before = {"val": selective(pv, yv, t_general, margin)["coverage"],
                        "test": selective(pt, yt, t_general, margin)["coverage"]}
-    # From here on t is per predicted class: every table below uses the blast-only threshold for blast.
-    t = torch.tensor([blast_t if c == "blast" else t_general for c in CLASSES], dtype=pv.dtype)
+    blb_t, val_blb_answers = (choose_class_threshold(pv, yv, "bacterial_leaf_blight", t_general, margin,
+                                                     BLB_MAX_WRONG_SHARE) if class_thresholds_for_blb
+                              else (t_general, -1))
+    if class_thresholds_for_blb:
+        print(f"BLB-only threshold = {blb_t}; validation BLB answers left: {val_blb_answers}, "
+              f"at most {BLB_MAX_WRONG_SHARE:.0%} of them wrong")
+    # From here on t is per predicted class: every table below uses the class-only thresholds.
+    per_class_t = {"blast": blast_t, "bacterial_leaf_blight": blb_t}
+    t = torch.tensor([per_class_t.get(c, t_general) for c in CLASSES], dtype=pv.dtype)
     val = selective(pv, yv, t, margin)
     spray_ok = True
     for name in ("blb", "blast"):
@@ -396,6 +481,8 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device,
     return {
         "temperature": T, "temperature_clamped": clamped, "threshold": t_general, "margin": margin,
         "blast_threshold": blast_t, "val_blast_answers_at_blast_threshold": val_blast_answers,
+        "blb_threshold": blb_t if class_thresholds_for_blb else None,
+        "val_blb_answers_at_blb_threshold": val_blb_answers if class_thresholds_for_blb else None,
         "coverage_before_blast_threshold": coverage_before,
         "target": {"precision": TARGET_PRECISION, "coverage": TARGET_COVERAGE},
         "target_met": target_met, "spray_relevant_precision_ok": spray_ok, "threshold_rule": rule,
@@ -451,6 +538,7 @@ def export_onnx_and_labels(model, cfg, va, out, *, model_name: str, classes: lis
         "margin": calib["margin"],
         # Blast is the only spray answer, so it has its own stricter threshold (never below "threshold").
         "blast_threshold": round(calib["blast_threshold"], 3),
+        **({"blb_threshold": round(calib["blb_threshold"], 3)} if calib.get("blb_threshold") is not None else {}),
         "input_size": list(cfg["input_size"]), "mean": [float(v) for v in cfg["mean"]],
         "std": [float(v) for v in cfg["std"]],
         "crop_pct": float(cfg["crop_pct"]), "interpolation": cfg["interpolation"],
@@ -548,6 +636,10 @@ def main(argv: list[str] | None = None) -> int:
                    help="sampler balance: per class, or per class x background (field / white sheet)")
     p.add_argument("--backgrounds", choices=["all", "field", "white"], default="all",
                    help="experiment: train and tune on one background only (the test split stays complete)")
+    p.add_argument("--aug", choices=["standard", "strong"], default="standard",
+                   help="strong: zoom-out onto field backgrounds, wider crops, rotation, blur, JPEG, brightness")
+    p.add_argument("--blb-threshold", action="store_true",
+                   help="also choose a BLB-only threshold on validation (at most 5%% wrong BLB answers)")
     p.add_argument("--subset", type=int, help="max images per split (CPU smoke runs only)")
     p.add_argument("--no-pretrained", action="store_true", help="offline smoke test only; never for the real run")
     p.add_argument("--skip-export", action="store_true", help="train and save best.pt only")
@@ -573,6 +665,11 @@ def main(argv: list[str] | None = None) -> int:
     te = ImageFolder(f"{args.data}/test", eval_tf)
     assert tr.classes == va.classes == te.classes == CLASSES, tr.classes
 
+    if args.aug == "strong":
+        backgrounds = [path for path, y in tr.samples if CLASSES[y] == "other"
+                       and source_of(path)[0] != "PaddyDoctor" and background_of(*source_of(path)) == "field"]
+        print(f"strong augmentation: zoom-out backgrounds from {len(backgrounds)} of our field 'other' photos")
+        tr.transform = strong_train_transform(cfg, backgrounds)
     tr_ds, tr_targets, tr_samples = take_subset(tr, args.subset, args.seed)
     va_ds, va_targets, va_samples = take_subset(va, args.subset, args.seed)
     if args.backgrounds != "all":   # experiment: train and tune only on one background; test stays complete
@@ -673,15 +770,20 @@ def main(argv: list[str] | None = None) -> int:
     import onnx
     import onnxruntime
 
-    calib = calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, args.out, device, va_samples)
+    calib = calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, args.out, device, va_samples,
+                                   class_thresholds_for_blb=args.blb_threshold)
     dhs_in = {name: sum(source_of(path)[0] == "DhanShomadhan" for path, _ in ds.samples)
               for name, ds in (("train", tr), ("val", va), ("test", te))}
     trained_on = TRAINED_ON + ([DHS_DOI] if dhs_in["train"] or dhs_in["val"] else [])
+    if any(source_of(path)[0] == "PaddyDoctor" for path, _ in tr.samples):
+        trained_on = trained_on + ["arXiv:2205.11108 (Paddy Doctor, Kaggle paddy-disease-classification, CC BY 4.0)"]
     exported = export_onnx_and_labels(model, cfg, va_ds, args.out, model_name=args.model,
                                       classes=tr.classes, calib=calib, trained_on=trained_on)
     metrics = {
         "model": args.model, "date": dt.date.today().isoformat(), "classes": tr.classes,
-        "trained_on": trained_on, "dhs_images": dhs_in, "balance": args.balance,
+        "trained_on": trained_on, "dhs_images": dhs_in, "balance": args.balance, "augmentation": args.aug,
+        "paddy_doctor_images": {name: sum(source_of(path)[0] == "PaddyDoctor" for path, _ in ds.samples)
+                                for name, ds in (("train", tr), ("val", va), ("test", te))},
         "train_backgrounds": args.backgrounds, "train_n": len(tr_targets), "val_n": len(va_targets),
         "epochs": {"head": args.epochs_head, "full": args.epochs},
         # False once Dhan-Shomadhan images are in train/ or val/: the held-out field blast slice is then

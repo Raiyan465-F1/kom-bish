@@ -1,0 +1,40 @@
+{
+ "model": "mobilenetv3_large_100.ra_in1k",
+ "classes": [
+  "bacterial_leaf_blight",
+  "blast",
+  "healthy",
+  "other"
+ ],
+ "temperature": 0.6396,
+ "threshold": 0.91,
+ "margin": 0.2,
+ "blast_threshold": 0.999,
+ "blb_threshold": 0.94,
+ "input_size": [
+  3,
+  224,
+  224
+ ],
+ "mean": [
+  0.485,
+  0.456,
+  0.406
+ ],
+ "std": [
+  0.229,
+  0.224,
+  0.225
+ ],
+ "crop_pct": 0.875,
+ "interpolation": "bicubic",
+ "onnx_input": "input",
+ "onnx_output": "logits",
+ "trained_on": [
+  "10.17632/kx9rx8p2mz.1",
+  "10.17632/sjkptpgv79.2",
+  "10.17632/znsxdctwtt.1",
+  "arXiv:2205.11108 (Paddy Doctor, Kaggle paddy-disease-classification, CC BY 4.0)"
+ ],
+ "date": "2026-10-11"
+}
