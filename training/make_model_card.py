@@ -16,11 +16,35 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from make_eval_report import (ABSTAIN_SENTENCE, DEFINITIONS, agronomy_status, comparison_table, load,  # noqa: E402
-                              outcome_lines, prop)
+from make_eval_report import (ABSTAIN_SENTENCE, DEFINITIONS, PUBLISHED, agronomy_status, comparison_table,  # noqa: E402
+                              load, outcome_lines, prop)
 from prepare_data import PUBLISHED_COUNTS, SOURCE_CLASS_TO_TARGET  # noqa: E402
 
 DHS_REPO = "Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification"
+
+
+def framing(metrics: dict, cmp: dict | None, ext: dict | None) -> list[str]:
+    """The one-paragraph claim, every number taken from the result files."""
+    o = metrics.get("outcomes") or {}
+    held = (((cmp or {}).get(PUBLISHED) or {}).get("sets") or {}).get("Paddy Doctor held-out")
+    if not (o.get("test") and o.get("field") and held and ext):
+        return []
+
+    def healthy(src: dict) -> str:
+        h = src["by_true_class"]["healthy"]
+        return f"{h['right_advice']} of {h['n']}"
+
+    wrong_spray = sum(s["blast_question_on_other_classes"] for s in (o["test"], o["field"], held, ext))
+    return [
+        "**What this model is for.** Kom Bish is a safe-by-design spray adviser, and this classifier is its "
+        "photo step. It recognises healthy leaves and refers unfamiliar diseases to the Krishi Call Centre 16123 "
+        "or an agriculture officer; it does not diagnose. True healthy leaves given the \"no spray now\" answer: "
+        f"{healthy(o['test'])} on our Bangladesh test split, {healthy(o['field'])} on our field photos, "
+        f"{healthy(held)} on the Paddy Doctor held-out set (India; **same source as some training data**) and "
+        f"{healthy(ext)} on the {ext['dataset']['name']} ({ext['dataset']['country']}; truly external, the rest "
+        f"were referred). Wrong \"spray correctly\" advice across all of these: {wrong_spray}. Known limit: on the "
+        f"external test {ext['wrong_advice']} blast leaf was told \"no spray now\". Recognising diseases needs "
+        "local data: on the external test almost every diseased leaf was referred, not recognised.", ""]
 
 
 def build(labels: dict, metrics: dict, licence: str) -> str:
@@ -36,7 +60,8 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
         L += ["> **SMOKE RUN ON SYNTHETIC OR SUBSET DATA. NOT A RESULT. DO NOT PUBLISH.**", ""]
     L += [f"4 classes: {', '.join(f'`{c}`' for c in labels['classes'])}. Base model `{labels['model']}` (timm, "
           f"Apache-2.0 weights), fine-tuned at {size} px and exported to ONNX (single file). Trained {labels['date']}.", "",
-          "**Versions.** This is version 2 (git tag `v2`). The previous model, trained without Paddy Doctor, is kept "
+          *framing(metrics, cmp, ext),
+          "**Versions.** This is version 2 (git tag `v2`), frozen on 11 Oct 2026. The previous model, trained without Paddy Doctor, is kept "
           "as revision `v1`: `hf_hub_download(repo_id, \"model.onnx\", revision=\"v1\")`.", "",
           "## Intended use", "",
           "The classifier picks a row in Kom Bish's hand-written rule table. It is not a diagnosis. Low-confidence "

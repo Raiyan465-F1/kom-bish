@@ -161,6 +161,18 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         "external_top_guess_right": (ext or {}).get("top_guess_right"),
         "external_junk_n": ((ext or {}).get("junk") or {}).get("n"),
         "external_junk_referred": ((ext or {}).get("junk") or {}).get("referred"),
+        "external_country": ((ext or {}).get("dataset") or {}).get("country"),
+        # true healthy leaves: how many got the healthy answer, per set (none of the rest is wrong advice if 0)
+        **{f"{name}_healthy_{key}": ((src.get("by_true_class") or {}).get("healthy") or {}).get(field)
+           for name, src in (("test", o_test), ("field", o_field), ("heldout", held), ("external", ext or {}))
+           for key, field in (("n", "n"), ("right_advice", "right_advice"), ("wrong_advice", "wrong_advice"))},
+        # blast question asked on a photo that is not blast = a wrong "spray correctly" if the farmer said yes
+        "wrong_spray_if_yes_field": o_field.get("blast_question_on_other_classes"),
+        "wrong_spray_if_yes_total": None if None in (o_test.get("blast_question_on_other_classes"),
+                                                     held.get("blast_question_on_other_classes"),
+                                                     (ext or {}).get("blast_question_on_other_classes"))
+        else (o_test["blast_question_on_other_classes"] + held["blast_question_on_other_classes"]
+              + ext["blast_question_on_other_classes"] + (o_field.get("blast_question_on_other_classes") or 0)),
         # the team's own photos (step 19) and the off-script test
         "own_healthy_n": healthy["n"] if healthy else None,
         "own_healthy_false_trigger_n": healthy["false_trigger_n"] if healthy else None,

@@ -86,7 +86,8 @@ Locally, `app.py` loads `.env` with `python-dotenv` inside `try/except ImportErr
 
 - Classes, in this order (from `ImageFolder.classes`, never typed by hand in training):
   `["bacterial_leaf_blight", "blast", "healthy", "other"]`
-- Rule IDs, priority order: `R0_NO_CONSENT`, `R0_NO_PHOTO`, `R5_ABSTAIN`, `R6_VOICE_REDFLAG`, `R1_BLB`, `R2_BLAST`, `R3_HEALTHY`, `R4_OTHER`
+- Rule IDs, priority order: `R0_NO_CONSENT`, `R0_NO_PHOTO`, `R5_ABSTAIN`, `R6_VOICE_REDFLAG`, `R1_BLB`, `R0_CONFIRM_BLAST`, `R7_BLAST_UNCONFIRMED`, `R2_BLAST`, `R3_HEALTHY`, `R4_OTHER`
+  (`R0_CONFIRM_BLAST` asks the lesion-shape question before any blast answer; "no" or "not sure" gives `R7_BLAST_UNCONFIRMED`, a referral; only "yes" gives `R2_BLAST`)
 - Decisions: `none`, `consult_officer`, `no_insecticide_fix_fertiliser`, `spray_correctly`, `no_spray_monitor`
 - Clip IDs → files: `blb`, `blast`, `safety`, `healthy`, `not_sure`, `consent`, `voice_failed`, `brinjal` (stretch, not wired) → `audio/<clip_id>.mp3`
 - Voice symptom enum: `brown_spots`, `spindle_lesions`, `yellowing`, `leaf_tip_drying`, `insects_seen`, `hopper_burn`, `wilting`, `none`, `unclear`

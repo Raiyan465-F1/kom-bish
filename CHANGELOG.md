@@ -13,6 +13,9 @@ recorded, the model is not published and nothing is hosted yet (see `docs/gates.
   `R7_BLAST_UNCONFIRMED`; draft Bangla awaiting review). Test coverage fell from 0.8780 to 0.7585
 - External test on Paddy Doctor (India), n = 200 (`training/external_test.py`): 192 referred, 8 answered,
   1 right, 0 wrong spray answers. The model does not transfer to wide shots of whole plants
+- Model frozen at v2. Healthy answer now ends with "if spots appear or spread, take a new photo or call
+  16123" (draft Bangla for review). README, model card and deck framed as a safe-by-design spray adviser;
+  README "Pilot plan" section (a plan, not built). `CLAUDE.md` lists the two blast-confirmation rule IDs
 - **Model v2 published** (candidate B: adds Paddy Doctor training photos, stronger augmentation, a BLB-only
   threshold). The previous model stays on the Hub as revision `v1`
 - One set of outcome definitions everywhere (`training/outcomes.py`): classifier confident, advice given,

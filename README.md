@@ -22,6 +22,22 @@ TODO-HUMAN (C): one-line pitch in Bangla. DRAFT — needs native speaker review.
 
 Hack for Humanity BD 2026, Round 2 · Team Unsick · Track: Inclusive Rural Development & Agriculture
 
+## What Kom Bish is
+
+**A safe-by-design spray adviser.** It is built to avoid wrong spray advice, not to diagnose everything.
+
+- **It recognises healthy leaves.** True healthy leaves given the "no spray now" answer: 139 of
+  152 on our Bangladesh test split, 36 of 37 on our field photos, 112 of 125 on photos from India, and
+  27 of 50 on photos from the Philippines. The rest were referred; none got wrong advice.
+- **It refers unfamiliar diseases** to the Krishi Call Centre 16123 or an agriculture officer instead of guessing.
+- **Tested on three countries with 0 wrong spray advice:** Bangladesh (our test split), India (Paddy
+  Doctor held-out; **same source as some training data**) and the Philippines (Zambali Rice Dataset (Public V1); truly
+  external, never seen in training).
+- **Known limit:** on the external test 1 blast leaf was told "no spray now". The healthy answer therefore
+  ends by telling the farmer to take a new photo or call 16123 if spots appear or spread.
+- **Disease recognition needs local data.** On the external test almost every diseased leaf was referred, not
+  recognised. See "Pilot plan" below.
+
 ## Try it
 
 - **Live demo:** TODO-HUMAN (direct HTTPS URL; first load can take about a minute if it is the Render host)
@@ -205,6 +221,26 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
 - **Impact:** spray-or-not answers. Evidence that fewer sprays are possible is from other studies; a pilot will measure what Kom Bish delivers.
 - **Feasibility:** a USD 0 stack that runs on free hosts and on a laptop.
 - **Scalability:** all configuration comes from environment variables; the rules live in a CSV. Next: review by a Sub-Assistant Agriculture Officer and a 30-farmer pilot.
+
+## Pilot plan (a plan, not a built feature)
+
+Nothing in this section exists yet. Today the app stores no photos.
+
+The model recognises diseases only on sources it has trained on, so the way to make it useful in a new place
+is local data with trustworthy labels. The referral already sends the farmer to the person who can provide
+that label:
+
+1. **Review first.** A Sub-Assistant Agriculture Officer (SAAO) reads the rule table and the answer scripts.
+2. **A small pilot,** about 30 farmers in one block, photo-only.
+3. **Officer-verified referrals become training data.** When Kom Bish refers a farmer and the officer then
+   sees the crop, the officer records what it was. With a separate, explicit consent, that photo and the
+   officer's label are kept. This needs a new consent text and a new, reviewed way to store photos; neither
+   is built, and the current "we do not keep your photo" promise stays true until they are.
+4. **Retrain only with a held-out local test.** Part of the officer-labelled photos is set aside and never
+   trained on. A new model replaces the old one only if it gives more right answers on that set, no more
+   wrong spray advice, and no loss on the existing tests: the same rule used for model v2.
+5. **What the pilot measures:** how often the app refers, how often the officer agrees with its answers, any
+   wrong advice, and whether the farmer sprayed.
 
 ## Data credits and licences
 

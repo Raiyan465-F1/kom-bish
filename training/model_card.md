@@ -8,7 +8,9 @@ tags: [image-classification, onnx, rice, plant-disease, bangladesh]
 
 4 classes: `bacterial_leaf_blight`, `blast`, `healthy`, `other`. Base model `mobilenetv3_large_100.ra_in1k` (timm, Apache-2.0 weights), fine-tuned at 224 px and exported to ONNX (single file). Trained 2026-10-11.
 
-**Versions.** This is version 2 (git tag `v2`). The previous model, trained without Paddy Doctor, is kept as revision `v1`: `hf_hub_download(repo_id, "model.onnx", revision="v1")`.
+**What this model is for.** Kom Bish is a safe-by-design spray adviser, and this classifier is its photo step. It recognises healthy leaves and refers unfamiliar diseases to the Krishi Call Centre 16123 or an agriculture officer; it does not diagnose. True healthy leaves given the "no spray now" answer: 139 of 152 on our Bangladesh test split, 36 of 37 on our field photos, 112 of 125 on the Paddy Doctor held-out set (India; **same source as some training data**) and 27 of 50 on the Zambali Rice Dataset (Public V1) (Philippines; truly external, the rest were referred). Wrong "spray correctly" advice across all of these: 0. Known limit: on the external test 1 blast leaf was told "no spray now". Recognising diseases needs local data: on the external test almost every diseased leaf was referred, not recognised.
+
+**Versions.** This is version 2 (git tag `v2`), frozen on 11 Oct 2026. The previous model, trained without Paddy Doctor, is kept as revision `v1`: `hf_hub_download(repo_id, "model.onnx", revision="v1")`.
 
 ## Intended use
 

@@ -329,6 +329,26 @@ results in `training/results/external_test.json`, sampled files in
   on the held-out set); the Paddy Doctor held-out result is the same source as some training data; the only
   truly external test (Zambali) shows no disease recognition.
 
+**Model frozen at v2 (Raiyan, 11 Oct 2026): no more training.** Changes made after the freeze, none of them to
+the model:
+
+- `CLAUDE.md` section 6 now lists `R0_CONFIRM_BLAST` and `R7_BLAST_UNCONFIRMED` (Raiyan's approval).
+- The healthy answer (`data/clips.csv`, clip `healthy`) ends with a new sentence: if spots appear or spread,
+  take a new photo or call 16123 (the number is spoken digit by digit, as in the `not_sure` script). It is a
+  **DRAFT written by Claude Code for the team's review**, and the script is now longer, so it must be timed
+  against the 25-second limit. `NUMBER_ALLOWLIST` for `healthy` gained the call-centre digits; a new test
+  checks the sentence is there. Reason: on the external test one blast leaf was told "no spray now".
+- Framing in the README, model card and deck draft: a safe-by-design spray adviser that recognises healthy
+  leaves and refers unfamiliar diseases. True healthy leaves given "no spray now": 139 of 152 (our test
+  split), 36 of 37 (our field photos), 112 of 125 (Paddy Doctor held-out, India, same source as some training
+  data), 27 of 50 (Zambali, Philippines, truly external). No true healthy leaf got wrong advice on any of
+  them. Wrong spray advice: 0 on all of them. Known limit listed everywhere: 1 external blast leaf told "no
+  spray now". Disease recognition needs local data. Note on wording: "reliably recognises healthy leaves" is
+  written with these counts beside it, because on the external set only 27 of 50 healthy leaves were answered
+  (the other 23 were referred).
+- README section "Pilot plan" and the deck's next-steps slide: officer-verified referrals become training
+  data. Written as a plan; nothing is built, and the app still stores no photos.
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
 with `blast_threshold` in `labels.json` and the updated card. A download with no token

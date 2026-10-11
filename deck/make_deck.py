@@ -202,16 +202,14 @@ def build(voice: str, video_url: str, demo_url: str) -> None:
 
     s = headline_slide("We built it and measured it, including where it fails.")
     f1 = num("test_macro_f1")
-    lines = [f"Our test photos (n = {S.get('test_n', NA)}): macro-F1 {NA if f1 is None else f'{f1:.3f}'}; advice given "
-             f"{k_of_n('test_advice_given', 'test_n')}, wrong {S.get('test_wrong_advice', NA)}.",
-             f"Our field photos: advice given {k_of_n('field_advice_given', 'field_n')}, "
-             f"wrong {S.get('field_wrong_advice', NA)}.",
-             f"External test ({S.get('external_dataset') or NA}): advice given "
-             f"{k_of_n('external_advice_given', 'external_n')}, right {S.get('external_right_advice', NA)}; "
-             f"junk referred {k_of_n('external_junk_referred', 'external_junk_n')}.",
-             "Diseases from a new source are referred, not recognised.",
-             f"Own healthy leaves wrongly sent to a spray class: "
-             f"{k_of_n('own_healthy_false_trigger_n', 'own_healthy_n')}."]
+    lines = [f"Tested on Bangladesh, India* and the Philippines: wrong spray advice "
+             f"{S.get('wrong_spray_if_yes_total', NA)}.",
+             f"Healthy leaves given \"no spray now\": {k_of_n('test_healthy_right_advice', 'test_healthy_n')} (Bangladesh), "
+             f"{k_of_n('heldout_healthy_right_advice', 'heldout_healthy_n')} (India*), "
+             f"{k_of_n('external_healthy_right_advice', 'external_healthy_n')} (Philippines, external).",
+             "Unfamiliar diseases are referred to 16123 or an officer.",
+             f"Known limit: {S.get('external_wrong_advice', NA)} external blast leaf was told \"no spray now\".",
+             "*Same source as some training data."]
     if S.get("offscript_failures") == 0 and S.get("invented_doses") == 0 and S.get("offscript_n"):
         lines.append(f"0 off-script answers and 0 invented doses in {S['offscript_n']}.")
     if S.get("target_met") is False:
@@ -219,10 +217,11 @@ def build(voice: str, video_url: str, demo_url: str) -> None:
     textbox(s, lines, 0.6, 1.8, 12.1, 4.6, size=20)
     footer(s, "training/eval_report.md; datasets CC BY 4.0 (DOIs 10.17632/kx9rx8p2mz.1, 10.17632/sjkptpgv79.2, "
               "10.17632/znsxdctwtt.1)")
-    notes(s, "Every number comes from training/eval_summary.json and has its n. Field photos matter most, "
-             "because that is what farmers send. Our first model learned the photo background instead of the "
-             "disease, so we added a third dataset and a stricter threshold. Blast in field photos is still "
-             "mostly referred, not recognised.")
+    notes(s, "Kom Bish is a safe-by-design spray adviser: it recognises healthy leaves and refers unfamiliar "
+             "diseases instead of guessing. Every number comes from training/eval_summary.json. The India set is "
+             "held out from Paddy Doctor, which is also part of the training data, so only the Philippine set is "
+             "truly external. There the model recognised about half of the healthy leaves and referred almost "
+             "every diseased one. Recognising diseases in a new place needs local data.")
 
     s = headline_slide("Kom Bish adds a spray-or-not rule that others do not show.")
     rows = [("", "Spray-or-not rule + sprays-avoided count"), ("Kom Bish", "Yes"), ("Rice Solution", VERIFY),
@@ -243,12 +242,15 @@ def build(voice: str, video_url: str, demo_url: str) -> None:
              "needs a pilot.")
 
     s = headline_slide("These are our limits, and this is what we do next.")
-    textbox(s, ["Diseases from a new source are referred, not recognised.", f"{agronomy_line()}.", "No field test.",
-                "Next: SAAO review, 30-farmer pilot."], 0.6, 2.0, 12.1, 3.5, size=24)
-    footer(s, "training/eval_report.md")
-    notes(s, "The model may have learned the source dataset rather than the disease, which is why we report "
-             "per-source and cross-source numbers. Nobody has checked what a farmer did after an answer. The "
-             "next steps are an officer's review of the rules and a small pilot.")
+    textbox(s, ["Disease recognition needs local data.", f"{agronomy_line()}. No field test.",
+                "Next: SAAO review, 30-farmer pilot.",
+                "Pilot plan (not built): officer-verified referrals become training data."],
+            0.6, 2.0, 12.1, 3.5, size=24)
+    footer(s, "training/eval_report.md; README, section \"Pilot plan\"")
+    notes(s, "Outside the sources it was trained on, the model refers diseased leaves instead of recognising them. "
+             "Nobody has checked what a farmer did after an answer. The plan, which is not built: when the app "
+             "refers a farmer and an officer then sees the crop, the officer's diagnosis and the photo, with a "
+             "separate explicit consent, become local training data. Today the app stores no photos.")
 
 
 def main(argv: list[str] | None = None) -> int:

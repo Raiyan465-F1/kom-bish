@@ -195,6 +195,16 @@ def test_blast_includes_safety_and_neck_blast_line():
     assert nfc("শীষ") in nfc(load_clips()["blast"]["text_bn"])   # update deliberately if reviewers reword
 
 
+def test_healthy_answer_tells_the_farmer_what_to_do_if_spots_appear():
+    """ "No spray now" must not be the last word: if spots appear or spread, take a new photo or call 16123."""
+    healthy, not_sure = nfc(load_clips()["healthy"]["text_bn"]), nfc(load_clips()["not_sure"]["text_bn"])
+    spoken_16123 = nfc("এক-ছয়-এক-দুই-তিন")
+    assert spoken_16123 in not_sure and spoken_16123 in healthy
+    assert nfc("দাগ") in healthy and nfc("নতুন ছবি") in healthy
+    a = decide("healthy", 0.99, True, None, None, threshold=T)
+    assert a.rule_id == "R3_HEALTHY" and spoken_16123 in nfc(a.text_md)
+
+
 def test_consent_clip_matches_screen_text():
     assert nfc(load_clips()["consent"]["text_bn"]) == nfc(texts.CONSENT_BN)
 
@@ -214,7 +224,10 @@ FORBIDDEN_TOKENS = {"মিলি", "মিলিলিটার", "লিটা
 BN_NUMBER_WORDS = {nfc(w) for w in ["এক", "দুই", "তিন", "চার", "পাঁচ", "ছয়", "সাত", "আট", "দশ", "বিশ",
                                     "ত্রিশ", "চল্লিশ", "পঞ্চাশ", "একশো", "সাড়ে", "দেড়", "আড়াই"]}
 NUMBER_ALLOWLIST = {   # every number a reviewed script may say; change only with reviewer approval
-    "blb": {"পাঁচ", "সাড়ে", "তিন"}, "blast": {"সাত", "দশ"}, "healthy": {"ত্রিশ", "চল্লিশ"},
+    # healthy also says the call-centre number 16123 digit by digit (team instruction, 11 Oct 2026); it is a
+    # phone number, not a dose or a waiting period.
+    "blb": {"পাঁচ", "সাড়ে", "তিন"}, "blast": {"সাত", "দশ"},
+    "healthy": {"ত্রিশ", "চল্লিশ", "এক", "ছয়", "দুই", "তিন"},
     "not_sure": {"এক", "ছয়", "দুই", "তিন"}, "safety": set(), "consent": set(), "voice_failed": set(),
 }
 TOKEN_SPLIT = re.compile(r"[\s,।;:!?\-–—()\"'“”‘’]+")
