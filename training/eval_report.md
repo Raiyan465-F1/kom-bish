@@ -137,6 +137,44 @@ Field photos that got wrong advice:
 | `RiceLeafBD/Tungro Virus/312624486_675060277291867_7528285692741017397_n.jpg` | RiceLeafBD | Tungro Virus | bacterial_leaf_blight | 0.8487 |
 | `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#15` | DhanShomadhan | Field Browon Spot | bacterial_leaf_blight | 0.8551 |
 
+## External test: Paddy Doctor (India)
+
+A dataset the model has never seen, from another country: the labelled training images of the Kaggle competition `paddy-disease-classification` (Petchiammal A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022). Paddy Doctor: A Visual Image Dataset for Automated Paddy Disease Classification and Benchmarking. arXiv:2205.11108.). Seeded sample (seed 42) of up to {'bacterial_leaf_blight': {'n': 50, 'advice_given': 0, 'referred': 50, 'correct_advice': 0, 'wrong_advice': 0, 'wrong_spray_advice': 0, 'model_answered': 12, 'model_correct_when_answered': 0, 'argmax_correct': 2}, 'blast': {'n': 50, 'advice_given': 2, 'referred': 48, 'correct_advice': 0, 'wrong_advice': 2, 'wrong_spray_advice': 0, 'model_answered': 30, 'model_correct_when_answered': 0, 'argmax_correct': 2}, 'healthy': {'n': 50, 'advice_given': 1, 'referred': 49, 'correct_advice': 1, 'wrong_advice': 0, 'wrong_spray_advice': 0, 'model_answered': 23, 'model_correct_when_answered': 1, 'argmax_correct': 2}, 'other': {'n': 50, 'advice_given': 5, 'referred': 45, 'correct_advice': 0, 'wrong_advice': 5, 'wrong_spray_advice': 0, 'model_answered': 17, 'model_correct_when_answered': 12, 'argmax_correct': 25, 'note': "for a true 'other' photo the right outcome is a referral; any advice is wrong advice"}} images per mapped class: bacterial leaf blight, blast, normal (healthy), and every other class as `other`, drawn evenly across its source classes. 200 images sampled; 0 dropped as near-duplicates of our 4837 training and validation images (perceptual hash, distance ≤ 5); **n = 200**. Run through the app's own code path (`kombish/classifier.py`, `kombish/rules.py`) with threshold 0.83, margin 0.2 and blast-only threshold 0.995. The lesion-shape question is treated as unanswered: a photo that reaches it is counted as a blast answer. This is a test only; nothing was changed because of it.
+
+**Reading the result:** the model does not transfer to these photos. Seen by eye on 24 of the sampled images, Paddy Doctor photos are wide shots of whole plants with many leaves (all 480×640), while every training photo is a close-up of one leaf. The confidence gate refers almost everything, which is the safe outcome, but the few answers that get through are mostly wrong.
+
+- Advice given (answered): 8/200 = 0.040 (95% CI 0.020–0.077); referred: 192/200 = 0.960 (95% CI 0.923–0.980)
+- Correct among advice given (accuracy when answered): 1/8 = 0.125 (95% CI 0.022–0.471)
+- Wrong advice: 7/200 = 0.035 (95% CI 0.017–0.070) of all photos; wrong "spray correctly": 0
+- Top prediction correct with no abstention: 31/200 = 0.155 (95% CI 0.111–0.212)
+
+| True class | n | Advice given | Referred | Correct advice | Wrong advice | Wrong spray advice |
+|---|---|---|---|---|---|---|
+| bacterial_leaf_blight | 50 | 0/50 = 0.000 (95% CI 0.000–0.071) | 50/50 = 1.000 (95% CI 0.929–1.000) | 0/50 = 0.000 (95% CI 0.000–0.071) | 0/50 = 0.000 (95% CI 0.000–0.071) | 0 |
+| blast | 50 | 2/50 = 0.040 (95% CI 0.011–0.135) | 48/50 = 0.960 (95% CI 0.865–0.989) | 0/50 = 0.000 (95% CI 0.000–0.071) | 2/50 = 0.040 (95% CI 0.011–0.135) | 0 |
+| healthy | 50 | 1/50 = 0.020 (95% CI 0.004–0.105) | 49/50 = 0.980 (95% CI 0.895–0.996) | 1/50 = 0.020 (95% CI 0.004–0.105) | 0/50 = 0.000 (95% CI 0.000–0.071) | 0 |
+| other | 50 | 5/50 = 0.100 (95% CI 0.043–0.214) | 45/50 = 0.900 (95% CI 0.786–0.957) | (a referral is the right outcome) | 5/50 = 0.100 (95% CI 0.043–0.214) | 0 |
+
+What each photo got (rows = true class):
+
+| true \ outcome | bacterial_leaf_blight advice | blast advice (spray) | healthy advice | referred |
+|---|---|---|---|---|
+| bacterial_leaf_blight | 0 | 0 | 0 | 50 |
+| blast | 2 | 0 | 0 | 48 |
+| healthy | 0 | 0 | 1 | 49 |
+| other | 5 | 0 | 0 | 45 |
+
+Confusion matrix of the top prediction, no abstention (rows = true class):
+
+| true \ predicted | bacterial_leaf_blight | blast | healthy | other |
+|---|---|---|---|---|
+| bacterial_leaf_blight | 2 | 10 | 4 | 34 |
+| blast | 9 | 2 | 1 | 38 |
+| healthy | 3 | 7 | 2 | 38 |
+| other | 11 | 10 | 4 | 25 |
+
+Wrong "spray correctly" answers: none.
+
 ## 4. The team's own photos and junk photos
 
 Not measured yet: `training/results/own_photos.json` does not exist (steps 19 and 20).
@@ -149,7 +187,7 @@ Not measured yet: `training/results/own_photos.json` does not exist (steps 19 an
 
 - Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most blast images from BD5 (leaves on a white sheet). A model can learn the background instead of the disease; the first run did exactly that. Sections 2 and 3 are the honest check.
 - BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description says 2,545. We used what the archive contains (`docs/gates.md`).
-- Dhan-Shomadhan is in the training data, which removed the only external test: no number in this report comes from a dataset the model has never seen.
+- Dhan-Shomadhan is in the training data, which removed the first external test. The only numbers from a dataset the model has never seen are the Paddy Doctor ones, if that section is present, and they show the model does not transfer to wide shots of whole plants.
 - The test split was looked at during development: several training runs were compared, and the threshold rule was tightened after seeing early results (`docs/gates.md` lists every run). The numbers here are therefore somewhat optimistic. Only a new, untouched set of field photos would give a clean estimate.
 - With this few test images per minority class, one or two images move a recall by several points; read the intervals, not the point values.
 - Own-photo labels are healthy-looking vs symptomatic, not diagnoses.

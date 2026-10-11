@@ -41,5 +41,11 @@
  "coverage_before_blast_threshold": 0.8780193328857422,
  "blast_answers_n": 29,
  "blast_answers_wrong": 1,
- "field_blast_answers_n": 0
+ "field_blast_answers_n": 0,
+ "external_n": 200,
+ "external_advice_given": 8,
+ "external_referred": 192,
+ "external_correct_advice": 1,
+ "external_wrong_advice": 7,
+ "external_wrong_spray": 0
 }

@@ -167,6 +167,39 @@ change; `run9_final` was re-evaluated with `train_export.py --weights`
    number in the reports includes it. TODO-HUMAN: `CLAUDE.md` section 6 still lists the old rule IDs; add
    `R0_CONFIRM_BLAST` and `R7_BLAST_UNCONFIRMED` there if the team keeps them.
 
+**External test on Paddy Doctor (Raiyan's instruction, 11 Oct 2026)** — `python training/external_test.py`,
+results in `training/results/external_test.json`, sampled files in
+`training/results/external_paddy_doctor_manifest.csv`. A test only: the model and thresholds were not changed.
+
+- Data: the 10,407 labelled training images of the Kaggle competition `paddy-disease-classification`
+  (Paddy Doctor; Petchiammal A, Briskline Kiruba S, D. Murugan, Pandarasamy A, 2022, arXiv:2205.11108),
+  downloaded into the git-ignored `data/external/paddy_doctor/`. No image is committed.
+- Sample (seed 42): 50 bacterial leaf blight, 50 blast, 50 normal (→ healthy), and 50 `other` spread over
+  7 source classes (8 bacterial leaf streak; 7 each of bacterial panicle blight, brown spot, dead heart, downy
+  mildew, hispa, tungro). 200 images.
+- Leak check against our 4,837 training and validation images (perceptual hash, distance ≤ 5): 0 dropped.
+  The closest pair is at distance 12. n = 200.
+- Photo-only decisions through `kombish/classifier.py` and `kombish/rules.py` (threshold 0.83, margin 0.2,
+  blast-only threshold 0.995; the lesion question counted as unanswered, so a photo reaching it would count
+  as a blast answer):
+
+  | True class | n | Advice given | Referred | Correct advice | Wrong advice | Wrong spray |
+  |---|---|---|---|---|---|---|
+  | bacterial_leaf_blight | 50 | 0 | 50 | 0 | 0 | 0 |
+  | blast | 50 | 2 | 48 | 0 | 2 (both given the BLB answer) | 0 |
+  | healthy | 50 | 1 | 49 | 1 | 0 | 0 |
+  | other | 50 | 5 | 45 | (referral is right) | 5 (all given the BLB answer: 4 bacterial panicle blight, 1 dead heart) | 0 |
+  | **All** | **200** | **8** | **192** | **1** | **7** | **0** |
+
+- Accuracy when answered: 1 of 8. Top prediction correct with no abstention: 31 of 200 (2 BLB, 2 blast,
+  2 healthy, 25 other). The model predicted `other` for 135 of the 200.
+- **Reading:** the model does not transfer. Seen by eye on 24 sampled images, Paddy Doctor photos are wide
+  shots of whole plants with many leaves (all 480×640); all our training photos are close-ups of one leaf.
+  The confidence gate refers 96%, which is the safe outcome, but 7 of the 8 answers are wrong "no insecticide
+  needed" advice, 2 of them for true blast.
+- `junk_photos/` does not exist, so the junk test was skipped.
+- The Kaggle token lives only in `.env` (git-ignored).
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
 with `blast_threshold` in `labels.json` and the updated card. A download with no token

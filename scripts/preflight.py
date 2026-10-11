@@ -23,7 +23,8 @@ DOIS = ["10.17632/kx9rx8p2mz.1", "10.17632/sjkptpgv79.2", "10.17632/znsxdctwtt.1
 PINS = ["gradio==6.29.1", "onnxruntime==1.31.0", "pillow==12.3.0", "huggingface_hub==2.2.0", "google-genai==2.29.0"]
 PLACEHOLDERS = ["TODO-C", "TODO-HUMAN", "VIDEO_URL_TODO", "DEMO_URL_TODO", "<gh-user>", "<hf-user>"]
 SECRET_PATTERNS = [re.compile(r"hf_[A-Za-z0-9]{20,}"), re.compile(r"AIza[0-9A-Za-z_\-]{20,}"),
-                   re.compile(r"AQ\.[0-9A-Za-z_\-]{20,}")]   # HF tokens and both Gemini key formats
+                   re.compile(r"AQ\.[0-9A-Za-z_\-]{20,}"),   # HF tokens and both Gemini key formats
+                   re.compile(r"KGAT_[0-9A-Za-z]{20,}")]      # Kaggle API tokens
 HAND_CHECK_HOSTS = ("youtube.com", "youtu.be", "drive.google.com", "docs.google.com")
 
 results: list[tuple[str, str, str]] = []

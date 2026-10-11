@@ -1,0 +1,347 @@
+{
+ "dataset": {
+  "name": "Paddy Doctor",
+  "kaggle_competition": "paddy-disease-classification",
+  "citation": "Petchiammal A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022). Paddy Doctor: A Visual Image Dataset for Automated Paddy Disease Classification and Benchmarking. arXiv:2205.11108.",
+  "split_used": "train_images (labelled)",
+  "used_for_training": false
+ },
+ "date": "2026-10-11",
+ "seed": 42,
+ "per_class": {
+  "bacterial_leaf_blight": {
+   "n": 50,
+   "advice_given": 0,
+   "referred": 50,
+   "correct_advice": 0,
+   "wrong_advice": 0,
+   "wrong_spray_advice": 0,
+   "model_answered": 12,
+   "model_correct_when_answered": 0,
+   "argmax_correct": 2
+  },
+  "blast": {
+   "n": 50,
+   "advice_given": 2,
+   "referred": 48,
+   "correct_advice": 0,
+   "wrong_advice": 2,
+   "wrong_spray_advice": 0,
+   "model_answered": 30,
+   "model_correct_when_answered": 0,
+   "argmax_correct": 2
+  },
+  "healthy": {
+   "n": 50,
+   "advice_given": 1,
+   "referred": 49,
+   "correct_advice": 1,
+   "wrong_advice": 0,
+   "wrong_spray_advice": 0,
+   "model_answered": 23,
+   "model_correct_when_answered": 1,
+   "argmax_correct": 2
+  },
+  "other": {
+   "n": 50,
+   "advice_given": 5,
+   "referred": 45,
+   "correct_advice": 0,
+   "wrong_advice": 5,
+   "wrong_spray_advice": 0,
+   "model_answered": 17,
+   "model_correct_when_answered": 12,
+   "argmax_correct": 25,
+   "note": "for a true 'other' photo the right outcome is a referral; any advice is wrong advice"
+  }
+ },
+ "label_map": {
+  "bacterial_leaf_blight": "bacterial_leaf_blight",
+  "blast": "blast",
+  "normal": "healthy",
+  "every other label": "other"
+ },
+ "lesion_question": "treated as unanswered: a photo that reaches the question counts as a blast answer",
+ "model": {
+  "name": "mobilenetv3_large_100.ra_in1k",
+  "threshold": 0.83,
+  "margin": 0.2,
+  "blast_threshold": 0.995,
+  "temperature": 0.6603,
+  "onnx_sha256": "c34bfb4891e1eb43cb4ad449930bc95f2e611822bf10ca190fd84f5dca7f7f90"
+ },
+ "sampled": 200,
+ "leak_check": {
+  "phash_distance": 5,
+  "compared_with_our_images": 4837,
+  "near_duplicates_dropped": 0,
+  "dropped_files": []
+ },
+ "n": 200,
+ "overall": {
+  "n": 200,
+  "advice_given": 8,
+  "referred": 192,
+  "correct_advice": 1,
+  "wrong_advice": 7,
+  "wrong_spray_advice": 0,
+  "model_answered": 82,
+  "model_correct_when_answered": 13,
+  "argmax_correct": 31
+ },
+ "per_source_label": {
+  "bacterial_leaf_blight": {
+   "mapped_label": "bacterial_leaf_blight",
+   "n": 50,
+   "outcomes": {
+    "referred": 50
+   },
+   "predicted": {
+    "other": 34,
+    "blast": 10,
+    "healthy": 4,
+    "bacterial_leaf_blight": 2
+   }
+  },
+  "bacterial_leaf_streak": {
+   "mapped_label": "other",
+   "n": 8,
+   "outcomes": {
+    "referred": 8
+   },
+   "predicted": {
+    "blast": 3,
+    "bacterial_leaf_blight": 2,
+    "other": 3
+   }
+  },
+  "bacterial_panicle_blight": {
+   "mapped_label": "other",
+   "n": 7,
+   "outcomes": {
+    "bacterial_leaf_blight advice": 4,
+    "referred": 3
+   },
+   "predicted": {
+    "bacterial_leaf_blight": 5,
+    "other": 2
+   }
+  },
+  "blast": {
+   "mapped_label": "blast",
+   "n": 50,
+   "outcomes": {
+    "referred": 48,
+    "bacterial_leaf_blight advice": 2
+   },
+   "predicted": {
+    "other": 38,
+    "bacterial_leaf_blight": 9,
+    "blast": 2,
+    "healthy": 1
+   }
+  },
+  "brown_spot": {
+   "mapped_label": "other",
+   "n": 7,
+   "outcomes": {
+    "referred": 7
+   },
+   "predicted": {
+    "other": 2,
+    "bacterial_leaf_blight": 1,
+    "blast": 3,
+    "healthy": 1
+   }
+  },
+  "dead_heart": {
+   "mapped_label": "other",
+   "n": 7,
+   "outcomes": {
+    "referred": 6,
+    "bacterial_leaf_blight advice": 1
+   },
+   "predicted": {
+    "other": 3,
+    "healthy": 2,
+    "bacterial_leaf_blight": 2
+   }
+  },
+  "downy_mildew": {
+   "mapped_label": "other",
+   "n": 7,
+   "outcomes": {
+    "referred": 7
+   },
+   "predicted": {
+    "blast": 2,
+    "other": 4,
+    "healthy": 1
+   }
+  },
+  "hispa": {
+   "mapped_label": "other",
+   "n": 7,
+   "outcomes": {
+    "referred": 7
+   },
+   "predicted": {
+    "other": 6,
+    "blast": 1
+   }
+  },
+  "normal": {
+   "mapped_label": "healthy",
+   "n": 50,
+   "outcomes": {
+    "referred": 49,
+    "healthy advice": 1
+   },
+   "predicted": {
+    "healthy": 2,
+    "other": 38,
+    "blast": 7,
+    "bacterial_leaf_blight": 3
+   }
+  },
+  "tungro": {
+   "mapped_label": "other",
+   "n": 7,
+   "outcomes": {
+    "referred": 7
+   },
+   "predicted": {
+    "other": 5,
+    "bacterial_leaf_blight": 1,
+    "blast": 1
+   }
+  }
+ },
+ "confusion_matrix_argmax": {
+  "labels": [
+   "bacterial_leaf_blight",
+   "blast",
+   "healthy",
+   "other"
+  ],
+  "rows_true_cols_predicted": [
+   [
+    2,
+    10,
+    4,
+    34
+   ],
+   [
+    9,
+    2,
+    1,
+    38
+   ],
+   [
+    3,
+    7,
+    2,
+    38
+   ],
+   [
+    11,
+    10,
+    4,
+    25
+   ]
+  ]
+ },
+ "decision_matrix": {
+  "rows_true": [
+   "bacterial_leaf_blight",
+   "blast",
+   "healthy",
+   "other"
+  ],
+  "cols_outcome": [
+   "bacterial_leaf_blight advice",
+   "blast advice (spray)",
+   "healthy advice",
+   "referred"
+  ],
+  "counts": [
+   [
+    0,
+    0,
+    0,
+    50
+   ],
+   [
+    2,
+    0,
+    0,
+    48
+   ],
+   [
+    0,
+    0,
+    1,
+    49
+   ],
+   [
+    5,
+    0,
+    0,
+    45
+   ]
+  ]
+ },
+ "wrong_spray_correctly": [],
+ "wrong_advice": [
+  {
+   "file": "train_images/bacterial_panicle_blight/101281.jpg",
+   "source_label": "bacterial_panicle_blight",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8434,
+   "margin": 0.7349
+  },
+  {
+   "file": "train_images/bacterial_panicle_blight/104460.jpg",
+   "source_label": "bacterial_panicle_blight",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8492,
+   "margin": 0.7706
+  },
+  {
+   "file": "train_images/bacterial_panicle_blight/105578.jpg",
+   "source_label": "bacterial_panicle_blight",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8681,
+   "margin": 0.7564
+  },
+  {
+   "file": "train_images/bacterial_panicle_blight/109716.jpg",
+   "source_label": "bacterial_panicle_blight",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8426,
+   "margin": 0.7462
+  },
+  {
+   "file": "train_images/blast/106451.jpg",
+   "source_label": "blast",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.9221,
+   "margin": 0.8692
+  },
+  {
+   "file": "train_images/blast/109546.jpg",
+   "source_label": "blast",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8649,
+   "margin": 0.7906
+  },
+  {
+   "file": "train_images/dead_heart/107559.jpg",
+   "source_label": "dead_heart",
+   "answered_as": "bacterial_leaf_blight",
+   "confidence": 0.8756,
+   "margin": 0.7859
+  }
+ ],
+ "junk_photos": null
+}

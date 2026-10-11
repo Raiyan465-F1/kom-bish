@@ -125,6 +125,16 @@ listed in [`training/results/runs/README.md`](training/results/runs/README.md).
 - **Blast in field photos, n = 18:** all 18 were referred to 16123 or an officer; 0 got wrong advice and 0
   got the blast answer. Kom Bish cannot recognise blast in a field photo yet; it refers instead.
 - **BLB in field photos, n = 50:** 35 got the right advice, 15 were referred, 0 got wrong advice.
+- **External test on Paddy Doctor (India), n = 200** (a dataset the model has never seen): the app referred
+  192 photos and gave advice on 8, of which 1 was right. No photo got a wrong "spray correctly" answer, but
+  7 got wrong "no insecticide needed" advice, 2 of them true blast. Without the confidence gate the top
+  prediction was right for 31 of 200. **The model does not transfer to these photos:** they show whole
+  plants with many leaves, while every training photo is a close-up of one leaf. Nothing was changed because
+  of this test. Details: [`training/eval_report.md`](training/eval_report.md),
+  [`training/results/external_test.json`](training/results/external_test.json). Dataset credit: Petchiammal
+  A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022), "Paddy Doctor: A Visual Image Dataset for
+  Automated Paddy Disease Classification and Benchmarking", arXiv:2205.11108, via the Kaggle competition
+  `paddy-disease-classification`. No Paddy Doctor image is in this repository.
 - **The team's own leaves and junk photos:** TODO-HUMAN, not collected yet (step 19).
 
 What went wrong first, and what it means: our first model scored 0.921 macro-F1 on its own test split and
@@ -132,9 +142,9 @@ then recognised 2 of 74 field blast photos from a third dataset. In the two trai
 lie on a white sheet and BLB leaves are photographed in the field, so the model had learned the background.
 We added the third dataset (Dhan-Shomadhan) to training and tightened the threshold.
 
-**This removed our only external test.** Dhan-Shomadhan was the one dataset the model had never seen. Now
-that it is training data, no number on this page comes from an unseen source: the 18 field blast photos
-above are held out from a dataset the model has seen. We also looked at the test split while comparing
+**This removed our first external test.** Dhan-Shomadhan was the one dataset the model had never seen. Now
+that it is training data, the 18 field blast photos above are held out from a dataset the model has seen.
+The Paddy Doctor test above is the only number here from an unseen source, and it is poor. We also looked at the test split while comparing
 runs, so these numbers are somewhat optimistic. A repeat run with another random seed gave wrong advice on
 2 of its 18 field blast photos.
 
@@ -195,7 +205,9 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
 - The lesion-shape question relies on the farmer's own judgement and has not been tested with farmers.
 - Source and background confound: all BLB training images come from one dataset (field photos) and most
   blast images from another (leaves on a white sheet).
-- No external test: Dhan-Shomadhan, the only dataset the model had never seen, is now training data.
+- The model does not transfer to an unseen dataset: on Paddy Doctor (India) it referred 192 of 200 photos
+  and was right on 1 of the 8 it answered. It needs a close-up of one leaf; wide shots of plants fail.
+- Dhan-Shomadhan, the first dataset the model had never seen, is now training data.
 - BD5's official archive (version 2, SHA-256 verified) holds 3,150 images; its own description says 2,545.
   We used what the archive contains.
 - No field test. Nobody has checked what a farmer did after an answer.

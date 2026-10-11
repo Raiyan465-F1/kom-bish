@@ -113,15 +113,33 @@ def build(labels: dict, metrics: dict, licence: str) -> str:
               f"{prop(count(dhs['abstain_rate'], dhs['n']), dhs['n'])}.", ""]
     else:
         L += ["Dhan-Shomadhan field blast: not measured in this run, so there is no cross-source blast test.", ""]
+    ext_path = ROOT / "training" / "results" / "external_test.json"
+    if ext_path.exists():
+        ext = json.loads(ext_path.read_text("utf-8"))
+        o = ext["overall"]
+        L += [f"**External test on Paddy Doctor (India), n = {ext['n']}** (a dataset the model has never seen; "
+              f"labelled images of the Kaggle competition `{ext['dataset']['kaggle_competition']}`; "
+              f"{ext['dataset']['citation']}). Seeded sample of up to {ext['per_class']} images per mapped class, "
+              f"{ext['leak_check']['near_duplicates_dropped']} near-duplicates of our images dropped, photo-only "
+              "decisions through the app's code path: advice given "
+              f"{prop(o['advice_given'], o['n'])}; referred {prop(o['referred'], o['n'])}; correct among advice "
+              f"given {prop(o['correct_advice'], o['advice_given'])}; wrong \"spray correctly\" answers "
+              f"{o['wrong_spray_advice']}; top prediction correct with no abstention "
+              f"{prop(o['argmax_correct'], o['n'])}. **The model does not transfer to these photos**, which show "
+              "whole plants with many leaves rather than one leaf close up; it refers almost all of them, and "
+              "the few answers it gives are mostly wrong. Nothing was changed because of this test.", ""]
     L += ["## Limitations", "",
           "- Every BLB image comes from one dataset (RiceLeafBD, field photos) and most blast images from "
           "another (BD5, leaves on a white sheet), so the model can learn the source or the background rather "
           "than the disease. A first run without Dhan-Shomadhan did exactly that. The per-source and "
           "per-background numbers above are the honest check.",
-          *(["- **No external test.** Dhan-Shomadhan was added to the training data because the first model "
-             "failed on its field photos. That removed the only test from a dataset the model had never seen. "
-             "The held-out field blast photos reported above come from a source the model has seen."]
+          *(["- **Dhan-Shomadhan is training data.** It was added because the first model failed on its field "
+             "photos. That removed the first external test: the held-out field blast photos reported above come "
+             "from a source the model has seen. The only result from an unseen source is the Paddy Doctor test, "
+             "if it is reported above."]
             if dhs_trained else []),
+          "- **Photo style matters.** The model was trained on close-ups of one leaf. It does not work on wide "
+          "shots of whole plants.",
           "- **Blast in field photos is mostly not recognised.** At the shipped threshold the model refers most "
           "field blast photos instead of answering (see the per-background table)."
           if dhs_trained else "- Blast on field backgrounds is the weakest case; see the cross-source numbers.",

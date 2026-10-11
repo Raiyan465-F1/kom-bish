@@ -32,6 +32,9 @@ SUMMARY_KEYS = [
     # Spray advice is stricter: blast has its own threshold.
     "blast_threshold", "coverage_before_blast_threshold", "blast_answers_n", "blast_answers_wrong",
     "field_blast_answers_n",
+    # External test on Paddy Doctor (a dataset the model has never seen), photo-only decisions.
+    "external_n", "external_advice_given", "external_referred", "external_correct_advice",
+    "external_wrong_advice", "external_wrong_spray",
 ]
 ABSTAIN_SENTENCE = "The model abstains more than we would like."
 
@@ -146,6 +149,13 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         "blast_answers_n": all_blast.get("given"), "blast_answers_wrong": all_blast.get("wrong"),
         "field_blast_answers_n": ((field.get("by_answer") or {}).get("blast") or {}).get("given"),
     })
+    ext_path = RESULTS / "external_test.json"
+    eo = json.loads(ext_path.read_text("utf-8"))["overall"] if ext_path.exists() else {}
+    summary.update({
+        "external_n": eo.get("n"), "external_advice_given": eo.get("advice_given"),
+        "external_referred": eo.get("referred"), "external_correct_advice": eo.get("correct_advice"),
+        "external_wrong_advice": eo.get("wrong_advice"), "external_wrong_spray": eo.get("wrong_spray_advice"),
+    })
     assert list(summary) == SUMMARY_KEYS
 
     L: list[str] = ["# Kom Bish evaluation report", ""]
@@ -258,6 +268,8 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     else:
         L += ["Not measured: the Dhan-Shomadhan images were not available in this run, so there is no "
               "cross-source blast test.", ""]
+    ext_path = RESULTS / "external_test.json"
+    ext = json.loads(ext_path.read_text("utf-8")) if ext_path.exists() else None
     leak_path = RESULTS / "leak_check.json"
     if leak_path.exists():
         k = json.loads(leak_path.read_text("utf-8"))
@@ -281,6 +293,54 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
             L += [f"| `{w['photo']}` | {w['true_class']} | {w['answered_as']} | {w['confidence']} |"
                   for w in k["field_wrong_advice"]]
             L += [""]
+    if ext:
+        o, lk, mdl = ext["overall"], ext["leak_check"], ext["model"]
+        L += ["## External test: Paddy Doctor (India)", "",
+              "A dataset the model has never seen, from another country: the labelled training images of the "
+              f"Kaggle competition `{ext['dataset']['kaggle_competition']}` ({ext['dataset']['citation']}). "
+              f"Seeded sample (seed {ext['seed']}) of up to {ext['per_class']} images per mapped class: bacterial "
+              "leaf blight, blast, normal (healthy), and every other class as `other`, drawn evenly across its "
+              f"source classes. {ext['sampled']} images sampled; {lk['near_duplicates_dropped']} dropped as "
+              f"near-duplicates of our {lk['compared_with_our_images']} training and validation images "
+              f"(perceptual hash, distance ≤ {lk['phash_distance']}); **n = {ext['n']}**. Run through the app's "
+              f"own code path (`kombish/classifier.py`, `kombish/rules.py`) with threshold {mdl['threshold']}, "
+              f"margin {mdl['margin']} and blast-only threshold {mdl['blast_threshold']}. The lesion-shape "
+              "question is treated as unanswered: a photo that reaches it is counted as a blast answer. "
+              "This is a test only; nothing was changed because of it.", "",
+              "**Reading the result:** the model does not transfer to these photos. Seen by eye on 24 of the "
+              "sampled images, Paddy Doctor photos are wide shots of whole plants with many leaves (all "
+              "480×640), while every training photo is a close-up of one leaf. The confidence gate refers "
+              "almost everything, which is the safe outcome, but the few answers that get through are mostly "
+              "wrong.", "",
+              f"- Advice given (answered): {prop(o['advice_given'], o['n'])}; referred: {prop(o['referred'], o['n'])}",
+              f"- Correct among advice given (accuracy when answered): {prop(o['correct_advice'], o['advice_given'])}",
+              f"- Wrong advice: {prop(o['wrong_advice'], o['n'])} of all photos; wrong \"spray correctly\": "
+              f"{o['wrong_spray_advice']}",
+              f"- Top prediction correct with no abstention: {prop(o['argmax_correct'], o['n'])}", "",
+              "| True class | n | Advice given | Referred | Correct advice | Wrong advice | Wrong spray advice |",
+              "|---|---|---|---|---|---|---|"]
+        for c, b in ext["per_class"].items():
+            correct = "(a referral is the right outcome)" if c == "other" else prop(b["correct_advice"], b["n"])
+            L.append(f"| {c} | {b['n']} | {prop(b['advice_given'], b['n'])} | {prop(b['referred'], b['n'])} | "
+                     f"{correct} | {prop(b['wrong_advice'], b['n'])} | {b['wrong_spray_advice']} |")
+        cmx, dm = ext["confusion_matrix_argmax"], ext["decision_matrix"]
+        L += ["", "What each photo got (rows = true class):", "",
+              "| true \\ outcome | " + " | ".join(dm["cols_outcome"]) + " |", "|---|" + "---|" * len(dm["cols_outcome"])]
+        L += [f"| {c} | " + " | ".join(str(v) for v in row) + " |" for c, row in zip(dm["rows_true"], dm["counts"])]
+        L += ["", "Confusion matrix of the top prediction, no abstention (rows = true class):", "",
+              "| true \\ predicted | " + " | ".join(cmx["labels"]) + " |", "|---|" + "---|" * len(cmx["labels"])]
+        L += [f"| {c} | " + " | ".join(str(v) for v in row) + " |"
+              for c, row in zip(cmx["labels"], cmx["rows_true_cols_predicted"])]
+        L += [""]
+        if ext["wrong_spray_correctly"]:
+            L += ["Every wrong \"spray correctly\" answer:", "", "| File | True label | Confidence |", "|---|---|---|"]
+            L += [f"| `{w['file']}` | {w['source_label']} | {w['confidence']} |" for w in ext["wrong_spray_correctly"]]
+        else:
+            L += ["Wrong \"spray correctly\" answers: none."]
+        L += [""]
+        if ext.get("junk_photos"):
+            j = ext["junk_photos"]
+            L += [f"Junk photos (`junk_photos/`): {prop(j['referred'], j['n'])} referred.", ""]
     L += ["## 4. The team's own photos and junk photos", ""]
     if own:
         L += ["Own-photo labels are \"healthy-looking\" vs \"symptomatic\" as judged by the team, not diagnoses.", "",
@@ -306,8 +366,9 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
           "disease; the first run did exactly that. Sections 2 and 3 are the honest check.",
           "- BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description "
           "says 2,545. We used what the archive contains (`docs/gates.md`).",
-          "- Dhan-Shomadhan is in the training data, which removed the only external test: no number in this "
-          "report comes from a dataset the model has never seen.",
+          "- Dhan-Shomadhan is in the training data, which removed the first external test. The only numbers "
+          "from a dataset the model has never seen are the Paddy Doctor ones, if that section is present, and "
+          "they show the model does not transfer to wide shots of whole plants.",
           "- The test split was looked at during development: several training runs were compared, and the "
           "threshold rule was tightened after seeing early results (`docs/gates.md` lists every run). The "
           "numbers here are therefore somewhat optimistic. Only a new, untouched set of field photos would "
