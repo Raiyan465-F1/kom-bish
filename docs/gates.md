@@ -197,6 +197,24 @@ results in `training/results/external_test.json`, sampled files in
   shots of whole plants with many leaves (all 480×640); all our training photos are close-ups of one leaf.
   The confidence gate refers 96%, which is the safe outcome, but 7 of the 8 answers are wrong "no insecticide
   needed" advice, 2 of them for true blast.
+- **Why it fails** (`python training/diagnose_external.py`, 11 Oct 2026; a read-only diagnosis, nothing was
+  changed because of it):
+  1. *Scale.* On our own 828 test images, shrinking the leaf inside the frame (the same image tiled) drops the
+     top-guess accuracy from 769/828 as is to 625 (half size), 473 (one third) and 328 (one quarter). The model
+     only knows a leaf that fills the frame; Paddy Doctor leaves are far smaller in the frame.
+  2. *Closer views do not rescue it.* Cutting each Paddy photo into 12 tiles gives 31/200 by averaging the
+     tiles and 42/200 with the most confident tile. Tiles are called blast or BLB almost regardless of the
+     true class (tiles of healthy plants: blast 52%, BLB 24%, healthy 14%).
+  3. *The photos are unlike anything in training.* Cosine similarity to the nearest training photo, in the
+     model's feature space: median 0.795 for our own test photos, 0.605 for Paddy photos. Their nearest
+     training photos are mostly field-background `other` images, which is why the model says `other`.
+  4. *Our training added nothing that transfers.* A simple classifier trained on 604 other Paddy photos using
+     the frozen features scores 151/200 with our fine-tuned model's features and 148/200 with plain ImageNet
+     features. So the task is learnable from such photos (about 75% with a trivial probe), but what our model
+     learned beyond ImageNet is specific to the look of our three datasets.
+  5. *Occlusion maps on 8 photos (anecdotal):* for a white-sheet blast leaf the answer depends on one spot on
+     the leaf; for a field "healthy" photo it depends mostly on the soil around the leaf, not the leaf.
+  The fix is data, not thresholds: photos framed the way farmers will take them, from more than one source.
 - `junk_photos/` does not exist, so the junk test was skipped.
 - The Kaggle token lives only in `.env` (git-ignored).
 
