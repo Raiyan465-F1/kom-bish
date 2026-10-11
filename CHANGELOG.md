@@ -13,6 +13,13 @@ recorded, the model is not published and nothing is hosted yet (see `docs/gates.
   `R7_BLAST_UNCONFIRMED`; draft Bangla awaiting review). Test coverage fell from 0.8780 to 0.7585
 - External test on Paddy Doctor (India), n = 200 (`training/external_test.py`): 192 referred, 8 answered,
   1 right, 0 wrong spray answers. The model does not transfer to wide shots of whole plants
+- **Model v2 published** (candidate B: adds Paddy Doctor training photos, stronger augmentation, a BLB-only
+  threshold). The previous model stays on the Hub as revision `v1`
+- One set of outcome definitions everywhere (`training/outcomes.py`): classifier confident, advice given,
+  blast question asked, referred
+- External test on the Zambali Rice Dataset (Philippines), n = 200: 28 advice answers, 27 right (all healthy
+  leaves); diseases referred, not recognised; 50 of 50 not-a-rice-leaf images referred
+- Example photos, one per rule path, credited in `examples/CREDITS.md` and checked by `tests/test_examples.py`
 - Two candidate models trained and compared, not published (`docs/gates.md`): A = stronger augmentation,
   B = A plus Paddy Doctor training photos. New: `--aug strong`, a BLB-only threshold (`blb_threshold`,
   supported by the app when present), `training/prepare_paddy.py`, `training/compare_candidates.py`

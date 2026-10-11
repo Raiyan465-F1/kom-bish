@@ -1,9 +1,10 @@
 """Write the Hugging Face model card from real result files only.
 
-  python training/make_model_card.py --license mit          # or apache-2.0: the team chooses
+  python training/make_model_card.py --license mit          # the team chose MIT on 11 Oct 2026
 
-Reads models/labels.json and training/results/metrics.json. Writes models/README.md (uploaded with the
-model) and a copy at training/model_card.md (committed). Every number comes from those files.
+Reads models/labels.json and training/results/ (metrics.json, runs/candidates_comparison.json,
+external_test.json). Writes models/README.md (uploaded with the model) and training/model_card.md (committed).
+Every number comes from those files; the definitions are the ones in training/outcomes.py.
 """
 from __future__ import annotations
 
@@ -15,137 +16,102 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from make_eval_report import ABSTAIN_SENTENCE, agronomy_status, count, prop  # noqa: E402
+from make_eval_report import (ABSTAIN_SENTENCE, DEFINITIONS, agronomy_status, comparison_table, load,  # noqa: E402
+                              outcome_lines, prop)
 from prepare_data import PUBLISHED_COUNTS, SOURCE_CLASS_TO_TARGET  # noqa: E402
 
 DHS_REPO = "Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification"
 
 
 def build(labels: dict, metrics: dict, licence: str) -> str:
-    t, classes, cm = metrics["test"], metrics["classes"], metrics["test"]["confusion_matrix"]
-    n = t["n"]
-    answered = count(t["coverage"], n)
-    blb, blast, dhs = t["precision_blb_answers"], t["precision_blast_answers"], metrics.get("dhs_field_blast")
+    t, o = metrics["test"], (metrics.get("outcomes") or {})
     size = labels["input_size"][1]
     short = int(size / labels["crop_pct"])
-    dhs_in = metrics.get("dhs_images") or {}
-    dhs_trained = not metrics.get("dhs_field_blast_is_cross_source", True)
+    dhs_in, paddy = metrics.get("dhs_images") or {}, metrics.get("paddy_doctor_images") or {}
+    cmp, ext = load("runs/candidates_comparison.json"), load("external_test.json")
     L = ["---", f"license: {licence}", "library_name: onnx",
          "tags: [image-classification, onnx, rice, plant-disease, bangladesh]", "---", "",
          "# Kom Bish rice-leaf classifier", ""]
     if metrics.get("smoke_run"):
         L += ["> **SMOKE RUN ON SYNTHETIC OR SUBSET DATA. NOT A RESULT. DO NOT PUBLISH.**", ""]
-    L += [f"4 classes: {', '.join(f'`{c}`' for c in labels['classes'])}. Base model `{labels['model']}` "
-          f"(timm, Apache-2.0 weights), fine-tuned at {size} px and exported to ONNX (single file). "
-          f"Trained {labels['date']}.", "",
+    L += [f"4 classes: {', '.join(f'`{c}`' for c in labels['classes'])}. Base model `{labels['model']}` (timm, "
+          f"Apache-2.0 weights), fine-tuned at {size} px and exported to ONNX (single file). Trained {labels['date']}.", "",
+          "**Versions.** This is version 2 (git tag `v2`). The previous model, trained without Paddy Doctor, is kept "
+          "as revision `v1`: `hf_hub_download(repo_id, \"model.onnx\", revision=\"v1\")`.", "",
           "## Intended use", "",
-          "The classifier picks a row in Kom Bish's hand-written rule table. It is not a diagnosis. "
-          "Low-confidence results are meant to be refused (abstain) and referred to the Krishi Call Centre "
-          "16123 or a Sub-Assistant Agriculture Officer. The `other` class does **not** cover non-rice photos.", "",
-          "## Preprocessing (must match exactly)", "",
-          f"EXIF transpose, RGB, resize shorter side to {short} ({labels['interpolation']}), centre-crop {size}, "
-          f"scale to 0–1, normalise with mean {tuple(labels['mean'])} and std {tuple(labels['std'])}, NCHW float32. "
-          f"Input name `{labels['onnx_input']}`, output name `{labels['onnx_output']}`.", "",
-          f"Calibrated probabilities: `softmax(logits / temperature)` with temperature {labels['temperature']}. "
-          f"Abstain if top-1 < {labels['threshold']} (`threshold`) or top-1 − top-2 < {labels['margin']} "
-          "(`margin`). All three values are in `labels.json`.", "",
-          *([f"**Blast has a stricter threshold.** Blast is the only class that leads to spray advice, so a "
-             f"blast prediction is also refused when top-1 < {labels['blast_threshold']} (`blast_threshold`), "
-             "the smallest value at which no blast answer on validation was wrong. In the Kom Bish app a blast "
-             "answer additionally needs the farmer's \"yes\" to a lesion-shape question.", ""]
-            if labels.get("blast_threshold") is not None else []),
-          "## Training data (CC BY 4.0, credit required)", "",
-          "- RiceLeafBD, DOI 10.17632/kx9rx8p2mz.1 (please also cite arXiv 2501.08912)",
-          "- RiceLeafDisease-BD5, DOI 10.17632/sjkptpgv79.2",
-          (f"- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1 (via the HF mirror `{DHS_REPO}`): **used for "
-           f"training** ({dhs_in.get('train', 0)} train, {dhs_in.get('val', 0)} validation, "
-           f"{dhs_in.get('test', 0)} test images; \"Rice Blast\" maps to `blast`, every other disease to "
-           "`other`). Part of its field-background blast images is held out and reported below."
-           if dhs_trained else
-           f"- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1: field-background rows only, **held out** as a "
-           f"cross-source blast test (via the HF mirror `{DHS_REPO}`). Not used for training."), "",
-          "| Source | Source class | Target class | Published n |", "|---|---|---|---|"]
+          "The classifier picks a row in Kom Bish's hand-written rule table. It is not a diagnosis. Low-confidence "
+          "results are refused and the farmer is referred to the Krishi Call Centre 16123 or a Sub-Assistant "
+          "Agriculture Officer. It expects a **close-up of one rice leaf**. The `other` class does **not** cover "
+          "non-rice photos.", "",
+          "## Preprocessing and thresholds (must match exactly)", "",
+          f"EXIF transpose, RGB, resize shorter side to {short} ({labels['interpolation']}), centre-crop {size}, scale "
+          f"to 0–1, normalise with mean {tuple(labels['mean'])} and std {tuple(labels['std'])}, NCHW float32. Input "
+          f"`{labels['onnx_input']}`, output `{labels['onnx_output']}`. Calibrated probabilities: "
+          f"`softmax(logits / {labels['temperature']})`.", "",
+          f"Refuse when top-1 < {labels['threshold']} (`threshold`) or top-1 − top-2 < {labels['margin']} (`margin`). "
+          f"Blast is the only class that leads to spray advice, so a blast prediction is also refused below "
+          f"{labels.get('blast_threshold')} (`blast_threshold`, the smallest value with no wrong blast answer on "
+          "validation)."
+          + (f" A BLB prediction is also refused below {labels['blb_threshold']} (`blb_threshold`, at most 5% wrong "
+             "BLB answers on validation; the 5% is our choice)." if labels.get("blb_threshold") is not None else "")
+          + " In the Kom Bish app a blast answer additionally needs the farmer's \"yes\" to a lesion-shape question.", "",
+          "## Training data (credit required)", "",
+          "- RiceLeafBD, DOI 10.17632/kx9rx8p2mz.1, CC BY 4.0 (please also cite arXiv 2501.08912)",
+          "- RiceLeafDisease-BD5, DOI 10.17632/sjkptpgv79.2, CC BY 4.0",
+          f"- Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1, CC BY 4.0, via the HF mirror `{DHS_REPO}`: "
+          f"{dhs_in.get('train', 0)} train, {dhs_in.get('val', 0)} validation, {dhs_in.get('test', 0)} test images "
+          "(\"Rice Blast\" → `blast`, every other disease → `other`); 18 field blast photos held out."]
+    if paddy.get("train"):
+        L += [f"- **Paddy Doctor**, CC BY 4.0 (Kaggle competition rules, section 7.A): {paddy['train']} train and "
+              f"{paddy.get('val', 0)} validation images; 500 more are held out and never trained on. Petchiammal A, "
+              "Briskline Kiruba S, D. Murugan, Pandarasamy A (2022), \"Paddy Doctor: A Visual Image Dataset for "
+              "Automated Paddy Disease Classification and Benchmarking\", arXiv:2205.11108. Project page: "
+              "https://paddydoc.github.io/ . Data: https://www.kaggle.com/competitions/paddy-disease-classification . "
+              "Bacterial leaf blight → `bacterial_leaf_blight`, blast → `blast`, normal → `healthy`, every other "
+              "class → `other`."]
+    L += ["", "| Source | Source class | Target class | Published n |", "|---|---|---|---|"]
     L += [f"| {s} | {c} | {SOURCE_CLASS_TO_TARGET[(s, c)]} | {k} |" for (s, c), k in PUBLISHED_COUNTS.items()]
-    L += ["", "## Evaluation", "",
-          "Every proportion is k/n with a Wilson 95% interval. The threshold and margin were chosen on "
-          "validation only.", "",
-          f"- Test images: n = {n}. Macro-F1 with no abstention: {t['macro_f1_no_abstention']:.4f}",
-          f"- Coverage at the threshold (images answered): {prop(answered, n)}",
-          f"- Selective accuracy (correct among answered): {prop(count(t['selective_accuracy'], answered or 0), answered)}",
-          f"- Precision on BLB answers: {prop(count(blb['value'], blb['n']), blb['n'])}",
-          f"- Precision on blast answers: {prop(count(blast['value'], blast['n']), blast['n'])}", ""]
+    L += ["", f"Augmentation: {metrics.get('augmentation', 'standard')} (random zoom-out onto field backgrounds, wider "
+          "crops, rotation, mild blur, JPEG re-compression, brightness and contrast jitter; no hue shift).", "",
+          "## Evaluation", "", "Definitions, the same in every table:", "", *DEFINITIONS, "",
+          f"**Our test split, n = {t['n']}:** macro-F1 of the top guess {t['macro_f1_no_abstention']:.4f}."]
+    if o.get("test"):
+        L += ["", *outcome_lines(o["test"])]
+    if o.get("field"):
+        L += ["", f"**Our field photos, n = {o['field']['n']}** (field-background test photos plus 18 held-out field "
+              "blast photos):", "", *outcome_lines(o["field"])]
     if not metrics["target_met"]:
-        L += [ABSTAIN_SENTENCE, ""]
-    L += ["| Class | Support | Precision | Recall | F1 |", "|---|---|---|---|---|"]
-    for i, c in enumerate(classes):
-        row_n, col_n = sum(cm[i]), sum(r[i] for r in cm)
-        L.append(f"| {c} | {row_n} | {prop(cm[i][i], col_n)} | {prop(cm[i][i], row_n)} | {t['per_class'][c]['f1']:.3f} |")
-    L += ["", "Recall per (source, class), no abstention:", "",
-          "| Source | Source class | Target | Recall | Abstain rate |", "|---|---|---|---|---|"]
-    L += [f"| {r['source']} | {r['source_class']} | {r['target']} | {prop(count(r['recall'], r['n']), r['n'])} | "
-          f"{prop(count(r['abstain_rate'], r['n']), r['n'])} |" for r in metrics["per_source"]]
-    L += [""]
-    if metrics.get("by_background"):
-        L += ["Recall per background (BD5 leaves lie on a white sheet, RiceLeafBD photos are taken in the "
-              "field, so the background can give the class away):", "",
-              "| Background | True class | Recall | Abstain rate | Answered wrong |", "|---|---|---|---|---|"]
-        L += [f"| {r['background']} | {r['target']} | {prop(count(r['recall'], r['n']), r['n'])} | "
-              f"{prop(count(r['abstain_rate'], r['n']), r['n'])} | "
-              f"{prop(count(r['answered_wrong_rate'], r['n']), r['n'])} |" for r in metrics["by_background"]]
-        L += [""]
-    field = (metrics.get("advice") or {}).get("field")
-    if field:
-        bt = field["by_true_class"]
-        L += [f"What a farmer with a field photo gets (n = {field['n']}; advice = a BLB, blast or healthy answer "
-              "above the threshold, everything else is a referral): advice given "
-              f"{prop(field['advice_given'], field['n'])}; wrong advice among advice given "
-              f"{prop(field['wrong_advice'], field['advice_given'])}. True field blast (n = {bt['blast']['n']}): "
-              f"{bt['blast']['correct_advice']} correct advice, {bt['blast']['referred']} referred, "
-              f"{bt['blast']['wrong_advice']} wrong advice. True field BLB (n = {bt['bacterial_leaf_blight']['n']}): "
-              f"{bt['bacterial_leaf_blight']['correct_advice']} correct advice, "
-              f"{bt['bacterial_leaf_blight']['referred']} referred, "
-              f"{bt['bacterial_leaf_blight']['wrong_advice']} wrong advice.", ""]
-    if dhs:
-        kind = "held-out slice of a source the model has seen, not a cross-source test" if dhs_trained \
-            else "cross-source"
-        L += [f"Dhan-Shomadhan field blast ({kind}, n = {dhs['n']}): blast recall "
-              f"{prop(count(dhs['blast_recall'], dhs['n']), dhs['n'])}; abstain rate "
-              f"{prop(count(dhs['abstain_rate'], dhs['n']), dhs['n'])}.", ""]
-    else:
-        L += ["Dhan-Shomadhan field blast: not measured in this run, so there is no cross-source blast test.", ""]
-    ext_path = ROOT / "training" / "results" / "external_test.json"
-    if ext_path.exists():
-        ext = json.loads(ext_path.read_text("utf-8"))
-        o = ext["overall"]
-        L += [f"**External test on Paddy Doctor (India), n = {ext['n']}** (a dataset the model has never seen; "
-              f"labelled images of the Kaggle competition `{ext['dataset']['kaggle_competition']}`; "
-              f"{ext['dataset']['citation']}). Seeded sample of up to {ext['per_class']} images per mapped class, "
-              f"{ext['leak_check']['near_duplicates_dropped']} near-duplicates of our images dropped, photo-only "
-              "decisions through the app's code path: advice given "
-              f"{prop(o['advice_given'], o['n'])}; referred {prop(o['referred'], o['n'])}; correct among advice "
-              f"given {prop(o['correct_advice'], o['advice_given'])}; wrong \"spray correctly\" answers "
-              f"{o['wrong_spray_advice']}; top prediction correct with no abstention "
-              f"{prop(o['argmax_correct'], o['n'])}. **The model does not transfer to these photos**, which show "
-              "whole plants with many leaves rather than one leaf close up; it refers almost all of them, and "
-              "the few answers it gives are mostly wrong. Nothing was changed because of this test.", ""]
-    L += ["## Limitations", "",
-          "- Every BLB image comes from one dataset (RiceLeafBD, field photos) and most blast images from "
-          "another (BD5, leaves on a white sheet), so the model can learn the source or the background rather "
-          "than the disease. A first run without Dhan-Shomadhan did exactly that. The per-source and "
-          "per-background numbers above are the honest check.",
-          *(["- **Dhan-Shomadhan is training data.** It was added because the first model failed on its field "
-             "photos. That removed the first external test: the held-out field blast photos reported above come "
-             "from a source the model has seen. The only result from an unseen source is the Paddy Doctor test, "
-             "if it is reported above."]
-            if dhs_trained else []),
-          "- **Photo style matters.** The model was trained on close-ups of one leaf. It does not work on wide "
-          "shots of whole plants.",
-          "- **Blast in field photos is mostly not recognised.** At the shipped threshold the model refers most "
-          "field blast photos instead of answering (see the per-background table)."
-          if dhs_trained else "- Blast on field backgrounds is the weakest case; see the cross-source numbers.",
-          "- The test split was looked at while comparing training runs, so the numbers are somewhat optimistic.",
+        L += ["", ABSTAIN_SENTENCE]
+    if cmp:
+        L += ["", "### Three models through the app's code path", "",
+              "v1 = the previous model (revision `v1`); A = stronger augmentation only (not published); B = this "
+              "model. The Paddy Doctor held-out set (500 photos never used for training, validation or thresholds) is "
+              "the **same source as some training data** of this model, so it is not an external test.", "",
+              *comparison_table(cmp)]
+    if ext:
+        d = ext["dataset"]
+        L += ["", "### External test (a dataset the model has never seen)", "",
+              f"**{d['name']} ({d['country']}), n = {ext['n']}.** Source: {d['source']}. Licence: {d['licence']}. "
+              f"{d['credit']} {ext['leak_check']['near_duplicates_dropped']} near-duplicates of the training data "
+              "dropped. Evaluated once, after the model and thresholds were fixed.", "",
+              *outcome_lines(ext), f"- Top guess right, no abstention: {prop(ext['top_guess_right'], ext['n'])}"]
+        if ext.get("junk"):
+            L += [f"- Not-a-rice-leaf images from the same dataset: {prop(ext['junk']['referred'], ext['junk']['n'])} "
+                  "referred"]
+    L += ["", "## Known limits", "",
+          "- **Diseases are not recognised on a new source.** On the external test the model recognises healthy "
+          "leaves and refers almost every diseased one. Treat a referral as the normal outcome.",
+          "- **The Paddy Doctor held-out result is the same source as some training data.** It is not an external test.",
+          f"- **Blast is rarely answered** (blast threshold {labels.get('blast_threshold')}). On our own test photos "
+          "the blast question is never reached; on the Paddy Doctor held-out set it is reached for a few photos.",
+          "- **Narrow brown spot leaves on a white sheet are told \"no spray now\"**: 11 of the wrong answers on our "
+          "test split are BD5 narrow brown spot photos answered `healthy`.",
+          "- The model was trained on close-ups of one leaf and on Paddy Doctor's wider field shots. Other framings "
+          "and other countries are untested beyond the external test above.",
+          "- Every BLB image in our own data comes from one dataset (field photos) and most blast images from "
+          "another (leaves on a white sheet). The first model learned the background instead of the disease.",
+          "- The test split was looked at while comparing training runs, so its numbers are somewhat optimistic.",
           "- BD5's official archive holds 3,150 images although its description says 2,545; we used the archive.",
-          "- Not tested on non-rice photos. The team's own leaf and junk-photo tests are not done yet.",
           f"- Agronomy review: {agronomy_status()}.",
           "- No field trial.", "",
           "## Files", "", "`model.onnx`, `labels.json`."]
@@ -165,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     labels = json.loads(args.labels.read_text("utf-8"))
     metrics = json.loads(args.metrics.read_text("utf-8"))
     if metrics.get("smoke_run") and not args.allow_smoke:
-        raise SystemExit("metrics.json is from a smoke run (--subset / --no-pretrained). Use the real Kaggle output.")
+        raise SystemExit("metrics.json is from a smoke run (--subset / --no-pretrained). Use the real training output.")
     card = build(labels, metrics, args.license)
     for path in args.out:
         path.parent.mkdir(parents=True, exist_ok=True)

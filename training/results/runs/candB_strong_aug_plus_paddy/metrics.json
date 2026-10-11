@@ -541,6 +541,131 @@
    }
   }
  },
+ "outcomes": {
+  "test": {
+   "n": 828,
+   "classifier_confident": 518,
+   "advice_given": 185,
+   "right_advice": 172,
+   "wrong_advice": 13,
+   "blast_question_asked": 0,
+   "blast_question_on_true_blast": 0,
+   "blast_question_on_other_classes": 0,
+   "referred": 643,
+   "by_true_class": {
+    "bacterial_leaf_blight": {
+     "n": 50,
+     "right_advice": 33,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 17
+    },
+    "blast": {
+     "n": 135,
+     "right_advice": 0,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 135
+    },
+    "healthy": {
+     "n": 152,
+     "right_advice": 139,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 13
+    },
+    "other": {
+     "n": 491,
+     "right_advice": 0,
+     "wrong_advice": 13,
+     "blast_question_asked": 0,
+     "referred": 478
+    }
+   }
+  },
+  "field": {
+   "n": 272,
+   "classifier_confident": 159,
+   "advice_given": 71,
+   "right_advice": 69,
+   "wrong_advice": 2,
+   "blast_question_asked": 0,
+   "blast_question_on_true_blast": 0,
+   "blast_question_on_other_classes": 0,
+   "referred": 201,
+   "by_true_class": {
+    "bacterial_leaf_blight": {
+     "n": 50,
+     "right_advice": 33,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 17
+    },
+    "blast": {
+     "n": 18,
+     "right_advice": 0,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 18
+    },
+    "healthy": {
+     "n": 37,
+     "right_advice": 36,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 1
+    },
+    "other": {
+     "n": 167,
+     "right_advice": 0,
+     "wrong_advice": 2,
+     "blast_question_asked": 0,
+     "referred": 165
+    }
+   }
+  },
+  "val": {
+   "n": 2315,
+   "classifier_confident": 1565,
+   "advice_given": 451,
+   "right_advice": 443,
+   "wrong_advice": 8,
+   "blast_question_asked": 15,
+   "blast_question_on_true_blast": 15,
+   "blast_question_on_other_classes": 0,
+   "referred": 1849,
+   "by_true_class": {
+    "bacterial_leaf_blight": {
+     "n": 96,
+     "right_advice": 70,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 26
+    },
+    "blast": {
+     "n": 383,
+     "right_advice": 0,
+     "wrong_advice": 2,
+     "blast_question_asked": 15,
+     "referred": 366
+    },
+    "healthy": {
+     "n": 407,
+     "right_advice": 373,
+     "wrong_advice": 0,
+     "blast_question_asked": 0,
+     "referred": 34
+    },
+    "other": {
+     "n": 1429,
+     "right_advice": 0,
+     "wrong_advice": 6,
+     "blast_question_asked": 0,
+     "referred": 1423
+    }
+   }
+  }
+ },
  "dhs_field_blast": {
   "n": 18,
   "blast_recall": 0.6666666865348816,
@@ -552,7 +677,7 @@
  "onnx_mb": 17.088395,
  "onnx_exporter": "dynamo",
  "train_seconds": 3173.9123108386993,
- "re_evaluated_from_weights": false,
+ "re_evaluated_from_weights": true,
  "versions": {
   "python": "3.12.10",
   "torch": "2.14.1+cu126",

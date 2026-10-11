@@ -277,7 +277,37 @@ def advice_outcomes(p: torch.Tensor, y: torch.Tensor, t: float, margin: float) -
             "by_true_class": by_true, "by_answer": by_answer}
 
 
+def outcome_counts(p: torch.Tensor, y: torch.Tensor, t, margin: float) -> dict:
+    """The same four numbers everywhere (reports, README, model card, comparison scripts).
+
+    classifier confident: the prediction passes the thresholds and margin (confident "other" included).
+    advice given:         a confident BLB or healthy answer. This is what the farmer is told from the photo.
+    blast question asked: a confident blast prediction. The app then asks the lesion-shape question; it gives
+                          the spray answer only on "yes", so this is NOT counted as advice.
+    referred:             everything else (not confident, or a confident "other").
+    """
+    pred = p.argmax(1)
+    confident = answered_mask(p, t, margin)
+    blast, other = CLASSES.index("blast"), CLASSES.index("other")
+    advice = confident & (pred != other) & (pred != blast)
+    question = confident & (pred == blast)
+    by_true = {}
+    for k, cls in enumerate(CLASSES):
+        true = y == k
+        by_true[cls] = {"n": int(true.sum()), "right_advice": int((true & advice & (pred == k)).sum()),
+                        "wrong_advice": int((true & advice & (pred != k)).sum()),
+                        "blast_question_asked": int((true & question).sum()),
+                        "referred": int((true & ~advice & ~question).sum())}
+    return {"n": int(len(y)), "classifier_confident": int(confident.sum()), "advice_given": int(advice.sum()),
+            "right_advice": int((advice & (pred == y)).sum()), "wrong_advice": int((advice & (pred != y)).sum()),
+            "blast_question_asked": int(question.sum()),
+            "blast_question_on_true_blast": int((question & (y == blast)).sum()),
+            "blast_question_on_other_classes": int((question & (y != blast)).sum()),   # wrong spray if answered "yes"
+            "referred": int((~advice & ~question).sum()), "by_true_class": by_true}
+
+
 def field_advice_ok(p: torch.Tensor, y: torch.Tensor, field: torch.Tensor | None, t: float, margin: float) -> bool:
+    """Threshold rule input: BLB, blast and healthy answers together, as when the rule was introduced."""
     if field is None or not field.any():
         return True
     o = advice_outcomes(p[field], y[field], t, margin)
@@ -475,6 +505,11 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device,
         "all": advice_outcomes(torch.cat([pt, pd_]), torch.cat([yt, yd]), t, margin),
         "val_field": advice_outcomes(pv[val_field], yv[val_field], t, margin) if val_field is not None else None,
     }
+    outcomes = {   # the definitions used in every report
+        "test": outcome_counts(pt, yt, t, margin),
+        "field": outcome_counts(torch.cat([pt[test_field], pd_]), torch.cat([yt[test_field], yd]), t, margin),
+        "val": outcome_counts(pv, yv, t, margin),
+    }
 
     save_confusion_png(cm, out / "confusion.png", len(yt))
     save_risk_coverage_png(pt, yt, t_general, margin, out / "risk_coverage.png")
@@ -490,6 +525,7 @@ def calibrate_and_evaluate(model, dl_va, dl_te, dhs_dl, te_samples, out, device,
                                                                  zero_division=0)),
         "val_by_background": val_by_background,
         "test": test, "per_source": per_source, "by_background": by_background, "advice": advice,
+        "outcomes": outcomes,
         "dhs_field_blast": dhs,
     }
 

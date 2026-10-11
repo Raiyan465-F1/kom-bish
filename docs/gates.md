@@ -271,8 +271,63 @@ results in `training/results/external_test.json`, sampled files in
   3. B never gives the blast answer on our own test photos (blast threshold 0.999): right blast answers
      28 → 0 on our test split. On the held-out set it gives 6 right blast answers out of 125 blast photos.
   4. Latency differs only by run-to-run noise (same architecture, same file size).
-- **Recommendation: B, if the team accepts point 2.** Nothing has been published and `models/` is unchanged.
-  TODO-HUMAN: approve or reject.
+- **Recommendation: B, if the team accepts point 2.** Raiyan approved B on 11 Oct 2026; see "Candidate B
+  published as v2" below. The table above uses the first comparison's wording ("answered" counted BLB, blast
+  and healthy answers together); the later tables use the shared definitions.
+
+**Candidate B published as v2 (approved by Raiyan, 11 Oct 2026)**
+
+- Hub: https://huggingface.co/Raiyan465/kom-bish-rice-leaf. `main` and tag `v2` = candidate B (thresholds 0.91 /
+  blast 0.999 / BLB 0.94). Tag `v1` = the previous model (0.83 / blast 0.995 / no BLB threshold), still
+  downloadable with `revision="v1"`. Checked with no token and an empty cache: both revisions download and
+  their `model.onnx` hashes match the local files (`models/` and `models/v1/`).
+- **One set of definitions everywhere** (`training/outcomes.py`): *classifier confident* (passes the thresholds,
+  confident `other` included); *advice given* (a confident BLB or healthy answer); *blast question asked* (a
+  confident blast prediction, not counted as advice while the question is unanswered); *referred* (the rest).
+- **Why the earlier figures looked inconsistent.** For v1 on our test split, "coverage 75.9%" was classifier
+  confident (629 of 828 through the app's ONNX path, 76.0%), which includes 417 confident `other` predictions
+  that become referrals. "212 of 828 answered" was 183 BLB or healthy answers plus 29 confident blast
+  predictions. Both were right; they measured different things.
+- **B through the app's code path** (`runs/candidates_comparison.json`, regenerated with these definitions):
+
+  | Set | n | Classifier confident | Advice given | Right | Wrong | Blast question asked (true blast / other) |
+  |---|---|---|---|---|---|---|
+  | Our test split | 828 | 518 (62.6%) | 185 (22.3%) | 172 | 13 | 0 |
+  | Our field photos | 272 | 159 (58.5%) | 71 (26.1%) | 69 | 2 | 0 |
+  | Paddy Doctor held-out (same source as some training data) | 500 | 332 (66.4%) | 221 (44.2%) | 220 | 1 | 6 (6 / 0) |
+
+  The full v1 / A / B table is in `training/results/runs/README.md`, the README and the model card.
+- **New external test, run once after B and its thresholds were fixed:** Zambali Rice Dataset (Public V1),
+  Zambales, Philippines (https://www.kaggle.com/datasets/gettingintoml/zambali-rice-dataset-v3-1, licence
+  Apache-2.0 as stated on its Kaggle page; collected on farms in Iba and Botolan and verified with the
+  Provincial Agricultural Office, per its description). Found within the 45-minute box. Rejected alternative:
+  `shrupyag001/philippines-rice-diseases`, which says it was assembled from open-source data and could contain
+  re-uploads of our training sets. Sample: 50 each of bacterial blight, leaf blast, healthy, and brown spot
+  (→ `other`), seed 42, plus 50 not-a-rice-leaf images. Leak check against all 14,516 training and validation
+  images (Paddy Doctor included): 0 dropped, closest distance 6. n = 200.
+
+  | True class | n | Right advice | Wrong advice | Blast question asked | Referred |
+  |---|---|---|---|---|---|
+  | bacterial_leaf_blight | 50 | 0 | 0 | 0 | 50 |
+  | blast | 50 | 0 | 1 (told "no spray now") | 0 | 49 |
+  | healthy | 50 | 27 | 0 | 0 | 23 |
+  | other (brown spot) | 50 | 0 | 0 | 0 | 50 |
+  | **All** | **200** | **27** | **1** | **0** | **172** |
+
+  Classifier confident 69 of 200; top guess right 84 of 200 (BLB 0, blast 10, healthy 42, other 32 of 50
+  each). Not-a-rice-leaf: 50 of 50 referred. **Reading: B recognises healthy leaves from a new source and
+  refers the diseased ones; it still does not recognise diseases from a source it has not seen.** Nothing was
+  changed because of this test (`training/results/external_test.json`).
+- **Leak check on B's own splits** (`check_leakage.py --data data/prepared_runB`): 2 of 846 test and held-out
+  images and 12 of 2,315 validation images have a near-duplicate in training. Macro-F1 0.8842 with them,
+  0.8851 without.
+- **App examples** (`examples/`, credited in `examples/CREDITS.md`, checked by `tests/test_examples.py`): one
+  photo per rule path, none from training data. The blast example is a Paddy Doctor held-out photo
+  (`train_images/blast/107817.jpg`, CC BY 4.0) that reaches the lesion question and, on "yes", `R2_BLAST`.
+- **Known limits of B:** 11 BD5 narrow brown spot leaves on a white sheet told "no spray now" (11 of its 13
+  wrong answers on our test split); blast rarely answered (threshold 0.999: 0 times on our test split, 6 times
+  on the held-out set); the Paddy Doctor held-out result is the same source as some training data; the only
+  truly external test (Zambali) shows no disease recognition.
 
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day

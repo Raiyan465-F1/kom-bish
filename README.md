@@ -28,7 +28,7 @@ Hack for Humanity BD 2026, Round 2 · Team Unsick · Track: Inclusive Rural Deve
 - **Mirror:** TODO-HUMAN
 - **Demo video:** VIDEO_URL_TODO
 - **Pitch deck:** `deck/Kom_Bish_deck.pptx` (TODO-HUMAN: not generated yet, step 22)
-- **Test photos:** [`examples/`](examples/) (TODO-HUMAN: not chosen yet, step 19)
+- **Test photos:** [`examples/`](examples/), one per rule path, credited in [`examples/CREDITS.md`](examples/CREDITS.md). The blast example shows the lesion question.
 
 How to try: tick the consent box, upload a rice-leaf photo, press **পরামর্শ নিন**.
 
@@ -36,7 +36,7 @@ How to try: tick the consent box, upload a rice-leaf photo, press **পরাম
 
 | Part | Status |
 |---|---|
-| Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 3,974 CC BY 4.0 Bangladeshi rice-leaf images. **Weak on blast in field photos: it mostly refers instead of answering** (see Evaluation). Published with its model card at [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT). |
+| Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 12,201 CC BY 4.0 rice photos from Bangladesh and India. **It recognises healthy leaves and refers most diseased ones; diseases from a new source are not recognised** (see Evaluation). Published with its model card at [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT); the previous model is kept there as revision `v1`. |
 | Rule engine | Real: pure Python, six rules, [`kombish/rules.py`](kombish/rules.py), tested |
 | Voice parsing | Code is real (Gemini `gemini-3.5-flash-lite` returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
 | Spoken answer | TODO-HUMAN: pre-recorded human clips, not recorded yet (step 16). No live text-to-speech. |
@@ -97,7 +97,7 @@ flowchart LR
 - **Code decides; the model only recognises.** No language-model output is shown or spoken as advice.
 - **Confidence gate.** One temperature is fitted on validation data; below the threshold or margin the app refers the farmer to 16123 or an officer.
 - **Spray advice is stricter than no-spray advice.** "Spray correctly" needs three things: the general
-  confidence gate, a blast-only threshold (0.995), and the farmer's own "yes" to one question about the
+  confidence gate, a blast-only threshold (0.999), and the farmer's own "yes" to one question about the
   lesion shape (eye or spindle shaped, grey centre, brown edge). "No" or "not sure" gives a referral. The
   question's Bangla is a draft awaiting review. Tests: [`tests/test_rules.py`](tests/test_rules.py).
 - **Voice can only add caution.** With a voice note the decision is the same as without it, or a referral. Tests enforce this: [`tests/test_rules.py`](tests/test_rules.py).
@@ -108,57 +108,75 @@ flowchart LR
 
 ## Evaluation
 
-Every number is from [`training/eval_summary.json`](training/eval_summary.json); the full tables with
-Wilson 95% intervals are in [`training/eval_report.md`](training/eval_report.md), and every training run is
-listed in [`training/results/runs/README.md`](training/results/runs/README.md).
+Every number is from [`training/eval_summary.json`](training/eval_summary.json). The full tables with Wilson
+95% intervals are in [`training/eval_report.md`](training/eval_report.md); every training run is listed in
+[`training/results/runs/README.md`](training/results/runs/README.md).
 
-- **Test split, n = 828:** macro-F1 0.904 with no abstention.
-- **Threshold 0.83, margin 0.2, and a blast-only threshold of 0.995** (all chosen on validation only): the
-  app answers 75.8% of test photos and is right on 97.9% of those. Before the blast-only threshold it
-  answered 87.8%.
-- **Blast answers ("spray correctly"):** 29 across the test and held-out photos, 1 wrong (a tungro leaf on a
-  white sheet, confidence 0.9994). With one threshold for every class it was 132 blast answers, 11 wrong. The blast-only
-  threshold is the smallest value with no wrong blast answer on validation; that is not a guarantee.
-- **BLB answers:** precision 0.946 (n = 37).
-- **Field photos, n = 272** (what farmers will send): advice was given 72 times and was wrong 2 times. Both
-  were other diseases given the BLB answer. **No field photo got a spray answer.**
-- **Blast in field photos, n = 18:** all 18 were referred to 16123 or an officer; 0 got wrong advice and 0
-  got the blast answer. Kom Bish cannot recognise blast in a field photo yet; it refers instead.
-- **BLB in field photos, n = 50:** 35 got the right advice, 15 were referred, 0 got wrong advice.
-- **External test on Paddy Doctor (India), n = 200** (a dataset the model has never seen): the app referred
-  192 photos and gave advice on 8, of which 1 was right. No photo got a wrong "spray correctly" answer, but
-  7 got wrong "no insecticide needed" advice, 2 of them true blast. Without the confidence gate the top
-  prediction was right for 31 of 200. **The model does not transfer to these photos:** they show whole
-  plants with many leaves, while every training photo is a close-up of one leaf. Nothing was changed because
-  of this test. Details: [`training/eval_report.md`](training/eval_report.md),
-  [`training/results/external_test.json`](training/results/external_test.json). Dataset credit: Petchiammal
-  A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022), "Paddy Doctor: A Visual Image Dataset for
-  Automated Paddy Disease Classification and Benchmarking", arXiv:2205.11108, via the Kaggle competition
-  `paddy-disease-classification`. No Paddy Doctor image is in this repository.
+The same four terms are used everywhere:
+
+- **Classifier confident:** the prediction passes the thresholds and the margin. A confident `other` counts.
+- **Advice given:** a confident BLB or healthy answer. This is what the farmer is told from the photo.
+- **Blast question asked:** a confident blast prediction. The app then asks the lesion-shape question and gives the spray answer only on "yes", so with the question unanswered this is **not** counted as advice. A blast question on a photo that is not blast would become a wrong "spray correctly" if the farmer said yes.
+- **Referred:** everything else: not confident, or a confident `other`.
+
+Earlier notes quoted two figures for the previous model that looked inconsistent: "coverage 76.0%"
+and "212 of 828 answered". (Computed in PyTorch the first figure was 75.9%.) The first was *classifier confident*
+(629 photos, of which 417 were confident `other`
+predictions that become referrals). The second was 183 BLB or healthy answers plus 29 confident blast
+predictions. Both were right; they measured different things.
+
+**The published model (B), thresholds 0.91 general, 0.999 blast, 0.94 BLB, all chosen on validation only:**
+
+- **Our test split, n = 828:** macro-F1 of the top guess 0.883. Classifier confident
+  518 (62.6%); advice given 185 (22.3%),
+  of which 172 right and 13 wrong; blast question asked 0 times.
+- **Our field photos, n = 272** (what farmers will send): classifier confident 159
+  (58.5%); advice given 71 (26.1%), of which 69 right and
+  2 wrong; blast question asked 0 times. All 18 of 18 true field
+  blast photos were referred.
+- **Paddy Doctor held-out, n = 500 (same source as some training data):** classifier confident
+  332 (66.4%); advice given 221 (44.2%), of which
+  220 right and 1 wrong; blast question asked 6 times, all on true blast.
+  These 500 photos were never used for training, validation or thresholds, but they come from the same
+  dataset as 8,227 of the training photos, so this is **not** an external test.
+- **External test: Zambali Rice Dataset (Public V1) (Philippines), n = 200** (a dataset the model has never
+  seen; run once, after the model and thresholds were fixed; 0 near-duplicates of the training data):
+  classifier confident 69 (34.5%); advice given 28 (14.0%), of
+  which 27 right and 1 wrong (a blast leaf told "no spray now"); blast question asked
+  0 times. The top guess was right for 84 of 200. All 50 of 50 not-a-rice-leaf
+  images were referred. **The model recognises healthy leaves from a new source, but not the diseases:** every
+  BLB and brown spot photo and 49 of 50 blast photos were referred.
 - **The team's own leaves and junk photos:** TODO-HUMAN, not collected yet (step 19).
 
-What went wrong first, and what it means: our first model scored 0.921 macro-F1 on its own test split and
-then recognised 2 of 74 field blast photos from a third dataset. In the two training datasets, blast leaves
-lie on a white sheet and BLB leaves are photographed in the field, so the model had learned the background.
-We added the third dataset (Dhan-Shomadhan) to training and tightened the threshold.
+### Three models through the app's own code path
 
-**This removed our first external test.** Dhan-Shomadhan was the one dataset the model had never seen. Now
-that it is training data, the 18 field blast photos above are held out from a dataset the model has seen.
-The Paddy Doctor test above is the only number here from an unseen source, and it is poor. We also looked at the test split while comparing
-runs, so these numbers are somewhat optimistic. A repeat run with another random seed gave wrong advice on
-2 of its 18 field blast photos.
+v1 is the previously published model (still on the Hub as revision `v1`). A is the same recipe with stronger
+augmentation only and was rejected. B adds Paddy Doctor training photos and is the published model.
 
-Before the blast-only threshold, 4 field photos got wrong advice, all other diseases: a tungro photo and a
-brown spot photo were told "no insecticide needed, fix the fertiliser" (the BLB answer), and a leaf scald
-photo and a sheath blight photo were told "spray correctly" (the blast answer), each at a confidence
-between 0.848 and 0.856. Wrong spray advice is the worse mistake, so spray advice is now held to a stricter
-standard: the blast-only threshold refers those two photos, and the app asks the farmer a lesion-shape
-question before any spray answer. The two wrong BLB answers remain.
+| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | Blast question asked (true blast / other = wrong spray if "yes") | Referred |
+|---|---|---|---|---|---|---|---|---|
+| v1 (previous) | our test split | 828 | 629 (76.0%) | 183 (22.1%) | 177 | 6 | 29 (28 / 1) | 616 |
+| v1 (previous) | our field photos | 272 | 208 (76.5%) | 72 (26.5%) | 70 | 2 | 0 (0 / 0) | 200 |
+| v1 (previous) | Paddy Doctor held-out | 500 | 194 (38.8%) | 20 (4.0%) | 7 | 13 | 0 (0 / 0) | 480 |
+| A (not published) | our test split | 828 | 503 (60.7%) | 168 (20.3%) | 161 | 7 | 51 (51 / 0) | 609 |
+| A (not published) | our field photos | 272 | 152 (55.9%) | 71 (26.1%) | 67 | 4 | 0 (0 / 0) | 201 |
+| A (not published) | Paddy Doctor held-out | 500 | 84 (16.8%) | 3 (0.6%) | 0 | 3 | 0 (0 / 0) | 497 |
+| B (published) | our test split | 828 | 518 (62.6%) | 185 (22.3%) | 172 | 13 | 0 (0 / 0) | 643 |
+| B (published) | our field photos | 272 | 159 (58.5%) | 71 (26.1%) | 69 | 2 | 0 (0 / 0) | 201 |
+| B (published) | Paddy Doctor held-out (**same source as some training data**) | 500 | 332 (66.4%) | 221 (44.2%) | 220 | 1 | 6 (6 / 0) | 273 |
 
-A near-duplicate check across the splits (perceptual hash, any class, any source) found 2 of 846 test and
-held-out images with a near-copy in training. Removing them moves macro-F1 from 0.9026 to 0.9036 through
-the app's own ONNX code path and changes no field number
-([`training/results/leak_check.json`](training/results/leak_check.json)).
+CPU latency, median of 30 predictions on a 1024×768 image: v1 (previous) 10.1 ms; A (not published) 12.7 ms; B (published) 12.7 ms (the same architecture; the differences are run-to-run noise).
+
+### How we got here
+
+Our first model scored 0.921 macro-F1 on its own test split and then recognised 2 of 74 field blast photos
+from a third dataset: blast leaves in our data lie on a white sheet and BLB leaves are photographed in the
+field, so it had learned the background. We added that third dataset (Dhan-Shomadhan) to training, which
+removed our first external test, and made spray advice stricter than no-spray advice (a blast-only
+threshold, and a lesion-shape question the farmer must answer "yes" to). A first external test on Paddy
+Doctor (India) then showed the model did not transfer at all, so we added Paddy Doctor training photos,
+keeping 500 held out. The external test above, on a Philippine dataset, is the only number here from a
+source the published model has never seen.
 
 ## Privacy
 
@@ -193,23 +211,28 @@ Round 2 is judged technically; the finale is judged on social and human impact, 
 - RiceLeafBD, DOI 10.17632/kx9rx8p2mz.1, CC BY 4.0 (please also cite arXiv 2501.08912)
 - RiceLeafDisease-BD5, DOI 10.17632/sjkptpgv79.2, CC BY 4.0
 - Dhan-Shomadhan, DOI 10.17632/znsxdctwtt.1, CC BY 4.0, via the Hugging Face mirror `Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification` (used for training; 18 field blast photos held out)
+- Paddy Doctor, CC BY 4.0 (Kaggle competition rules, section 7.A): Petchiammal A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022), "Paddy Doctor: A Visual Image Dataset for Automated Paddy Disease Classification and Benchmarking", arXiv:2205.11108; project page https://paddydoc.github.io/ ; data https://www.kaggle.com/competitions/paddy-disease-classification (used for training; 500 photos held out)
+- External test only, never trained on: Zambali Rice Dataset (Public V1), https://www.kaggle.com/datasets/gettingintoml/zambali-rice-dataset-v3-1 (Apache-2.0 (as stated on the Kaggle dataset page))
 - Base weights: `timm/mobilenetv3_large_100.ra_in1k` (Apache-2.0)
 - Advice sources: BRRI, DAE/BAMIS, FAO, Ali et al. 2017
 - Model repository: [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT)
 
 ## Limitations
 
-- Blast in field photos is referred, not recognised (0 of 18 answered). Only 44 field blast photos exist to
-  train on. In practice the spray answer is reached only by very clear photos, and in our test set those
-  were all leaves on a white sheet.
-- The lesion-shape question relies on the farmer's own judgement and has not been tested with farmers.
-- Source and background confound: all BLB training images come from one dataset (field photos) and most
-  blast images from another (leaves on a white sheet).
-- The model does not transfer to an unseen dataset: on Paddy Doctor (India) it referred 192 of 200 photos
-  and was right on 1 of the 8 it answered. It needs a close-up of one leaf; wide shots of plants fail.
-- Dhan-Shomadhan, the first dataset the model had never seen, is now training data.
+- **Diseases are not recognised on a new source.** On the external test the model recognised healthy leaves
+  and referred almost every diseased one. No truly external test shows it recognising BLB or blast.
+- **The Paddy Doctor held-out result is the same source as some training data.** It is not an external test.
+- **Blast is rarely answered.** The blast threshold is 0.999: the blast question was asked 0 times
+  on our test split and 6 times on the 500 Paddy Doctor held-out photos (125 of them blast).
+- **Narrow brown spot leaves on a white sheet are told "no spray now":** 11 of the 13 wrong answers on our
+  test split are BD5 narrow brown spot photos answered `healthy`. None are field photos.
+- The model expects a close-up of one leaf, or a field shot like Paddy Doctor's. Other framings are untested.
+- Source and background confound: all BLB images in our own data come from one dataset (field photos) and
+  most blast images from another (leaves on a white sheet).
 - BD5's official archive (version 2, SHA-256 verified) holds 3,150 images; its own description says 2,545.
   We used what the archive contains.
+- We looked at our test split while comparing training runs, so its numbers are somewhat optimistic.
+- The lesion-shape question relies on the farmer's own judgement and has not been tested with farmers.
 - No field test. Nobody has checked what a farmer did after an answer.
 - The rules are not yet signed off by an agronomist.
 - TODO-HUMAN: who reviewed the Bangla (step 06).

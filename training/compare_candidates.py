@@ -1,11 +1,9 @@
-"""Compare models through the app's own code path (kombish.classifier.predict + kombish.rules.decide).
+"""Compare models through the app's own code path (definitions in training/outcomes.py).
 
-  python training/compare_candidates.py --model current=models --model A=data/export_candA --model B=data/export_candB
+  python training/compare_candidates.py --model "v1 (previous)=models/v1" --model A=data/export_candA --model "B (published)=models"
 
 Sets: (i) our test split, (ii) our field-photo subset (field-background test photos plus the held-out field
 blast), (iii) the Paddy Doctor held-out set (never used for training, validation or thresholds).
-The lesion-shape question is treated as unanswered: a photo that reaches it counts as a blast (spray) answer.
-"Answered" = the app gives advice (BLB, blast or healthy). Everything else is a referral.
 Writes training/results/runs/candidates_comparison.json and .md. Changes no model.
 """
 from __future__ import annotations
@@ -13,7 +11,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 import statistics
 import sys
 import time
@@ -22,13 +19,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-os.environ["MODEL_REPO"] = ""   # always local folders, never a cached download
-from kombish import classifier, rules  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from outcomes import ROOT, classifier, photo_outcome, tally, use_model  # noqa: E402
 
-ADVICE = {"R1_BLB": "bacterial_leaf_blight", "R2_BLAST": "blast", "R3_HEALTHY": "healthy"}
-CLASSES = ["bacterial_leaf_blight", "blast", "healthy", "other"]
+COLUMNS = ("| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | "
+           "Blast question asked (true blast / other = wrong spray if \"yes\") | Referred |")
 
 
 def load_sets(prepared: Path, paddy: Path, heldout_manifest: Path) -> dict[str, list[tuple[Path, str]]]:
@@ -44,35 +39,6 @@ def load_sets(prepared: Path, paddy: Path, heldout_manifest: Path) -> dict[str, 
             "Paddy Doctor held-out": [(paddy / r["file"], r["mapped_label"]) for r in held]}
 
 
-def evaluate(items: list[tuple[Path, str]], m: dict) -> dict:
-    out = {"n": len(items), "answered": 0, "referred": 0, "correct_answers": 0, "wrong_advice": 0, "wrong_spray": 0,
-           "wrong_blb_answers": 0, "right_referrals_of_other": 0, "top_guess_right": 0,
-           "correct_answers_by_class": {c: 0 for c in CLASSES[:3]}}
-    for path, true in items:
-        with Image.open(path) as im:
-            pred = classifier.predict(im)
-        adv = rules.decide(pred.label, pred.conf, pred.margin >= m["margin"], None, None, threshold=m["threshold"],
-                           blast_threshold=m.get("blast_threshold"), blb_threshold=m.get("blb_threshold"),
-                           blast_confirmed=True)
-        advice = ADVICE.get(adv.rule_id)
-        out["top_guess_right"] += pred.label == true
-        if advice is None:
-            out["referred"] += 1
-            out["right_referrals_of_other"] += true == "other"
-            continue
-        out["answered"] += 1
-        if advice == true:
-            out["correct_answers"] += 1
-            out["correct_answers_by_class"][true] += 1
-        else:
-            out["wrong_advice"] += 1
-            out["wrong_spray"] += advice == "blast"
-            out["wrong_blb_answers"] += advice == "bacterial_leaf_blight"
-    out["coverage"] = out["answered"] / out["n"]
-    out["accuracy_when_answered"] = out["correct_answers"] / out["answered"] if out["answered"] else None
-    return out
-
-
 def latency_ms(n: int = 30) -> float:
     rng = np.random.default_rng(0)
     img = Image.fromarray(rng.integers(0, 256, size=(768, 1024, 3), dtype=np.uint8))
@@ -83,6 +49,13 @@ def latency_ms(n: int = 30) -> float:
         classifier.predict(img)
         times.append((time.perf_counter() - t0) * 1000)
     return statistics.median(times)
+
+
+def row(name: str, s: str, e: dict) -> str:
+    return (f"| {name} | {s} | {e['n']} | {e['classifier_confident']} ({e['classifier_confident'] / e['n']:.1%}) | "
+            f"{e['advice_given']} ({e['advice_given'] / e['n']:.1%}) | {e['right_advice']} | {e['wrong_advice']} | "
+            f"{e['blast_question_asked']} ({e['blast_question_on_true_blast']} / {e['blast_question_on_other_classes']}) | "
+            f"{e['referred']} |")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -96,27 +69,24 @@ def main(argv: list[str] | None = None) -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sets = load_sets(args.prepared, args.paddy, args.heldout_manifest)
 
-    results = {}
+    results, lines = {}, [COLUMNS, "|---|---|---|---|---|---|---|---|---|"]
     for spec in args.model:
         name, folder = spec.split("=", 1)
-        classifier.LOCAL_MODEL_DIR = (ROOT / folder).resolve()
-        classifier.load.cache_clear()
-        m = classifier.meta()
-        results[name] = {"thresholds": {k: m.get(k) for k in ("threshold", "margin", "blast_threshold", "blb_threshold")},
-                         "temperature": m["temperature"], "trained_on": m.get("trained_on"),
-                         "cpu_latency_ms_median": round(latency_ms(), 1),
-                         "sets": {s: evaluate(items, m) for s, items in sets.items()}}
-        print(f"{name}: thresholds {results[name]['thresholds']} | latency {results[name]['cpu_latency_ms_median']} ms")
-
-    lines = ["| Model | Set | n | Answered (coverage) | Right when answered | Wrong advice | of which wrong spray | "
-             "Right answers by class (BLB / blast / healthy) | CPU latency |", "|---|---|---|---|---|---|---|---|---|"]
-    for name, r in results.items():
-        for s, e in r["sets"].items():
-            acc = "n/a" if e["accuracy_when_answered"] is None else f"{e['correct_answers']}/{e['answered']} = {e['accuracy_when_answered']:.3f}"
-            by = e["correct_answers_by_class"]
-            lines.append(f"| {name} | {s} | {e['n']} | {e['answered']} ({e['coverage']:.3f}) | {acc} | {e['wrong_advice']} | "
-                         f"{e['wrong_spray']} | {by['bacterial_leaf_blight']} / {by['blast']} / {by['healthy']} | "
-                         f"{r['cpu_latency_ms_median']} ms |")
+        m = use_model(ROOT / folder)
+        entry = {"thresholds": {k: m.get(k) for k in ("threshold", "margin", "blast_threshold", "blb_threshold")},
+                 "temperature": m["temperature"], "trained_on": m.get("trained_on"),
+                 "cpu_latency_ms_median": round(latency_ms(), 1), "sets": {}}
+        for s, items in sets.items():
+            rows = []
+            for path, true in items:
+                with Image.open(path) as im:
+                    rows.append({**photo_outcome(im, m), "true": true})
+            entry["sets"][s] = tally(rows)
+            lines.append(row(name, s, entry["sets"][s]))
+        results[name] = entry
+        print(f"{name}: thresholds {entry['thresholds']} | CPU latency {entry['cpu_latency_ms_median']} ms")
+    lines += ["", "CPU latency (median of 30 predictions on a 1024x768 image): "
+              + "; ".join(f"{n} {r['cpu_latency_ms_median']} ms" for n, r in results.items()) + "."]
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.with_suffix(".json").write_text(json.dumps(results, indent=1), "utf-8")
     args.out.with_suffix(".md").write_text("\n".join(lines) + "\n", "utf-8", newline="\n")

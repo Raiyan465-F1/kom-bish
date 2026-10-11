@@ -1,196 +1,173 @@
 # Kom Bish evaluation report
 
-Model `mobilenetv3_large_100.ra_in1k`, trained 2026-10-11. Every proportion is shown as k/n with a Wilson 95% interval.
+Published model: `mobilenetv3_large_100.ra_in1k`, trained 2026-10-11. Every proportion is shown as k/n with a Wilson 95% interval.
+
+## Definitions (the same in every table)
+
+- **Classifier confident:** the prediction passes the thresholds and the margin. A confident `other` counts.
+- **Advice given:** a confident BLB or healthy answer. This is what the farmer is told from the photo.
+- **Blast question asked:** a confident blast prediction. The app then asks the lesion-shape question and gives the spray answer only on "yes", so with the question unanswered this is **not** counted as advice. A blast question on a photo that is not blast would become a wrong "spray correctly" if the farmer said yes.
+- **Referred:** everything else: not confident, or a confident `other`.
+
+**Why two numbers.** Earlier write-ups gave two figures for the previous model on our test split that looked inconsistent. Its "coverage" was classifier confident: 629 of 828 (76.0%), which includes 417 confident `other` predictions that the app turns into referrals. Its "answered" count was 212: 183 BLB or healthy answers plus 29 confident blast predictions. Both were right; they measured different things. From here on only the names above are used.
 
 ## Method
 
-Byte-identical duplicate files were removed, and photos filed under two classes with different targets were dropped. Images were then split once, before any augmentation, into train/validation/test (70/15/15, seed 42, stratified by source and class; near-duplicate images kept in one split). One temperature T = 0.6603 was fitted on validation logits. The abstain threshold t = 0.83 and margin = 0.2 were chosen on validation only (target: precision ≥ 0.9 on answered images at coverage ≥ 0.5), never on test. The app abstains when calibrated top-1 confidence is below t or top-1 minus top-2 is below the margin, and then refers the farmer to 16123 or an officer.
+Byte-identical duplicate files were removed, and photos filed under two classes with different targets were dropped. Our images were split once into train/validation/test (70/15/15, seed 42, stratified by source and class; near-duplicates kept in one split). One temperature T = 0.6396 was fitted on validation logits. All thresholds were chosen on validation only: general threshold 0.91 and margin 0.2 (field: the strict rule, and on field-background validation photos at most 5% of advice answers (BLB, blast, healthy) are wrong); blast-only threshold 0.999 (the smallest value with no wrong blast answer on validation); BLB-only threshold 0.94 (the smallest value with at most 5% wrong BLB answers on validation; the 5% is our choice).
 
-Threshold rule used: field: the strict rule, and on field-background validation photos at most 5% of advice answers (BLB, blast, healthy) are wrong.
+Training data: RiceLeafBD and BD5; Dhan-Shomadhan (766 train, 167 validation, 155 test images); Paddy Doctor (8227 train, 1452 validation images; 500 more are held out and never trained on). Augmentation: strong.
 
-**Spray advice is held to a stricter standard than no-spray advice.** Blast is the only answer that tells a farmer to spray, so it has its own threshold: 0.995, the smallest value at which no blast answer on validation was wrong (35 validation blast answers remain). This lowered test coverage from 0.8780 to 0.7585. Zero wrong on validation is not zero wrong everywhere: see the blast row in the tables below. In the app, a blast answer also needs the farmer's own "yes" to a lesion-shape question; that question cannot be measured on photo datasets and is not part of any number here.
+## 1. Our test split
 
-Dhan-Shomadhan images are part of training in this run (766 train, 167 validation, 155 test). An earlier run without them recognised 2 of 74 field-background blast photos (`results/runs/run1_no_dhs/metrics.json`), so they were added. The cost: there is no longer any blast test from a source the model has never seen.
-
-## 1. In-distribution test split
-
-n = 828. Macro-F1 with no abstention: **0.9037**.
+n = 828. Macro-F1 of the top guess, no abstention: **0.8832**.
 
 | Class | Support | Precision | Recall | F1 |
 |---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 40/48 = 0.833 (95% CI 0.704–0.913) | 40/50 = 0.800 (95% CI 0.670–0.888) | 0.816 |
-| blast | 135 | 128/148 = 0.865 (95% CI 0.800–0.911) | 128/135 = 0.948 (95% CI 0.897–0.975) | 0.905 |
-| healthy | 152 | 149/160 = 0.931 (95% CI 0.881–0.961) | 149/152 = 0.980 (95% CI 0.944–0.993) | 0.955 |
-| other | 491 | 452/472 = 0.958 (95% CI 0.935–0.972) | 452/491 = 0.921 (95% CI 0.893–0.941) | 0.939 |
+| bacterial_leaf_blight | 50 | 46/61 = 0.754 (95% CI 0.633–0.845) | 46/50 = 0.920 (95% CI 0.812–0.968) | 0.829 |
+| blast | 135 | 129/166 = 0.777 (95% CI 0.708–0.834) | 129/135 = 0.956 (95% CI 0.906–0.979) | 0.857 |
+| healthy | 152 | 150/169 = 0.888 (95% CI 0.831–0.927) | 150/152 = 0.987 (95% CI 0.953–0.996) | 0.935 |
+| other | 491 | 421/432 = 0.975 (95% CI 0.955–0.986) | 421/491 = 0.857 (95% CI 0.824–0.886) | 0.912 |
 
-At t = 0.83, margin = 0.2:
+Outcomes at the published thresholds:
 
-- Coverage (images answered): 628/828 = 0.758 (95% CI 0.728–0.786)
-- Selective accuracy (correct among answered): 615/628 = 0.979 (95% CI 0.965–0.988)
-- Precision on BLB answers: 35/37 = 0.946 (95% CI 0.823–0.985)
-- Precision on blast answers: 28/29 = 0.966 (95% CI 0.828–0.994)
+- Classifier confident: 518/828 = 0.626 (95% CI 0.592–0.658)
+- Advice given: 185/828 = 0.223 (95% CI 0.196–0.253); right 172, wrong 13
+- Blast question asked: 0 (on true blast 0, on other classes 0)
+- Referred: 643/828 = 0.777 (95% CI 0.747–0.804)
 
-Abstained share by true class: bacterial_leaf_blight 0.260, blast 0.763, healthy 0.066, other 0.151.
+| True class | n | Right advice | Wrong advice | Blast question asked | Referred |
+|---|---|---|---|---|---|
+| bacterial_leaf_blight | 50 | 33 | 0 | 0 | 17 |
+| blast | 135 | 0 | 0 | 0 | 135 |
+| healthy | 152 | 139 | 0 | 0 | 13 |
+| other | 491 | 0 | 13 | 0 | 478 |
 
-Confusion matrix (rows = true class, columns = predicted, no abstention):
+Confusion matrix of the top guess (rows = true class):
 
 | true \ predicted | bacterial_leaf_blight | blast | healthy | other |
 |---|---|---|---|---|
-| bacterial_leaf_blight | 40 | 0 | 0 | 10 |
-| blast | 0 | 128 | 0 | 7 |
-| healthy | 0 | 0 | 149 | 3 |
-| other | 8 | 20 | 11 | 452 |
+| bacterial_leaf_blight | 46 | 0 | 0 | 4 |
+| blast | 0 | 129 | 0 | 6 |
+| healthy | 0 | 1 | 150 | 1 |
+| other | 15 | 36 | 19 | 421 |
 
 ![Confusion matrix](results/confusion.png)
 
 ![Risk-coverage curve](results/risk_coverage.png)
 
-## 2. Recall per source
+### Recall per source (top guess, no abstention)
 
-Every BLB image comes from RiceLeafBD and every training blast image from BD5, so this table shows whether one source carries the result.
-
-| Source | Source class | Target | Recall (no abstention) | Abstain rate |
+| Source | Source class | Target | Recall | Not confident |
 |---|---|---|---|---|
-| BD5 | blast | blast | 106/106 = 1.000 (95% CI 0.965–1.000) | 83/106 = 0.783 (95% CI 0.695–0.851) |
-| BD5 | narrow_brown_spot | other | 67/78 = 0.859 (95% CI 0.765–0.919) | 9/78 = 0.115 (95% CI 0.062–0.205) |
-| BD5 | normal_leaf | healthy | 112/115 = 0.974 (95% CI 0.926–0.991) | 8/115 = 0.070 (95% CI 0.036–0.131) |
-| BD5 | sheath_blight | other | 85/85 = 1.000 (95% CI 0.957–1.000) | 2/85 = 0.024 (95% CI 0.006–0.082) |
-| BD5 | tungro | other | 74/75 = 0.987 (95% CI 0.928–0.998) | 4/75 = 0.053 (95% CI 0.021–0.129) |
-| DhanShomadhan | field_browon_spot | other | 6/8 = 0.750 (95% CI 0.409–0.929) | 3/8 = 0.375 (95% CI 0.137–0.694) |
-| DhanShomadhan | field_leaf_scaled | other | 7/11 = 0.636 (95% CI 0.354–0.848) | 7/11 = 0.636 (95% CI 0.354–0.848) |
-| DhanShomadhan | field_rice_turgro | other | 12/12 = 1.000 (95% CI 0.757–1.000) | 1/12 = 0.083 (95% CI 0.015–0.354) |
-| DhanShomadhan | field_sheath_blight | other | 7/9 = 0.778 (95% CI 0.453–0.937) | 6/9 = 0.667 (95% CI 0.354–0.879) |
-| DhanShomadhan | white_brown_spot | other | 12/13 = 0.923 (95% CI 0.667–0.986) | 4/13 = 0.308 (95% CI 0.127–0.576) |
-| DhanShomadhan | white_leaf_scaled | other | 17/22 = 0.773 (95% CI 0.566–0.899) | 8/22 = 0.364 (95% CI 0.197–0.570) |
-| DhanShomadhan | white_rice_blast | blast | 22/29 = 0.759 (95% CI 0.579–0.878) | 20/29 = 0.690 (95% CI 0.508–0.827) |
-| DhanShomadhan | white_rice_tungro | other | 16/18 = 0.889 (95% CI 0.672–0.969) | 3/18 = 0.167 (95% CI 0.058–0.392) |
-| DhanShomadhan | white_shath_blight | other | 29/33 = 0.879 (95% CI 0.727–0.952) | 9/33 = 0.273 (95% CI 0.151–0.442) |
-| RiceLeafBD | bacterial_leaf_blight | bacterial_leaf_blight | 40/50 = 0.800 (95% CI 0.670–0.888) | 13/50 = 0.260 (95% CI 0.159–0.396) |
-| RiceLeafBD | brown_spot | other | 52/52 = 1.000 (95% CI 0.931–1.000) | 5/52 = 0.096 (95% CI 0.042–0.206) |
-| RiceLeafBD | healthy | healthy | 37/37 = 1.000 (95% CI 0.906–1.000) | 2/37 = 0.054 (95% CI 0.015–0.177) |
-| RiceLeafBD | tungro_virus | other | 68/75 = 0.907 (95% CI 0.820–0.954) | 13/75 = 0.173 (95% CI 0.104–0.274) |
+| BD5 | blast | blast | 106/106 = 1.000 (95% CI 0.965–1.000) | 106/106 = 1.000 (95% CI 0.965–1.000) |
+| BD5 | narrow_brown_spot | other | 56/78 = 0.718 (95% CI 0.610–0.806) | 17/78 = 0.218 (95% CI 0.141–0.322) |
+| BD5 | normal_leaf | healthy | 113/115 = 0.983 (95% CI 0.939–0.995) | 12/115 = 0.104 (95% CI 0.061–0.174) |
+| BD5 | sheath_blight | other | 84/85 = 0.988 (95% CI 0.936–0.998) | 5/85 = 0.059 (95% CI 0.025–0.130) |
+| BD5 | tungro | other | 74/75 = 0.987 (95% CI 0.928–0.998) | 10/75 = 0.133 (95% CI 0.074–0.228) |
+| DhanShomadhan | field_browon_spot | other | 5/8 = 0.625 (95% CI 0.306–0.863) | 7/8 = 0.875 (95% CI 0.529–0.978) |
+| DhanShomadhan | field_leaf_scaled | other | 6/11 = 0.545 (95% CI 0.280–0.787) | 11/11 = 1.000 (95% CI 0.741–1.000) |
+| DhanShomadhan | field_rice_turgro | other | 12/12 = 1.000 (95% CI 0.757–1.000) | 6/12 = 0.500 (95% CI 0.254–0.746) |
+| DhanShomadhan | field_sheath_blight | other | 8/9 = 0.889 (95% CI 0.565–0.980) | 5/9 = 0.556 (95% CI 0.267–0.811) |
+| DhanShomadhan | white_brown_spot | other | 8/13 = 0.615 (95% CI 0.355–0.823) | 8/13 = 0.615 (95% CI 0.355–0.823) |
+| DhanShomadhan | white_leaf_scaled | other | 13/22 = 0.591 (95% CI 0.387–0.767) | 12/22 = 0.545 (95% CI 0.347–0.731) |
+| DhanShomadhan | white_rice_blast | blast | 23/29 = 0.793 (95% CI 0.616–0.902) | 27/29 = 0.931 (95% CI 0.780–0.981) |
+| DhanShomadhan | white_rice_tungro | other | 14/18 = 0.778 (95% CI 0.548–0.910) | 4/18 = 0.222 (95% CI 0.090–0.452) |
+| DhanShomadhan | white_shath_blight | other | 30/33 = 0.909 (95% CI 0.764–0.969) | 12/33 = 0.364 (95% CI 0.222–0.534) |
+| RiceLeafBD | bacterial_leaf_blight | bacterial_leaf_blight | 46/50 = 0.920 (95% CI 0.812–0.968) | 17/50 = 0.340 (95% CI 0.224–0.478) |
+| RiceLeafBD | brown_spot | other | 48/52 = 0.923 (95% CI 0.818–0.970) | 25/52 = 0.481 (95% CI 0.351–0.613) |
+| RiceLeafBD | healthy | healthy | 37/37 = 1.000 (95% CI 0.906–1.000) | 1/37 = 0.027 (95% CI 0.005–0.138) |
+| RiceLeafBD | tungro_virus | other | 63/75 = 0.840 (95% CI 0.741–0.906) | 25/75 = 0.333 (95% CI 0.237–0.446) |
 
-### Recall per background
+## 2. Our field photos
 
-BD5 leaves lie on a white sheet and RiceLeafBD photos are taken in the field, so the background can give the class away. Farmers will send field photos, so the field rows matter most. "Answered wrong" is the share that got a confident wrong answer instead of a referral.
+Field-background test photos plus the 18 held-out Dhan-Shomadhan field blast photos. Farmers send field photos, so this matters more than the full test split, most of which is leaves on a white sheet.
 
-| Background | True class | Recall (no abstention) | Abstain rate | Answered wrong |
-|---|---|---|---|---|
-| field | bacterial_leaf_blight | 40/50 = 0.800 (95% CI 0.670–0.888) | 13/50 = 0.260 (95% CI 0.159–0.396) | 2/50 = 0.040 (95% CI 0.011–0.135) |
-| field | blast | 7/18 = 0.389 (95% CI 0.203–0.614) | 15/18 = 0.833 (95% CI 0.608–0.942) | 3/18 = 0.167 (95% CI 0.058–0.392) |
-| field | healthy | 37/37 = 1.000 (95% CI 0.906–1.000) | 2/37 = 0.054 (95% CI 0.015–0.177) | 0/37 = 0.000 (95% CI 0.000–0.094) |
-| field | other | 152/167 = 0.910 (95% CI 0.857–0.945) | 35/167 = 0.210 (95% CI 0.155–0.277) | 2/167 = 0.012 (95% CI 0.003–0.043) |
-| white | blast | 128/135 = 0.948 (95% CI 0.897–0.975) | 103/135 = 0.763 (95% CI 0.685–0.827) | 4/135 = 0.030 (95% CI 0.012–0.074) |
-| white | healthy | 112/115 = 0.974 (95% CI 0.926–0.991) | 8/115 = 0.070 (95% CI 0.036–0.131) | 0/115 = 0.000 (95% CI -0.000–0.032) |
-| white | other | 300/324 = 0.926 (95% CI 0.892–0.950) | 39/324 = 0.120 (95% CI 0.089–0.160) | 5/324 = 0.015 (95% CI 0.007–0.036) |
+- Classifier confident: 159/272 = 0.585 (95% CI 0.525–0.642)
+- Advice given: 71/272 = 0.261 (95% CI 0.212–0.316); right 69, wrong 2
+- Blast question asked: 0 (on true blast 0, on other classes 0)
+- Referred: 201/272 = 0.739 (95% CI 0.684–0.788)
 
-### What the farmer gets (advice-level outcomes)
-
-A BLB, blast or healthy answer above the threshold is **advice**. An `other` answer or an abstention is a **referral** to 16123 or an officer, which is safe. **Wrong advice** is the harmful outcome: advice that does not match the true class.
-
-**Field-background photos (test split plus the held-out field blast), n = 272.** Advice given: 72/272 = 0.265 (95% CI 0.216–0.320). Wrong advice among advice given: 2/72 = 0.028 (95% CI 0.008–0.096).
-
-| True class | n | Correct advice | Referred | Wrong advice |
-|---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 35/50 = 0.700 (95% CI 0.562–0.809) | 15/50 = 0.300 (95% CI 0.191–0.438) | 0/50 = 0.000 (95% CI 0.000–0.071) |
-| blast | 18 | 0/18 = 0.000 (95% CI 0.000–0.176) | 18/18 = 1.000 (95% CI 0.824–1.000) | 0/18 = 0.000 (95% CI 0.000–0.176) |
-| healthy | 37 | 35/37 = 0.946 (95% CI 0.823–0.985) | 2/37 = 0.054 (95% CI 0.015–0.177) | 0/37 = 0.000 (95% CI 0.000–0.094) |
-| other | 167 | (a referral is the right outcome) | 165/167 = 0.988 (95% CI 0.957–0.997) | 2/167 = 0.012 (95% CI 0.003–0.043) |
-
-Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95% CI 0.015–0.177); blast answers n = 0; healthy answers 0/35 = 0.000 (95% CI 0.000–0.099).
-
-**All test photos (plus the held-out field blast), n = 846.** Advice given: 212/846 = 0.251 (95% CI 0.223–0.281). Wrong advice among advice given: 7/212 = 0.033 (95% CI 0.016–0.067).
-
-| True class | n | Correct advice | Referred | Wrong advice |
-|---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 35/50 = 0.700 (95% CI 0.562–0.809) | 15/50 = 0.300 (95% CI 0.191–0.438) | 0/50 = 0.000 (95% CI 0.000–0.071) |
-| blast | 153 | 28/153 = 0.183 (95% CI 0.130–0.252) | 125/153 = 0.817 (95% CI 0.748–0.870) | 0/153 = 0.000 (95% CI 0.000–0.024) |
-| healthy | 152 | 142/152 = 0.934 (95% CI 0.883–0.964) | 10/152 = 0.066 (95% CI 0.036–0.117) | 0/152 = 0.000 (95% CI 0.000–0.025) |
-| other | 491 | (a referral is the right outcome) | 484/491 = 0.986 (95% CI 0.971–0.993) | 7/491 = 0.014 (95% CI 0.007–0.029) |
-
-Wrong among each kind of advice: bacterial_leaf_blight answers 2/37 = 0.054 (95% CI 0.015–0.177); blast answers 1/29 = 0.034 (95% CI 0.006–0.172); healthy answers 4/146 = 0.027 (95% CI 0.011–0.068).
-
-
-## 3. Dhan-Shomadhan field blast (held-out slice of a source the model has seen)
-
-n = 18 field-background blast images held out from Dhan-Shomadhan. Other Dhan-Shomadhan images were used for training, so this is **not** a cross-source test; with n this small the interval is wide.
-
-- Blast recall (no abstention): 7/18 = 0.389 (95% CI 0.203–0.614)
-- Abstain rate: 15/18 = 0.833 (95% CI 0.608–0.942)
-- Answered as blast: 0/18 = 0.000 (95% CI 0.000–0.176)
-
-### Near-duplicate leak check
-
-`training/check_leakage.py` compared every validation, test and held-out image with every training image (64-bit perceptual hash, Hamming distance ≤ 5, any class, any source). 2 of 846 test and held-out images and 6 of 863 validation images have a near-duplicate in training. The shipped model through the app's own ONNX code path:
-
-| | Test n | Macro-F1 (no abstention) | Coverage | Selective accuracy | Field wrong advice |
+| True class | n | Right advice | Wrong advice | Blast question asked | Referred |
 |---|---|---|---|---|---|
-| All test images | 828 | 0.9026 | 0.7597 | 0.9793 | 2/72 |
-| Without leaked test images | 826 | 0.9036 | 0.7603 | 0.9793 | 2/72 |
+| bacterial_leaf_blight | 50 | 33 | 0 | 0 | 17 |
+| blast | 18 | 0 | 0 | 0 | 18 |
+| healthy | 37 | 36 | 0 | 0 | 1 |
+| other | 167 | 0 | 2 | 0 | 165 |
 
-These ONNX-on-CPU numbers differ from the tables above (computed in PyTorch on the GPU) by one or two borderline images; the app runs the ONNX model.
+## 3. Three models through the app's own code path
 
-Field photos that got wrong advice:
+`python training/compare_candidates.py`: `kombish/classifier.py` and `kombish/rules.py`, ONNX on the CPU, the lesion-shape question unanswered. v1 is the previously published model; A is the same recipe with stronger augmentation only; B adds Paddy Doctor training photos and is the published model. The Paddy Doctor held-out set (500 photos, never used for training, validation or thresholds) comes from the **same source as some of B's training data**, so for B it is not an external test.
 
-| Photo | True class | Answered as | Confidence |
-|---|---|---|---|
-| `RiceLeafBD/Tungro Virus/312624486_675060277291867_7528285692741017397_n.jpg` | RiceLeafBD | Tungro Virus | bacterial_leaf_blight | 0.8487 |
-| `hf://datasets/Project-AgML/Dhan-Shomadhan_rice_leaf_disease_classification#15` | DhanShomadhan | Field Browon Spot | bacterial_leaf_blight | 0.8551 |
+| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | Blast question asked (true blast / other = wrong spray if "yes") | Referred |
+|---|---|---|---|---|---|---|---|---|
+| v1 (previous) | our test split | 828 | 629 (76.0%) | 183 (22.1%) | 177 | 6 | 29 (28 / 1) | 616 |
+| v1 (previous) | our field photos | 272 | 208 (76.5%) | 72 (26.5%) | 70 | 2 | 0 (0 / 0) | 200 |
+| v1 (previous) | Paddy Doctor held-out | 500 | 194 (38.8%) | 20 (4.0%) | 7 | 13 | 0 (0 / 0) | 480 |
+| A (not published) | our test split | 828 | 503 (60.7%) | 168 (20.3%) | 161 | 7 | 51 (51 / 0) | 609 |
+| A (not published) | our field photos | 272 | 152 (55.9%) | 71 (26.1%) | 67 | 4 | 0 (0 / 0) | 201 |
+| A (not published) | Paddy Doctor held-out | 500 | 84 (16.8%) | 3 (0.6%) | 0 | 3 | 0 (0 / 0) | 497 |
+| B (published) | our test split | 828 | 518 (62.6%) | 185 (22.3%) | 172 | 13 | 0 (0 / 0) | 643 |
+| B (published) | our field photos | 272 | 159 (58.5%) | 71 (26.1%) | 69 | 2 | 0 (0 / 0) | 201 |
+| B (published) | Paddy Doctor held-out (**same source as some training data**) | 500 | 332 (66.4%) | 221 (44.2%) | 220 | 1 | 6 (6 / 0) | 273 |
 
-## External test: Paddy Doctor (India)
+CPU latency, median of 30 predictions on a 1024×768 image: v1 (previous) 10.1 ms; A (not published) 12.7 ms; B (published) 12.7 ms (the same architecture; the differences are run-to-run noise).
 
-A dataset the model has never seen, from another country: the labelled training images of the Kaggle competition `paddy-disease-classification` (Petchiammal A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022). Paddy Doctor: A Visual Image Dataset for Automated Paddy Disease Classification and Benchmarking. arXiv:2205.11108.). Seeded sample (seed 42) of up to {'bacterial_leaf_blight': {'n': 50, 'advice_given': 0, 'referred': 50, 'correct_advice': 0, 'wrong_advice': 0, 'wrong_spray_advice': 0, 'model_answered': 12, 'model_correct_when_answered': 0, 'argmax_correct': 2}, 'blast': {'n': 50, 'advice_given': 2, 'referred': 48, 'correct_advice': 0, 'wrong_advice': 2, 'wrong_spray_advice': 0, 'model_answered': 30, 'model_correct_when_answered': 0, 'argmax_correct': 2}, 'healthy': {'n': 50, 'advice_given': 1, 'referred': 49, 'correct_advice': 1, 'wrong_advice': 0, 'wrong_spray_advice': 0, 'model_answered': 23, 'model_correct_when_answered': 1, 'argmax_correct': 2}, 'other': {'n': 50, 'advice_given': 5, 'referred': 45, 'correct_advice': 0, 'wrong_advice': 5, 'wrong_spray_advice': 0, 'model_answered': 17, 'model_correct_when_answered': 12, 'argmax_correct': 25, 'note': "for a true 'other' photo the right outcome is a referral; any advice is wrong advice"}} images per mapped class: bacterial leaf blight, blast, normal (healthy), and every other class as `other`, drawn evenly across its source classes. 200 images sampled; 0 dropped as near-duplicates of our 4837 training and validation images (perceptual hash, distance ≤ 5); **n = 200**. Run through the app's own code path (`kombish/classifier.py`, `kombish/rules.py`) with threshold 0.83, margin 0.2 and blast-only threshold 0.995. The lesion-shape question is treated as unanswered: a photo that reaches it is counted as a blast answer. This is a test only; nothing was changed because of it.
+## 4. External test: a dataset the model has never seen
 
-**Reading the result:** the model does not transfer to these photos. Seen by eye on 24 of the sampled images, Paddy Doctor photos are wide shots of whole plants with many leaves (all 480×640), while every training photo is a close-up of one leaf. The confidence gate refers almost everything, which is the safe outcome, but the few answers that get through are mostly wrong.
+**Zambali Rice Dataset (Public V1) (Philippines), n = 200.** Source: https://www.kaggle.com/datasets/gettingintoml/zambali-rice-dataset-v3-1. Licence: Apache-2.0 (as stated on the Kaggle dataset page). Kaggle user gettingintoml. Rice leaf images collected on farms in Iba and Botolan, Zambales, Philippines, verified with the Provincial Agricultural Office of Zambales (dataset description). Seeded sample (seed 42) of up to 50 images per mapped class; 0 near-duplicates of the 14516 training and validation images dropped (perceptual hash, distance ≤ 5). Evaluated once, after the model and thresholds were fixed; nothing was changed because of it.
 
-- Advice given (answered): 8/200 = 0.040 (95% CI 0.020–0.077); referred: 192/200 = 0.960 (95% CI 0.923–0.980)
-- Correct among advice given (accuracy when answered): 1/8 = 0.125 (95% CI 0.022–0.471)
-- Wrong advice: 7/200 = 0.035 (95% CI 0.017–0.070) of all photos; wrong "spray correctly": 0
-- Top prediction correct with no abstention: 31/200 = 0.155 (95% CI 0.111–0.212)
+- Classifier confident: 69/200 = 0.345 (95% CI 0.283–0.413)
+- Advice given: 28/200 = 0.140 (95% CI 0.099–0.195); right 27, wrong 1
+- Blast question asked: 0 (on true blast 0, on other classes 0)
+- Referred: 172/200 = 0.860 (95% CI 0.805–0.901)
+- Top guess right, no abstention: 84/200 = 0.420 (95% CI 0.354–0.489)
 
-| True class | n | Advice given | Referred | Correct advice | Wrong advice | Wrong spray advice |
-|---|---|---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 0/50 = 0.000 (95% CI 0.000–0.071) | 50/50 = 1.000 (95% CI 0.929–1.000) | 0/50 = 0.000 (95% CI 0.000–0.071) | 0/50 = 0.000 (95% CI 0.000–0.071) | 0 |
-| blast | 50 | 2/50 = 0.040 (95% CI 0.011–0.135) | 48/50 = 0.960 (95% CI 0.865–0.989) | 0/50 = 0.000 (95% CI 0.000–0.071) | 2/50 = 0.040 (95% CI 0.011–0.135) | 0 |
-| healthy | 50 | 1/50 = 0.020 (95% CI 0.004–0.105) | 49/50 = 0.980 (95% CI 0.895–0.996) | 1/50 = 0.020 (95% CI 0.004–0.105) | 0/50 = 0.000 (95% CI 0.000–0.071) | 0 |
-| other | 50 | 5/50 = 0.100 (95% CI 0.043–0.214) | 45/50 = 0.900 (95% CI 0.786–0.957) | (a referral is the right outcome) | 5/50 = 0.100 (95% CI 0.043–0.214) | 0 |
+| True class | n | Right advice | Wrong advice | Blast question asked | Referred |
+|---|---|---|---|---|---|
+| bacterial_leaf_blight | 50 | 0 | 0 | 0 | 50 |
+| blast | 50 | 0 | 1 | 0 | 49 |
+| healthy | 50 | 27 | 0 | 0 | 23 |
+| other | 50 | 0 | 0 | 0 | 50 |
 
-What each photo got (rows = true class):
-
-| true \ outcome | bacterial_leaf_blight advice | blast advice (spray) | healthy advice | referred |
-|---|---|---|---|---|
-| bacterial_leaf_blight | 0 | 0 | 0 | 50 |
-| blast | 2 | 0 | 0 | 48 |
-| healthy | 0 | 0 | 1 | 49 |
-| other | 5 | 0 | 0 | 45 |
-
-Confusion matrix of the top prediction, no abstention (rows = true class):
+Confusion matrix of the top guess (rows = true class):
 
 | true \ predicted | bacterial_leaf_blight | blast | healthy | other |
 |---|---|---|---|---|
-| bacterial_leaf_blight | 2 | 10 | 4 | 34 |
-| blast | 9 | 2 | 1 | 38 |
-| healthy | 3 | 7 | 2 | 38 |
-| other | 11 | 10 | 4 | 25 |
+| bacterial_leaf_blight | 0 | 26 | 0 | 24 |
+| blast | 0 | 10 | 1 | 39 |
+| healthy | 0 | 1 | 42 | 7 |
+| other | 0 | 17 | 1 | 32 |
 
-Wrong "spray correctly" answers: none.
+Not-a-rice-leaf images from the same dataset: 50/50 = 1.000 (95% CI 0.929–1.000) referred; advice given 0; blast question asked 0.
 
-## 4. The team's own photos and junk photos
+Wrong advice: `LEAF_BLAST/Leaf_Blast (548).jpg` (true LEAF_BLAST, answered healthy, confidence 0.9878).
+
+## 5. Near-duplicate leak check on our own splits
+
+`training/check_leakage.py`: every validation, test and held-out image against every training image (perceptual hash, distance ≤ 5, any class, any source). 2 of 846 test and held-out images and 12 of 2315 validation images have a near-duplicate in training.
+
+| | Test n | Macro-F1 (top guess) | Classifier confident | Right when confident |
+|---|---|---|---|---|
+| All test images | 828 | 0.8842 | 0.6256 | 0.9710 |
+| Without leaked test images | 826 | 0.8851 | 0.6259 | 0.9729 |
+
+## 6. The team's own photos
 
 Not measured yet: `training/results/own_photos.json` does not exist (steps 19 and 20).
 
-## 5. Off-script test
+## 7. Off-script test
 
 **0 off-script answers and 0 invented doses in 20 test consultations** (`tests/test_offscript.py`): every sentence shown came from `data/rules.csv` or `data/clips.csv`.
 
 ## Limitations
 
-- Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most blast images from BD5 (leaves on a white sheet). A model can learn the background instead of the disease; the first run did exactly that. Sections 2 and 3 are the honest check.
-- BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description says 2,545. We used what the archive contains (`docs/gates.md`).
-- Dhan-Shomadhan is in the training data, which removed the first external test. The only numbers from a dataset the model has never seen are the Paddy Doctor ones, if that section is present, and they show the model does not transfer to wide shots of whole plants.
-- The test split was looked at during development: several training runs were compared, and the threshold rule was tightened after seeing early results (`docs/gates.md` lists every run). The numbers here are therefore somewhat optimistic. Only a new, untouched set of field photos would give a clean estimate.
-- With this few test images per minority class, one or two images move a recall by several points; read the intervals, not the point values.
-- Own-photo labels are healthy-looking vs symptomatic, not diagnoses.
-- The `other` class does not cover non-rice photos; section 4 is the only junk-photo test.
+- **Diseases are not recognised on a new source.** On the external test the model mostly recognises healthy leaves; BLB, blast and brown spot photos are referred, not answered.
+- **The Paddy Doctor held-out result is not an external test** for the published model: it is the same source as some of its training data.
+- **Blast is rarely answered.** The blast-only threshold is 0.999: on our test split the blast question was asked 0 times.
+- **Narrow brown spot on a white sheet is told "no spray now".** 13 `other` photos on our test split got wrong advice; `runs/README.md` and `docs/gates.md` break them down (11 are BD5 narrow brown spot leaves answered healthy).
+- Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most of our own blast images from BD5 (leaves on a white sheet). The first model learned the background.
+- BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description says 2,545. We used what the archive contains.
+- The test split was looked at while comparing runs and tightening the threshold rules, so its numbers are somewhat optimistic. The external test was run once, after everything was fixed.
+- The lesion-shape question relies on the farmer's judgement and is not part of any number here.
 - No field trial. Nobody checked what a farmer did after an answer.
 - Agronomy review: none yet; rules and scripts are not reviewed by an agronomist (TODO-HUMAN: name, role and date once someone reads the six rules and four answer scripts).

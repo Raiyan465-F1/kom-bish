@@ -18,18 +18,20 @@ Generated from each run's `metrics.json`. Every run used the same test images wh
 | candB_strong_aug_plus_paddy | CANDIDATE B, not published. Candidate A plus 8,227 Paddy Doctor training photos and 1,452 Paddy Doctor validation photos. | 0.6396 | 0.91 | 0.999 | 0.2 | 828 | 0.8832 | 0.6256 | 0.9710 | 12/18 / 16/18 | 2/71 |
 | run9b_seed43 | Repeat of run 9 with a different random seed (not shipped; shows run-to-run variation). | 0.6339 | 0.80 | same as t | 0.2 | 828 | 0.9166 | 0.8877 | 0.9646 | 6/18 / 5/18 | 5/87 |
 
-## Candidates compared through the app's code path
+## Three models through the app's code path
 
-From `candidates_comparison.json` (`python training/compare_candidates.py`). Answered = the app gives advice; everything else is a referral. The lesion-shape question is counted as unanswered. The Paddy Doctor held-out set is from the same source as part of candidate B's training data.
+From `candidates_comparison.json` (`python training/compare_candidates.py`), with the definitions in `training/outcomes.py`. The lesion-shape question is counted as unanswered. The Paddy Doctor held-out set is the same source as some of B's training data.
 
-| Model | Set | n | Answered (coverage) | Right when answered | Wrong advice | of which wrong spray | Right answers by class (BLB / blast / healthy) | CPU latency |
+| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | Blast question asked (true blast / other = wrong spray if "yes") | Referred |
 |---|---|---|---|---|---|---|---|---|
-| current | our test split | 828 | 212 (0.256) | 205/212 = 0.967 | 7 | 1 | 35 / 28 / 142 | 9.4 ms |
-| current | our field photos | 272 | 72 (0.265) | 70/72 = 0.972 | 2 | 0 | 35 / 0 / 35 | 9.4 ms |
-| current | Paddy Doctor held-out | 500 | 20 (0.040) | 7/20 = 0.350 | 13 | 0 | 0 / 0 / 7 | 9.4 ms |
-| A | our test split | 828 | 219 (0.264) | 212/219 = 0.968 | 7 | 0 | 34 / 51 / 127 | 12.5 ms |
-| A | our field photos | 272 | 71 (0.261) | 67/71 = 0.944 | 4 | 0 | 34 / 0 / 33 | 12.5 ms |
-| A | Paddy Doctor held-out | 500 | 3 (0.006) | 0/3 = 0.000 | 3 | 0 | 0 / 0 / 0 | 12.5 ms |
-| B | our test split | 828 | 185 (0.223) | 172/185 = 0.930 | 13 | 0 | 33 / 0 / 139 | 12.6 ms |
-| B | our field photos | 272 | 71 (0.261) | 69/71 = 0.972 | 2 | 0 | 33 / 0 / 36 | 12.6 ms |
-| B | Paddy Doctor held-out | 500 | 227 (0.454) | 226/227 = 0.996 | 1 | 0 | 108 / 6 / 112 | 12.6 ms |
+| v1 (previous) | our test split | 828 | 629 (76.0%) | 183 (22.1%) | 177 | 6 | 29 (28 / 1) | 616 |
+| v1 (previous) | our field photos | 272 | 208 (76.5%) | 72 (26.5%) | 70 | 2 | 0 (0 / 0) | 200 |
+| v1 (previous) | Paddy Doctor held-out | 500 | 194 (38.8%) | 20 (4.0%) | 7 | 13 | 0 (0 / 0) | 480 |
+| A (not published) | our test split | 828 | 503 (60.7%) | 168 (20.3%) | 161 | 7 | 51 (51 / 0) | 609 |
+| A (not published) | our field photos | 272 | 152 (55.9%) | 71 (26.1%) | 67 | 4 | 0 (0 / 0) | 201 |
+| A (not published) | Paddy Doctor held-out | 500 | 84 (16.8%) | 3 (0.6%) | 0 | 3 | 0 (0 / 0) | 497 |
+| B (published) | our test split | 828 | 518 (62.6%) | 185 (22.3%) | 172 | 13 | 0 (0 / 0) | 643 |
+| B (published) | our field photos | 272 | 159 (58.5%) | 71 (26.1%) | 69 | 2 | 0 (0 / 0) | 201 |
+| B (published) | Paddy Doctor held-out | 500 | 332 (66.4%) | 221 (44.2%) | 220 | 1 | 6 (6 / 0) | 273 |
+
+CPU latency (median of 30 predictions on a 1024x768 image): v1 (previous) 10.1 ms; A (not published) 12.7 ms; B (published) 12.7 ms.

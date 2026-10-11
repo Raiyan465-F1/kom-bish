@@ -1,0 +1,251 @@
+file,source_label,mapped_label,near_duplicate_dropped,min_phash_distance_to_training
+BACTERIAL_BLIGHT/Bacterial_Blight (1).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight (22).JPEG,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight (32).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight (33).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight (35).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight (37).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight (38).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight (41).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight (42).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight (43).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight (46).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight (48).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,18
+BACTERIAL_BLIGHT/Bacterial_Blight (49).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight (50).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight (51).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight (53).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight (54).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight (58).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight (59).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (1).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (10).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (11).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (12).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (13).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (14).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (15).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (16).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (17).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (19).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (2).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (20).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (21).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (23).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (24).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (25).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (26).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (27).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (28).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,12
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (29).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,8
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (3).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (30).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (31).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (32).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (33).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,8
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (34).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (35).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,16
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (36).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (6).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (7).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,14
+BACTERIAL_BLIGHT/Bacterial_Blight_Iba (9).jpg,BACTERIAL_BLIGHT,bacterial_leaf_blight,no,10
+BROWN_SPOT/Brown_Spot (124).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (141).jpg,BROWN_SPOT,other,no,12
+BROWN_SPOT/Brown_Spot (157).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (159).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (160).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (189).jpg,BROWN_SPOT,other,no,10
+BROWN_SPOT/Brown_Spot (191).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (21).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (33).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (343).jpg,BROWN_SPOT,other,no,12
+BROWN_SPOT/Brown_Spot (349).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (370).jpg,BROWN_SPOT,other,no,12
+BROWN_SPOT/Brown_Spot (376).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (378).jpg,BROWN_SPOT,other,no,18
+BROWN_SPOT/Brown_Spot (393).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (402).jpg,BROWN_SPOT,other,no,18
+BROWN_SPOT/Brown_Spot (403).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (404).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (406).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (411).jpg,BROWN_SPOT,other,no,12
+BROWN_SPOT/Brown_Spot (468).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (49).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (51).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot (8).jpg,BROWN_SPOT,other,no,12
+BROWN_SPOT/Brown_Spot (87).jpg,BROWN_SPOT,other,no,12
+BROWN_SPOT/Brown_Spot (9).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (90).jpg,BROWN_SPOT,other,no,18
+BROWN_SPOT/Brown_Spot (96).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot (97).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot_Iba (1).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot_Iba (16).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot_Iba (18).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot_Iba (20).jpg,BROWN_SPOT,other,no,8
+BROWN_SPOT/Brown_Spot_Iba (24).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot_Iba (26).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Brown_Spot_Iba (27).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot_Iba (28).jpg,BROWN_SPOT,other,no,6
+BROWN_SPOT/Brown_Spot_Iba (30).jpg,BROWN_SPOT,other,no,8
+BROWN_SPOT/Brown_Spot_Iba (32).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot_Iba (5).jpg,BROWN_SPOT,other,no,18
+BROWN_SPOT/Brown_Spot_Iba (7).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Brown_Spot_Iba (8).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Leaf_Blast (139).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Leaf_Blast (351).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Leaf_Blast (408).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Leaf_Blast (505).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Leaf_Blast (506).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Leaf_Blast (508).jpg,BROWN_SPOT,other,no,14
+BROWN_SPOT/Leaf_Blast (552).jpg,BROWN_SPOT,other,no,16
+BROWN_SPOT/Leaf_Blast (564).jpg,BROWN_SPOT,other,no,16
+HEALTHY/Healthy (103).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (113).jpg,HEALTHY,healthy,no,10
+HEALTHY/Healthy (120).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (128).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (129).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (140).jpg,HEALTHY,healthy,no,8
+HEALTHY/Healthy (15).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (150).jpg,HEALTHY,healthy,no,10
+HEALTHY/Healthy (151).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (162).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (163).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (165).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (17).jpg,HEALTHY,healthy,no,18
+HEALTHY/Healthy (171).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (172).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (197).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (20).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (212).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (214).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (22).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (220).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (221).jpg,HEALTHY,healthy,no,8
+HEALTHY/Healthy (222).jpg,HEALTHY,healthy,no,8
+HEALTHY/Healthy (234).jpg,HEALTHY,healthy,no,8
+HEALTHY/Healthy (244).jpg,HEALTHY,healthy,no,10
+HEALTHY/Healthy (256).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (266).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (275).jpg,HEALTHY,healthy,no,8
+HEALTHY/Healthy (277).jpg,HEALTHY,healthy,no,10
+HEALTHY/Healthy (281).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (283).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (284).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (294).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (297).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (3).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (308).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (31).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (36).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (48).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (50).jpg,HEALTHY,healthy,no,8
+HEALTHY/Healthy (55).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (64).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (68).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (69).jpg,HEALTHY,healthy,no,12
+HEALTHY/Healthy (76).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (8).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (82).jpg,HEALTHY,healthy,no,16
+HEALTHY/Healthy (9).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (90).jpg,HEALTHY,healthy,no,14
+HEALTHY/Healthy (96).jpg,HEALTHY,healthy,no,12
+LEAF_BLAST/Brown_Spot (100).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Brown_Spot (128).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Brown_Spot (168).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Brown_Spot (206).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Brown_Spot (23).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Brown_Spot (243).jpg,LEAF_BLAST,blast,no,10
+LEAF_BLAST/Brown_Spot (276).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Brown_Spot (295).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Brown_Spot (334).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Brown_Spot (384).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Brown_Spot (387).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Brown_Spot (39).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Brown_Spot (425).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Brown_Spot (449).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Brown_Spot (458).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Brown_Spot (55).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast (134).jpg,LEAF_BLAST,blast,no,10
+LEAF_BLAST/Leaf_Blast (182).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast (292).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast (301).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast (308).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast (320).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast (393).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast (419).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast (456).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast (497).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast (548).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast (556).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast (563).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast (570).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast (572).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast (583).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast (587).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (1).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast_IBA (11).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast_IBA (16).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (23).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (25).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (3).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (32).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast_IBA (40).jpg,LEAF_BLAST,blast,no,16
+LEAF_BLAST/Leaf_Blast_IBA (49).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (5).jpg,LEAF_BLAST,blast,no,18
+LEAF_BLAST/Leaf_Blast_IBA (51).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (54).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast_IBA (56).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast_IBA (6).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (62).jpg,LEAF_BLAST,blast,no,12
+LEAF_BLAST/Leaf_Blast_IBA (8).jpg,LEAF_BLAST,blast,no,14
+LEAF_BLAST/Leaf_Blast_IBA (9).jpg,LEAF_BLAST,blast,no,14
+NOT_A_RICE_LEAF/image1002.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1009.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1016.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1036.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1039.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image104.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1041.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1046.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1050.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1069.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1070.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1071.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1077.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1088.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1094.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1101.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1134.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1135.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1152.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1155.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1159.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1162.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1166.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image117.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1172.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1174.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1197.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1232.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1237.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1246.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1261.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,10
+NOT_A_RICE_LEAF/image1287.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1290.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1292.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1299.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1304.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1310.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1317.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1319.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1328.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,18
+NOT_A_RICE_LEAF/image1330.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1338.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1360.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1363.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1378.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image138.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1390.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1401.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16
+NOT_A_RICE_LEAF/image1407.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,14
+NOT_A_RICE_LEAF/image1415.jpg,NOT_A_RICE_LEAF,not a rice leaf,no,16

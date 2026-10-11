@@ -109,6 +109,7 @@ srt = np.sort(P, axis=1)
 pred = P.argmax(1)
 answered = (P.max(1) >= t) & ((srt[:, -1] - srt[:, -2]) >= margin)
 answered &= ~((pred == 1) & (P.max(1) < m.get("blast_threshold", t)))   # blast has its own, stricter threshold
+answered &= ~((pred == 0) & (P.max(1) < (m.get("blb_threshold") or t)))  # and BLB, when labels.json has one
 advice = answered & (pred != 3)
 
 
