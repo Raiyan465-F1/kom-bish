@@ -258,6 +258,10 @@ that label:
 
 - **Diseases are not recognised on a new source.** On the external test the model recognised healthy leaves
   and referred almost every diseased one. No truly external test shows it recognising BLB or blast.
+- **Close-up web photos of blast were not recognised.** We tried four textbook-style blast photos from the
+  web (not a test set, labels not checked by an agronomist): none was called blast, three were referred and
+  one got the BLB answer ("no insecticide needed, fix the fertiliser"), which is wrong advice. See
+  [`docs/gates.md`](docs/gates.md).
 - **The Paddy Doctor held-out result is the same source as some training data.** It is not an external test.
 - **Blast is rarely answered.** The blast threshold is 0.999: the blast question was asked 0 times
   on our test split and 6 times on the 500 Paddy Doctor held-out photos (125 of them blast).

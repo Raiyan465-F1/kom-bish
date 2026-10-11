@@ -485,6 +485,29 @@ card that this removed the external test. Both now say so.
 - The team's own photos and junk photos (step 19) do not exist yet, so the false-trigger and junk-refusal
   numbers are still missing.
 
+**Web photos tried by Raiyan (11 Oct 2026, after deployment): 0 of 4 recognised as blast.** Four close-up
+photos from the web showing spindle-shaped lesions with grey centres (they look like textbook leaf blast;
+the labels are not checked by an agronomist; the photos are stock images and are **not** in the repo). Run
+through `kombish.classifier.predict` with the published model (B):
+
+| Photo | Top class | Confidence | Blast probability | What the app said |
+|---|---|---|---|---|
+| 1 (three leaves, green background) | `other` | 0.964 | 0.007 | Referral (`R4_OTHER`) |
+| 2 (one leaf, long lesions) | `bacterial_leaf_blight` | 0.940 | 0.002 | **BLB answer (`R1_BLB`): wrong advice** |
+| 3 (one leaf, many small lesions) | `other` | 0.635 | 0.007 | Referral (`R5_ABSTAIN`) |
+| 4 (three leaves, held in a hand) | `other` | 0.693 | 0.027 | Referral (`R5_ABSTAIN`) |
+
+- Cropping closer did not help: over the whole photo, a centre square, 60% and 40% centre crops and nine
+  half-size tiles, the blast probability never went above 0.044 on any photo.
+- Photo 2 passed the BLB threshold (0.94) by about 0.001 and got "no insecticide needed, fix the fertiliser".
+  No wrong spray advice, but a blast leaf was not referred.
+- This agrees with the limitation already recorded: the model recognises blast on its own sources (top-1
+  blast recall on our test split: 0.956 on white-sheet photos, n = 135; 0.667 on field photos, n = 18) and
+  not on a new source. Four photos are an anecdote, not a test set; no threshold was changed because of them.
+- TODO-HUMAN: decide whether the model stays frozen at v2. Options: (a) keep v2 and show this limit openly;
+  (b) raise the BLB threshold, chosen on validation only, never on these four photos; (c) retrain with
+  close-up field photos of blast from a new source, which we do not have yet.
+
 ## Code checks done without the real model (11 Oct 2026)
 
 These prove the code runs. They are not results and must never be reported as accuracy.
