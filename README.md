@@ -14,8 +14,7 @@ license: mit
 # Kom Bish (কম বিষ) — a Bangla rice adviser that says whether to spray at all
 
 > **DRAFT README (11 Oct 2026).** The app, the rule engine, the tests and a trained classifier exist.
-> The Bangla was **reviewed by one native speaker** on 11 Oct 2026. The audio clips are a **computer-generated voice** that no person has listened to yet, and nothing
-> is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
+> The Bangla was **reviewed by one native speaker** on 11 Oct 2026. The audio clips are a **computer-generated voice** that no person has listened to yet. The app is live on a Hugging Face Space. Every `TODO-HUMAN` below marks a fact that does not exist yet.
 > No number on this page is invented: each comes from `training/eval_summary.json`.
 
 **Language:** the app, its answers and its audio are in Bangla, for farmers. This README, the model card, the
@@ -42,8 +41,8 @@ Hack for Humanity BD 2026, Round 2 · Team Unsick · Track: Inclusive Rural Deve
 
 ## Try it
 
-- **Live demo:** TODO-HUMAN (direct HTTPS URL; first load can take about a minute if it is the Render host)
-- **Mirror:** TODO-HUMAN
+- **Live demo:** <https://raiyan465-kom-bish.hf.space> (open this direct link on a phone; the Space page is https://huggingface.co/spaces/Raiyan465/kom-bish)
+- **Mirror:** none. For a live pitch the same app runs from a laptop with `python app.py --share`.
 - **Demo video:** VIDEO_URL_TODO
 - **Pitch deck:** `deck/Kom_Bish_deck.pptx` (TODO-HUMAN: not generated yet, step 22)
 - **Test photos:** [`examples/`](examples/), one per rule path, credited in [`examples/CREDITS.md`](examples/CREDITS.md). The blast example shows the lesion question.
@@ -218,7 +217,7 @@ pytest -q                     # safety invariants and app paths
 
 Round 2 is judged technically; the finale is judged on social and human impact, feasibility and scalability.
 
-- **Running code:** live demo (TODO-HUMAN), [tests](tests/), [CI](.github/workflows/tests.yml).
+- **Running code:** [live demo](https://raiyan465-kom-bish.hf.space), [tests](tests/), [CI](.github/workflows/tests.yml).
 - **Technical depth:** temperature scaling and an abstain threshold, single-file ONNX with a parity check, [`training/`](training/).
 - **Impact:** spray-or-not answers. Evidence that fewer sprays are possible is from other studies; a pilot will measure what Kom Bish delivers.
 - **Feasibility:** a USD 0 stack that runs on free hosts and on a laptop.

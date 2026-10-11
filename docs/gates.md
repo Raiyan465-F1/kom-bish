@@ -4,7 +4,7 @@ Fill in **Decision**, **Date** and **Who** when each gate is decided.
 
 | Gate | Name | Deadline | Decision | Date | Who |
 |---|---|---|---|---|---|
-| G1 | Hosting route | Sat 10 Oct, 10 PM | TODO-HUMAN: ZeroGPU / Render / both? Which ZeroGPU variant works? URLs? (see "G1 — hosting route" below) | | |
+| G1 | Hosting route | Sat 10 Oct, 10 PM | **Hugging Face ZeroGPU Space**, variant `noop`. https://raiyan465-kom-bish.hf.space . Render was not needed. Laptop `--share` backup works. Decided late (11 Oct). | Sun 11 Oct 2026 | Claude Code, on Raiyan's instruction |
 | G2 | Trained ONNX | Sun 11 Oct, 6 PM | **Passed with a changed plan.** Trained ONNX exists (`run9_final`). Trained on the laptop's RTX 4070, not Kaggle. Dhan-Shomadhan had to move into training, so there is no true cross-source blast test any more. Details in "G2 — training" below. | Sun 11 Oct 2026, about 03:00 | Claude Code on Raiyan's laptop; TODO-HUMAN: team to confirm |
 | G3 | Voice on/off | Sun 11 Oct, 10 PM | TODO-HUMAN: not scored yet. Needs 10 test notes (step 15). Until then `VOICE_ENABLED=false` (photo-only). Model decided: `gemini-3.5-flash-lite` only (Raiyan, 11 Oct), so the score is run on that model alone. | | |
 | G4 | Hosted app works on phones | Mon 12 Oct, noon | | | |
@@ -433,6 +433,35 @@ the model:
   other voices after the reset, or record that one clip by hand (`scripts/process_clips.py`).
 - `pytest -q` and `pytest -q -m final` both pass.
 
+**Deployed (step 17, 11 Oct 2026, on Raiyan's instruction)**
+
+- **Live app: https://raiyan465-kom-bish.hf.space** (Space page: https://huggingface.co/spaces/Raiyan465/kom-bish).
+  A free ZeroGPU Gradio Space under the account `Raiyan465`; Hugging Face accepted it without a paid plan, so
+  Render was not set up. Hardware `zero-a10g`, stage RUNNING, `ZEROGPU_MODE=noop` (variant A worked; the app
+  itself runs ONNX on the CPU).
+- Deployed with `python scripts/deploy_space.py`: it uploads an allow-list of 27 files (the app, `kombish/`,
+  the two CSVs, the clips, the examples, `requirements.txt`, `README.md`, `LICENSE`) and nothing else.
+- Space variables: `MODEL_REPO`, `LOG_REPO`, `GEMINI_MODEL`, `VOICE_ENABLED=false`, `APP_VERSION=1.0.0-rc`,
+  `ZEROGPU_MODE=noop`. Space secret: `HF_TOKEN` (value never printed). `GEMINI_API_KEY` was **not** uploaded,
+  because voice is switched off and the app does not need it.
+- **Smoke test on the live URL** (`scripts/smoke_hosted.py`, all five example photos): 7 of 7 calls succeeded
+  (consent off, no photo, and the five photos: BLB answer, lesion question, healthy answer, two referrals).
+  Separately on the live app: the blast photo with "yes" gave the spray answer with both clips; "not sure"
+  gave the referral; the "Show English" toggle added the translation. All eight files the page references
+  (five examples, the consent clip, two Gradio assets) return HTTP 200.
+- **Logging arrives:** 7 consultation records with `app_version` `1.0.0-rc` reached the private dataset
+  `Raiyan465/kom-bish-logs` in the 13:04 UTC scheduled commit, with only the allowed fields. **These 7 are our
+  own smoke-test calls, plus 1 record from the laptop test, so the dashboard counters start at 8, not 0.**
+- **Laptop backup:** `python app.py --share` created a `*.gradio.live` link, the page loaded, and the same
+  smoke test passed 7 of 7 through it. The link lives only while the process runs.
+- TODO-HUMAN:
+  - Phone test over mobile data on the direct URL (gate G4, `docs/phone_test.md`).
+  - The Space's `HF_TOKEN` secret is the broad token from `.env` (it can write to every repo of the account).
+    Replace it in Space Settings → Secrets with a fine-grained token that can write to `kom-bish-logs` only.
+  - GitHub → Space sync is not active: it needs the Actions variable `HF_SPACE_ID=Raiyan465/kom-bish` and the
+    secret `HF_SYNC_TOKEN`. Until then, update the Space with `python scripts/deploy_space.py`.
+  - A free ZeroGPU Space sleeps after long inactivity; open the link a few minutes before a demo.
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
 with `blast_threshold` in `labels.json` and the updated card. A download with no token
@@ -475,10 +504,10 @@ test are still open, so G1 is undecided and already past its Sat 10 PM deadline.
 **TODO-HUMAN:** Which HF account (if any) is older than 30 days with a verified email? Write the account
 name here. If none, skip the ZeroGPU Space and use Render plus the laptop backup.
 
-- HF account for ZeroGPU: TODO-HUMAN
-- ZeroGPU variant that started (`noop` / `wrap` / neither): TODO-HUMAN
-- HF Space URL: TODO-HUMAN
-- Render URL: TODO-HUMAN
+- HF account for ZeroGPU: `Raiyan465` (the Space was created without a paid plan)
+- ZeroGPU variant that started: `noop` (`ZEROGPU_MODE=noop`); the Space reached RUNNING on `zero-a10g` hardware
+- HF Space URL: https://raiyan465-kom-bish.hf.space (direct), https://huggingface.co/spaces/Raiyan465/kom-bish (Space page)
+- Render URL: not set up; Hugging Face accepted the Space, so Render was skipped
 - Phone test (mic permission prompt seen, camera/gallery offered): TODO-HUMAN
 
 ### Render settings (copy into the Render dashboard)

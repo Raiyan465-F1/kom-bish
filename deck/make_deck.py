@@ -260,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--summary", type=Path, default=SUMMARY)
     p.add_argument("--voice", choices=["on", "off", "undecided"], default="undecided", help="gate G3 decision")
     p.add_argument("--video-url", default="VIDEO_URL_TODO")
-    p.add_argument("--demo-url", default="DEMO_URL_TODO")
+    p.add_argument("--demo-url", default="https://raiyan465-kom-bish.hf.space")
     args = p.parse_args(argv)
     if args.summary.exists():
         S = json.loads(args.summary.read_text(encoding="utf-8"))

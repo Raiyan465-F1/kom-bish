@@ -20,6 +20,7 @@ Checks before recording:
   checked English translation. Keep the main take in Bangla only.
 - The end-card numbers come from `training/eval_summary.json` on the day (`wrong_spray_if_yes_total`,
   `external_n`, `external_dataset`). Do not type a number from memory.
-- TODO-HUMAN: repo URL and demo URL for the end card.
+- End card URLs: demo https://raiyan465-kom-bish.hf.space ; repo https://github.com/Raiyan465-F1/kom-bish
+  (the repo must be public before the video is published).
 - The subtitles follow the Bangla text as it is today. If a reviewer changes any Bangla line, update the
   matching cue in `video/subtitles_en.srt` and the English in `data/clips.csv` / `data/rules.csv`.
