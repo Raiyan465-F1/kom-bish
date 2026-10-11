@@ -14,7 +14,7 @@ license: mit
 # Kom Bish (কম বিষ) — a Bangla rice adviser that says whether to spray at all
 
 > **DRAFT README (11 Oct 2026).** The app, the rule engine, the tests and a trained classifier exist.
-> The Bangla is **not yet reviewed** by a native speaker, the audio clips are a **computer-generated voice** and nothing
+> The Bangla was **reviewed by one native speaker** on 11 Oct 2026. The audio clips are a **computer-generated voice** that no person has listened to yet, and nothing
 > is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
 > No number on this page is invented: each comes from `training/eval_summary.json`.
 
@@ -57,11 +57,11 @@ How to try: tick the consent box, upload a rice-leaf photo, press **পরাম
 | Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 12,201 CC BY 4.0 rice photos from Bangladesh and India. **It recognises healthy leaves and refers most diseased ones; diseases from a new source are not recognised** (see Evaluation). Published with its model card at [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT); the previous model is kept there as revision `v1`. |
 | Rule engine | Real: pure Python, six rules, [`kombish/rules.py`](kombish/rules.py), tested |
 | Voice parsing | Code is real (Gemini `gemini-3.5-flash-lite` returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
-| Spoken answer | **Computer-generated voice.** Six clips were generated offline with Gemini text-to-speech (`gemini-3.8-flash-tts`) from the exact on-screen text, and the app labels them "computer-generated voice". Nothing is synthesised live. No native speaker has listened to them yet. A human recording can replace any clip later (`scripts/process_clips.py`). The "voice failed" line has no text and no clip yet. |
+| Spoken answer | **Computer-generated voice.** Seven clips were generated offline with Gemini text-to-speech (`gemini-3.8-flash-tts`; the short "voice failed" clip with `gemini-3.8-flash-lite-tts`) from the exact reviewed on-screen text, and the app labels them "computer-generated voice". Nothing is synthesised live. **No person has listened to them yet**; a machine check could not confirm that the product name is pronounced clearly in the consent clip. A human recording can replace any clip later (`scripts/process_clips.py`). |
 | "Estimated sprays avoided" | Advice-based count, unverified: nobody checked what the farmer did next |
 | Telegram, WhatsApp, phone call | Not built |
 | Agronomist review | Not yet reviewed by an agronomist |
-| Bangla review | TODO-HUMAN: all Bangla text is still a draft. One native-speaker reviewer is required. The full list is in [`docs/bangla_review.md`](docs/bangla_review.md). |
+| Bangla review | Every farmer-facing Bangla line was reviewed by one native speaker (Raiyan Rahman) on 11 Oct 2026. The full list is in [`docs/bangla_review.md`](docs/bangla_review.md). |
 | Field trial | None |
 
 ## The problem
@@ -74,7 +74,7 @@ The person who sells the spray is often the person who gives the advice.
 
 ## What it does: the four answers
 
-| Answer (Bangla, DRAFT) | In English | When | Source |
+| Answer (Bangla) | In English | When | Source |
 |---|---|---|---|
 | কীটনাশক লাগবে না, সার ঠিক করুন | No insecticide needed, fix the fertiliser | `R1_BLB`: bacterial leaf blight | [BRRI notice, 19 Mar 2023](https://brri.portal.gov.bd/sites/default/files/files/brri.portal.gov.bd/news/245bba32_a089_4da8_9845_d9afcddf455f/2023-04-05-05-24-b9fb45272dcf3a51acb0e89254944725.pdf); [DAE/BAMIS bulletin](https://www.bamis.gov.bd/res/pages/2023/03/19/26691.pdf) |
 | স্প্রে লাগবে, তবে ঠিকভাবে | Spray correctly: tricyclazole-group fungicide, label dose, safety script | `R2_BLAST`: blast, very high confidence, and the farmer answers "yes" to the lesion-shape question | BRRI notice; DAE/BAMIS bulletin; [FAO PPE guidelines](https://fao.org/fileadmin/templates/agphome/documents/Pests_Pesticides/Code/Old_guidelines/PROTECT.pdf) |
@@ -117,7 +117,7 @@ flowchart LR
 - **Spray advice is stricter than no-spray advice.** "Spray correctly" needs three things: the general
   confidence gate, a blast-only threshold (0.999), and the farmer's own "yes" to one question about the
   lesion shape (eye or spindle shaped, grey centre, brown edge). "No" or "not sure" gives a referral. The
-  question's Bangla is a draft awaiting review. Tests: [`tests/test_rules.py`](tests/test_rules.py).
+  question was worded by our native-speaker reviewer. Tests: [`tests/test_rules.py`](tests/test_rules.py).
 - **Voice can only add caution.** With a voice note the decision is the same as without it, or a referral. Tests enforce this: [`tests/test_rules.py`](tests/test_rules.py).
 - **Bacterial leaf blight.** The official notice also lists a sulphur-based foliar mix; Kom Bish deliberately omits it and refers the farmer instead.
 - **No brands, no doses.** Kom Bish names active-ingredient groups only as they appear in BRRI/DAE advisories, never brands or doses, and takes no money from input sellers. Dose and harvest wait are "follow the label".
@@ -273,7 +273,7 @@ that label:
 - The lesion-shape question relies on the farmer's own judgement and has not been tested with farmers.
 - No field test. Nobody has checked what a farmer did after an answer.
 - The rules are not yet signed off by an agronomist.
-- TODO-HUMAN: who reviewed the Bangla (step 06).
+- The Bangla was reviewed by one native speaker, not two, and not by an agronomist.
 - TODO-HUMAN: voice accuracy, from a 10-note test only (gate G3).
 - The `other` class does not cover non-rice photos.
 

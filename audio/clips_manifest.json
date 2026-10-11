@@ -1,44 +1,44 @@
 {
  "blast": {
-  "bytes": 211680,
-  "duration_s": 21.1,
+  "bytes": 255360,
+  "duration_s": 25.5,
   "generated": "2026-10-11",
-  "text_sha256": "245498439f3c8f61a447da13523d94c3cead522211b1dcc3aeefd9554ffde781",
-  "transcribe_back_model": "gemini-3.5-flash-lite",
-  "transcribe_back_similarity": 0.993,
-  "tts_model": "gemini-3.8-flash-tts",
-  "tts_voice": "Charon",
-  "voice": "computer-generated"
- },
- "blb": {
-  "bytes": 172560,
-  "duration_s": 17.2,
-  "generated": "2026-10-11",
-  "text_sha256": "68e8e365ce3aa782707e481e26c00276c58095dbad60ca183554ddbe1660098a",
+  "text_sha256": "6229943c120cf82d2e1d7d81f7a242a38dbc13e1845bb977fbb75786ca0598c0",
   "transcribe_back_model": "gemini-3.5-flash-lite",
   "transcribe_back_similarity": 1.0,
   "tts_model": "gemini-3.8-flash-tts",
   "tts_voice": "Charon",
   "voice": "computer-generated"
  },
- "consent": {
-  "bytes": 281760,
-  "duration_s": 28.1,
+ "blb": {
+  "bytes": 185760,
+  "duration_s": 18.5,
   "generated": "2026-10-11",
-  "text_sha256": "2abfd66fe15cdeef404b5f289db4bca554e8fc531d19fc253577b40224619dac",
+  "text_sha256": "54678d29c59a7fa7845e0ab7a66109a6aac4f15c99076ec132cff773f9a01f43",
   "transcribe_back_model": "gemini-3.5-flash-lite",
-  "transcribe_back_similarity": 0.941,
+  "transcribe_back_similarity": 0.979,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "consent": {
+  "bytes": 245760,
+  "duration_s": 24.5,
+  "generated": "2026-10-11",
+  "text_sha256": "0873d4926ff4a710937d980bdf5ede48589c868a379b3589dc47d84ca1233dd2",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.792,
   "tts_model": "gemini-3.8-flash-tts",
   "tts_voice": "Charon",
   "voice": "computer-generated"
  },
  "healthy": {
-  "bytes": 326640,
-  "duration_s": 32.6,
+  "bytes": 276480,
+  "duration_s": 27.6,
   "generated": "2026-10-11",
-  "text_sha256": "5a5ffd4fff6052f0a5d968ca58e186851042af16e622576d4acd9ae46207974b",
+  "text_sha256": "429e81e8982743605e9d36b789933fe37c9c91e77f1567eb1930395b91425c2d",
   "transcribe_back_model": "gemini-3.5-flash-lite",
-  "transcribe_back_similarity": 0.933,
+  "transcribe_back_similarity": 0.942,
   "tts_model": "gemini-3.8-flash-tts",
   "tts_voice": "Charon",
   "voice": "computer-generated"
@@ -55,13 +55,24 @@
   "voice": "computer-generated"
  },
  "safety": {
-  "bytes": 300960,
-  "duration_s": 30.0,
+  "bytes": 296880,
+  "duration_s": 29.6,
   "generated": "2026-10-11",
-  "text_sha256": "b65ce89a2f68447530300c000a01e5607756c5673fdced2f319357ce165a45b1",
+  "text_sha256": "8c3d5f5127f51ab06c5131b5528191fa3bb18ad5b0adee1098e47f4c78d54025",
   "transcribe_back_model": "gemini-3.5-flash-lite",
-  "transcribe_back_similarity": 0.989,
+  "transcribe_back_similarity": 0.993,
   "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "voice_failed": {
+  "bytes": 51360,
+  "duration_s": 5.1,
+  "generated": "2026-10-11",
+  "text_sha256": "df33dcdd51c18b2973e24ed77ee01ef442d91f043a5abbee7d465676407da575",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.974,
+  "tts_model": "gemini-3.8-flash-lite-tts",
   "tts_voice": "Charon",
   "voice": "computer-generated"
  }

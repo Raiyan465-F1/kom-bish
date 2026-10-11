@@ -60,7 +60,15 @@ def _english_labels(show_english):
             gr.Checkbox(label=texts.both(texts.CONSENT_CHECKBOX_BN, texts.CONSENT_CHECKBOX_EN, on)),
             gr.Image(label=texts.both(texts.LABEL_PHOTO_BN, texts.LABEL_PHOTO_EN, on)),
             gr.Radio(label=texts.both(texts.SPRAY_INTENT_Q_BN, texts.SPRAY_INTENT_Q_EN, on)),
-            gr.Radio(label=texts.both(question["headline_bn"], question["headline_en"], on)))
+            gr.Radio(label=texts.both(question["headline_bn"], question["headline_en"], on)),
+            gr.Markdown(value=_photo_instruction(on)))
+
+
+def _photo_instruction(show_english: bool) -> str:
+    """How to take the photo: shown above the photo box."""
+    if not show_english:
+        return texts.PHOTO_INSTRUCTION_BN
+    return f"{texts.PHOTO_INSTRUCTION_BN}\n\n*{texts.PHOTO_INSTRUCTION_EN}*"
 
 
 def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
@@ -143,6 +151,7 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
             consent = gr.Checkbox(label=texts.CONSENT_CHECKBOX_BN, value=False)
             with gr.Row():
                 with gr.Column():
+                    photo_help = gr.Markdown(_photo_instruction(False))
                     img = gr.Image(type="pil", sources=["upload", "webcam"], label=texts.LABEL_PHOTO_BN)
                     aud = gr.Audio(sources=["microphone", "upload"], type="filepath",
                                    label=texts.LABEL_VOICE_BN, visible=voice_on)
@@ -168,7 +177,7 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
             consent.change(lambda c: gr.Button(interactive=bool(c)), inputs=consent, outputs=btn)
             img.change(lambda: _question(False), outputs=blast_q)   # a new photo starts with no answer
             show_english.change(_english_labels, inputs=show_english,
-                                outputs=[consent_en, consent, img, planning, blast_q])
+                                outputs=[consent_en, consent, img, planning, blast_q, photo_help])
             btn.click(make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on),
                       inputs=[consent, img, aud, planning, blast_q, show_english],
                       outputs=[answer, echo, out_audio, out_audio2, consult_id, fb_btn, fb_md, blast_q],

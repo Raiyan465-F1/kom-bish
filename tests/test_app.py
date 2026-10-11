@@ -223,6 +223,19 @@ def test_english_toggle_labels():
     assert on[4].label == f"{question['headline_bn']} / {question['headline_en']}"
     assert off[3].label == texts.SPRAY_INTENT_Q_BN and on[3].label.endswith(texts.SPRAY_INTENT_Q_EN)
     assert off[1].label == texts.CONSENT_CHECKBOX_BN and off[2].label == texts.LABEL_PHOTO_BN
+    assert off[5].value == texts.PHOTO_INSTRUCTION_BN                      # the photo instruction, Bangla only
+    assert on[5].value.startswith(texts.PHOTO_INSTRUCTION_BN) and texts.PHOTO_INSTRUCTION_EN in on[5].value
+
+
+def test_photo_instruction_is_shown_above_the_photo_box(harness):
+    demo = app_module.build_demo(predict_fn=fake_predict, meta_fn=fake_meta, voice_fn=harness.voice,
+                                 log_fn=harness.log, feedback_fn=harness.log_feedback, counts_fn=harness.counts,
+                                 voice_on=False)
+    ids = list(demo.blocks)
+    help_id = next(i for i in ids if type(demo.blocks[i]).__name__ == "Markdown"
+                   and demo.blocks[i].value == texts.PHOTO_INSTRUCTION_BN)
+    image_id = next(i for i in ids if type(demo.blocks[i]).__name__ == "Image")
+    assert ids.index(help_id) < ids.index(image_id)
 
 
 def markdown_values(demo) -> list[str]:

@@ -399,6 +399,40 @@ the model:
   Bangla. TODO-HUMAN: paste the edited lines, the reviewer's name and the review date. Then: apply them, mark
   the rows reviewed, update the English lines and subtitle cues that change, and regenerate the changed clips.
 
+**Bangla review applied (11 Oct 2026)**
+
+- Reviewer: Raiyan Rahman, native speaker, reviewed 2026-10-11 (one reviewer, as the rule now requires).
+- Edited exactly as supplied: consent (1), BLB answer (2), blast answer (3), spray safety (4), healthy
+  answer (5), the new voice-failed line (7), the lesion question (12), the note under the microphone (18),
+  the spray question (19), the confirm line (27), the voice echo (28), the BLB disease name (34), and a new
+  photo instruction shown above the photo box. Everything else was approved as it was. `CONSENT_VERSION` is
+  now `2026-10-11-v1`.
+- Marked reviewed: all seven wired clips in `data/clips.csv` and all ten rows in `data/rules.csv`. The English
+  lines (`gloss_en`, `headline_en`, `*_EN`) and four subtitle cues were updated to match.
+  `docs/bangla_review.md` was regenerated (37 items).
+- Review note: the reviewed healthy answer no longer has "তবে" before the exception sentence. Step 06's
+  checklist asked to keep it; the reviewer's wording was applied as given.
+- **Audio regenerated** from the reviewed text with `scripts/tts_fallback.py` (voice "Charon"):
+
+  | Clip | Model | Length | Transcribe-back similarity | Note |
+  |---|---|---|---|---|
+  | `consent` | gemini-3.8-flash-tts | 24.5 s | 0.792 | **The product name is not confirmed.** Two transcriptions heard "কম বিষ" as "কম্বিনেশ" / "Kombinis". The rest matched, except "তা রাখি" heard as "তার বাকি". |
+  | `blb` | gemini-3.8-flash-tts | 18.5 s | 0.979 | |
+  | `blast` | gemini-3.8-flash-tts | 25.5 s | 1.000 | Just over the 25-second guide. |
+  | `safety` | gemini-3.8-flash-tts | 29.6 s | 0.993 | Over the 25-second guide. |
+  | `healthy` | gemini-3.8-flash-tts | 27.6 s | 0.942 | Over the 25-second guide. The phone number was heard as the five digit words "এক ছয় এক দুই তিন". "ডিগ" was heard as "ডিক". |
+  | `not_sure` | gemini-3.8-flash-tts | 19.2 s | 0.995 | Not regenerated (text unchanged). Phone number heard digit by digit. |
+  | `voice_failed` | gemini-3.8-flash-lite-tts | 5.1 s | 0.974 | New. Made with the lite model because the main model's free quota ran out. |
+
+  The similarity comes from transcribing each clip back with `gemini-3.5-flash-lite`; it is a rough machine
+  check, and that model is unreliable on an unusual name: on five short test clips it heard the product name
+  five different ways. **No person has listened to any clip.** TODO-HUMAN: listen to all seven, the consent
+  clip first.
+- The free tier allows 10 requests a day to `gemini-3.8-flash-tts`; it was used up at about 16:20 on 11 Oct
+  and resets about 14 hours later. If the product name is wrong in the consent clip, the options are: try
+  other voices after the reset, or record that one clip by hand (`scripts/process_clips.py`).
+- `pytest -q` and `pytest -q -m final` both pass.
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
 with `blast_threshold` in `labels.json` and the updated card. A download with no token
