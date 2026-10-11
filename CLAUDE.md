@@ -187,7 +187,8 @@ pip install -r training/requirements-train.txt
 
 - Keep `app.py` thin. Safety logic lives in `kombish/` where a judge can read it.
 - Load the ONNX session lazily once (cached), so importing `app` in tests needs no network.
-- Bangla text: every Bangla string in this repo is a **DRAFT until two native speakers mark it reviewed** in
+- Bangla text: every Bangla string in this repo is a **DRAFT until one native speaker marks it reviewed**
+  (team decision, 11 Oct 2026; it was two) in
   `data/clips.csv` / `data/rules.csv`. Do not reword reviewed Bangla without the human's approval.
   NFC-normalise Bangla before comparing strings (`unicodedata.normalize("NFC", s)`).
 - Phones need HTTPS for mic and camera. Never tell anyone to use a LAN IP for a phone test.

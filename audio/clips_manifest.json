@@ -1,0 +1,68 @@
+{
+ "blast": {
+  "bytes": 211680,
+  "duration_s": 21.1,
+  "generated": "2026-10-11",
+  "text_sha256": "245498439f3c8f61a447da13523d94c3cead522211b1dcc3aeefd9554ffde781",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.993,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "blb": {
+  "bytes": 172560,
+  "duration_s": 17.2,
+  "generated": "2026-10-11",
+  "text_sha256": "68e8e365ce3aa782707e481e26c00276c58095dbad60ca183554ddbe1660098a",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 1.0,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "consent": {
+  "bytes": 281760,
+  "duration_s": 28.1,
+  "generated": "2026-10-11",
+  "text_sha256": "2abfd66fe15cdeef404b5f289db4bca554e8fc531d19fc253577b40224619dac",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.941,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "healthy": {
+  "bytes": 326640,
+  "duration_s": 32.6,
+  "generated": "2026-10-11",
+  "text_sha256": "5a5ffd4fff6052f0a5d968ca58e186851042af16e622576d4acd9ae46207974b",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.933,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "not_sure": {
+  "bytes": 192480,
+  "duration_s": 19.2,
+  "generated": "2026-10-11",
+  "text_sha256": "8c83096d2cf4ec12d08b209fe8daf6c2b60d02a2a93acd7204339ca865b3030a",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.995,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ },
+ "safety": {
+  "bytes": 300960,
+  "duration_s": 30.0,
+  "generated": "2026-10-11",
+  "text_sha256": "b65ce89a2f68447530300c000a01e5607756c5673fdced2f319357ce165a45b1",
+  "transcribe_back_model": "gemini-3.5-flash-lite",
+  "transcribe_back_similarity": 0.989,
+  "tts_model": "gemini-3.8-flash-tts",
+  "tts_voice": "Charon",
+  "voice": "computer-generated"
+ }
+}

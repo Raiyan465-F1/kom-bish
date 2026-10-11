@@ -101,6 +101,11 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
     counts_fn = counts_fn or logging_store.counts
     voice_on = voice.voice_enabled() if voice_on is None else voice_on
 
+    # Clips made with text-to-speech are labelled on screen. A missing clip is fine: the answer is shown as text.
+    synthetic_voice = any(row.get("voice") == "computer-generated" and _clip(row["file"])
+                          for row in rules.load_clips().values())
+    voice_note = f"*{texts.AUDIO_SYNTHETIC_NOTE_BN} (computer-generated voice)*"
+
     def stats():
         c = counts_fn()
         return c["total"], c["no_spray"], c["correct_use"], c["referrals"], c["sprays_avoided"]
@@ -112,6 +117,8 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
             if _clip("audio/consent.mp3"):
                 gr.Audio(value=_clip("audio/consent.mp3"), label=texts.LABEL_LISTEN_BN,
                          interactive=False, autoplay=False)
+                if synthetic_voice:
+                    gr.Markdown(voice_note)
             consent = gr.Checkbox(label=texts.CONSENT_CHECKBOX_BN, value=False)
             with gr.Row():
                 with gr.Column():
@@ -132,6 +139,7 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
                                          interactive=False, autoplay=False)
                     out_audio2 = gr.Audio(type="filepath", label=texts.LABEL_SAFETY_BN,
                                           interactive=False, autoplay=False, visible=False)
+                    gr.Markdown(voice_note, visible=synthetic_voice)
                     fb_btn = gr.Button(texts.FEEDBACK_BN, variant="secondary", visible=False)
                     fb_md = gr.Markdown(visible=False)
             if EXAMPLES:
@@ -168,6 +176,7 @@ def main():
         share="--share" in sys.argv,
         theme=gr.themes.Soft(font=[gr.themes.GoogleFont("Noto Sans Bengali"), "sans-serif"]),
         head=FONT_HEAD,
+        allowed_paths=[str(ROOT / "audio"), str(ROOT / "examples")],
     )
 
 

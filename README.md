@@ -14,7 +14,7 @@ license: mit
 # Kom Bish (কম বিষ) — a Bangla rice adviser that says whether to spray at all
 
 > **DRAFT README (11 Oct 2026).** The app, the rule engine, the tests and a trained classifier exist.
-> The Bangla is **not yet reviewed** by native speakers, the audio clips are **not recorded** and nothing
+> The Bangla is **not yet reviewed** by a native speaker, the audio clips are a **computer-generated voice** and nothing
 > is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
 > No number on this page is invented: each comes from `training/eval_summary.json`.
 
@@ -55,11 +55,11 @@ How to try: tick the consent box, upload a rice-leaf photo, press **পরাম
 | Photo classifier | Real: ONNX MobileNetV3-Large, fine-tuned on 12,201 CC BY 4.0 rice photos from Bangladesh and India. **It recognises healthy leaves and refers most diseased ones; diseases from a new source are not recognised** (see Evaluation). Published with its model card at [Raiyan465/kom-bish-rice-leaf](https://huggingface.co/Raiyan465/kom-bish-rice-leaf) (MIT); the previous model is kept there as revision `v1`. |
 | Rule engine | Real: pure Python, six rules, [`kombish/rules.py`](kombish/rules.py), tested |
 | Voice parsing | Code is real (Gemini `gemini-3.5-flash-lite` returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
-| Spoken answer | TODO-HUMAN: pre-recorded human clips, not recorded yet (step 16). No live text-to-speech. |
+| Spoken answer | **Computer-generated voice.** Six clips were generated offline with Gemini text-to-speech (`gemini-3.8-flash-tts`) from the exact on-screen text, and the app labels them "computer-generated voice". Nothing is synthesised live. No native speaker has listened to them yet. A human recording can replace any clip later (`scripts/process_clips.py`). The "voice failed" line has no text and no clip yet. |
 | "Estimated sprays avoided" | Advice-based count, unverified: nobody checked what the farmer did next |
 | Telegram, WhatsApp, phone call | Not built |
 | Agronomist review | Not yet reviewed by an agronomist |
-| Bangla review | TODO-HUMAN: all Bangla text is still a draft (step 06) |
+| Bangla review | TODO-HUMAN: all Bangla text is still a draft. One native-speaker reviewer is required. The full list is in [`docs/bangla_review.md`](docs/bangla_review.md). |
 | Field trial | None |
 
 ## The problem
@@ -97,7 +97,7 @@ flowchart LR
   V["Optional Bangla voice note"] --> G["Gemini: fixed symptom list, or nothing"]
   G -- "can only add caution" --> F
   F --> H["Reviewed Bangla text (data/clips.csv)"]
-  F --> I["Human-recorded MP3 clip"]
+  F --> I["Pre-generated MP3 clip (computer-generated voice)"]
   F --> L[("Anonymous log: private HF dataset")]
 ```
 

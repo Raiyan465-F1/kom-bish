@@ -263,10 +263,37 @@ def test_headline_digits_only_16123():
 
 
 # ---- release checks (pytest -m final) ----
+def test_computer_generated_clips_say_the_current_text():
+    """A text-to-speech clip was made from one exact text. If the text changes, the clip must be regenerated."""
+    import hashlib
+    import json
+
+    manifest_path = ROOT / "audio" / "clips_manifest.json"
+    if not manifest_path.exists():
+        pytest.skip("no generated clips")
+    manifest = json.loads(manifest_path.read_text("utf-8"))
+    for cid, row in load_clips().items():
+        if row.get("voice") != "computer-generated":
+            continue
+        assert (ROOT / row["file"]).exists(), f"{cid}: marked computer-generated but the file is missing"
+        assert cid in manifest, f"{cid}: no manifest entry (run scripts/tts_fallback.py)"
+        assert manifest[cid]["text_sha256"] == hashlib.sha256(nfc(row["text_bn"]).encode("utf-8")).hexdigest(), \
+            f"{cid}: the text changed after the clip was generated; run scripts/tts_fallback.py --only {cid}"
+
+
+def test_audio_is_optional():
+    """Audio never blocks an answer: a rule still returns its text when a clip file does not exist."""
+    a = decide("bacterial_leaf_blight", 0.99, True, None, None, threshold=T)
+    assert a.text_md and a.clips == ("audio/blb.mp3",)   # the app shows the text and skips a missing file
+
+
 @pytest.mark.final
 def test_clip_files_exist():
     for cid in wired_clip_ids():
-        p = ROOT / load_clips()[cid]["file"]
+        row = load_clips()[cid]
+        if row["text_bn"].strip().upper().startswith("TODO"):
+            continue   # no text yet, so no clip; test_no_placeholders_left reports it
+        p = ROOT / row["file"]
         assert p.exists() and p.stat().st_size > 0, p
 
 
@@ -275,7 +302,8 @@ def test_wired_text_is_reviewed():
     for cid in wired_clip_ids():
         row = load_clips()[cid]
         assert row["review_status"] == "reviewed", cid
-        assert row["reviewer_1"] and row["reviewer_2"] not in ("", "PENDING"), cid
+        # One native-speaker reviewer is required (team decision, 11 Oct 2026; it was two). reviewer_2 is optional.
+        assert row["reviewer_1"].strip() not in ("", "PENDING"), cid
     for rid, row in load_rules().items():
         assert row["review_status"] == "reviewed", rid
 

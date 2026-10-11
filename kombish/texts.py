@@ -34,3 +34,5 @@ SOURCE_LABEL_BN = "সূত্র"                           # NEW
 LABEL_SAFETY_BN = "স্প্রের নিরাপত্তা"                  # NEW
 FEEDBACK_BN = "ভুল মনে হচ্ছে"                        # NEW ("this looks wrong")
 FEEDBACK_THANKS_BN = "ধন্যবাদ"                       # NEW
+# Shown next to the audio players while the clips are generated with text-to-speech, not recorded by a person.
+AUDIO_SYNTHETIC_NOTE_BN = "কম্পিউটারে তৈরি কণ্ঠ"        # NEW ("computer-generated voice"), DRAFT written 11 Oct 2026

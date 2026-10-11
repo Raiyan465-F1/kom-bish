@@ -58,7 +58,11 @@ def main(argv: list[str] | None = None) -> int:
         fields, rows = reader.fieldnames, list(reader)
     by_id = {r["clip_id"]: r for r in rows}
 
-    summary, missing = [], 0
+    if "voice" not in fields:
+        fields.append("voice")
+    for r in rows:
+        r.setdefault("voice", "")
+    summary, missing, replaced = [], 0, []
     for clip_id in WIRED:
         if by_id[clip_id]["review_status"] != "reviewed":
             print(f"WARNING: {clip_id} text is not reviewed yet (step 06). Recording unreviewed text wastes the take.")
@@ -76,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
             continue
         size = dest.stat().st_size
         by_id[clip_id]["duration_s"] = f"{seconds:.1f}"
+        by_id[clip_id]["voice"] = "human"   # replaces a computer-generated clip and its on-screen label
+        replaced.append(clip_id)
         warnings = []
         if seconds > MAX_SECONDS:
             warnings.append(f"longer than {MAX_SECONDS:.0f} s")
@@ -91,6 +97,12 @@ def main(argv: list[str] | None = None) -> int:
         w.writeheader()
         w.writerows(rows)
 
+    manifest_path = args.out / "clips_manifest.json"   # text-to-speech records; a human clip no longer has one
+    if replaced and manifest_path.exists():
+        import json
+
+        manifest = {k: v for k, v in json.loads(manifest_path.read_text("utf-8")).items() if k not in replaced}
+        manifest_path.write_text(json.dumps(manifest, indent=1, ensure_ascii=False, sort_keys=True) + "\n", "utf-8")
     print(f"\n{'clip_id':<14}{'duration':<10}{'size':<9}status")
     for row in summary:
         print(f"{row[0]:<14}{row[1]:<10}{row[2]:<9}{row[3]}")

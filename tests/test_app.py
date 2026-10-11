@@ -196,6 +196,34 @@ def test_planning_to_spray_mapping(advise, harness, answer, expected):
     assert out[0] == expected_text(101)   # never changes the answer
 
 
+def markdown_values(demo) -> list[str]:
+    return [str(getattr(b, "value", "")) for b in demo.blocks.values() if type(b).__name__ == "Markdown"]
+
+
+def test_computer_generated_voice_is_labelled(harness, monkeypatch):
+    clips = {"consent": {"file": "audio/consent.mp3", "voice": "computer-generated"}}
+    monkeypatch.setattr(app_module.rules, "load_clips", lambda: clips)
+    monkeypatch.setattr(app_module, "_clip", lambda rel: f"/clips/{rel}" if rel else None)
+    demo = app_module.build_demo(predict_fn=fake_predict, meta_fn=fake_meta, voice_fn=harness.voice,
+                                 log_fn=harness.log, feedback_fn=harness.log_feedback, counts_fn=harness.counts,
+                                 voice_on=False)
+    notes = [v for v in markdown_values(demo) if texts.AUDIO_SYNTHETIC_NOTE_BN in v]
+    assert notes and all("computer-generated voice" in v for v in notes)
+
+
+def test_no_voice_label_and_no_crash_without_audio(harness, monkeypatch):
+    monkeypatch.setattr(app_module, "_clip", lambda rel: None)   # no clip files at all: text only
+    demo = app_module.build_demo(predict_fn=fake_predict, meta_fn=fake_meta, voice_fn=harness.voice,
+                                 log_fn=harness.log, feedback_fn=harness.log_feedback, counts_fn=harness.counts,
+                                 voice_on=False)
+    visible = [b for b in demo.blocks.values() if type(b).__name__ == "Markdown"
+               and texts.AUDIO_SYNTHETIC_NOTE_BN in str(b.value) and b.visible]
+    assert visible == []
+    advise = app_module.make_advise(fake_predict, fake_meta, harness.voice, harness.log, False)
+    out = advise(True, img(101), None, None)
+    assert out[0] == expected_text(101) and out[2] is None and out[3].visible is False
+
+
 def test_feedback_handler(harness):
     on_feedback = app_module.make_feedback(harness.log_feedback)
     md, button = on_feedback("id1")
