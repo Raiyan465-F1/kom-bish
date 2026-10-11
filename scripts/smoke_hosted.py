@@ -40,9 +40,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"connected to {args.base_url} in {time.perf_counter() - t0:.1f}s")
 
     # The last input is the lesion-shape question. Left unanswered, a blast photo shows the question itself.
-    cases = [("consent off", (False, handle_file(str(images[0])) if images else None, None, None, None)),
-             ("no photo", (True, None, None, None, None))]
-    cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN, None)) for q in images]
+    # The last input is the "Show English" toggle (off: the app answers in Bangla, as a farmer sees it).
+    cases = [("consent off", (False, handle_file(str(images[0])) if images else None, None, None, None, False)),
+             ("no photo", (True, None, None, None, None, False))]
+    cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN, None, False)) for q in images]
 
     errors = 0
     for name, inputs in cases:

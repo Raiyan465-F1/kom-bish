@@ -381,6 +381,24 @@ the model:
   with `scripts/process_clips.py` replaces a clip and removes the label for it.
 - `pytest -m final` now fails only on: Bangla not reviewed, and the `voice_failed` placeholder.
 
+**Language decision (Raiyan, 11 Oct 2026)**
+
+- The farmer-facing app (screens, answers, buttons, audio) stays Bangla. The README, model card, deck, video
+  script, Worker Studio summary and email draft are English.
+- New "Show English (for reviewers)" toggle in the app, off by default. On: the English translation appears
+  under each Bangla answer and headline, under the consent text, and beside each prompt (consent box, photo
+  box, spray question, lesion question). The audio stays Bangla. The decision, the log and the clips are the
+  same with the toggle on or off (tested). The English lines live beside the Bangla ones: `gloss_en` in
+  `data/clips.csv`, the new `headline_en` column in `data/rules.csv`, and the `*_EN` names in
+  `kombish/texts.py`. `Advice` gained a `text_en_md` field built line for line from those rows.
+- Video: `video/narration_en.md` (English narration) replaces `video/narration_bn.md`; `video/shot_list.md`
+  and `video/subtitles_en.srt` (24 cues, 110 s) were rewritten so the subtitles translate everything the app
+  shows or says in Bangla in the demo.
+- **Not done: the reviewer's Bangla edits** (items 1, 2, 3, 4, 5, 7, 12, 18, 19, 27, 28, 34 and the photo
+  instruction). The edited text was not in the message or in the repo, and Claude Code does not reword
+  Bangla. TODO-HUMAN: paste the edited lines, the reviewer's name and the review date. Then: apply them, mark
+  the rows reviewed, update the English lines and subtitle cues that change, and regenerate the changed clips.
+
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
 https://huggingface.co/Raiyan465/kom-bish-rice-leaf, licence MIT (Raiyan's choice); republished the same day
 with `blast_threshold` in `labels.json` and the updated card. A download with no token

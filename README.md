@@ -18,7 +18,9 @@ license: mit
 > is hosted. Every `TODO-HUMAN` below marks a fact that does not exist yet.
 > No number on this page is invented: each comes from `training/eval_summary.json`.
 
-TODO-HUMAN (C): one-line pitch in Bangla. DRAFT — needs native speaker review.
+**Language:** the app, its answers and its audio are in Bangla, for farmers. This README, the model card, the
+deck and the video are in English. In the app, tick **Show English (for reviewers)** to see the English
+translation under each Bangla answer, headline and prompt; the audio stays Bangla.
 
 Hack for Humanity BD 2026, Round 2 · Team Unsick · Track: Inclusive Rural Development & Agriculture
 

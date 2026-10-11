@@ -1,72 +1,115 @@
 1
-00:00:00,500 --> 00:00:05,000
-Most farmers spray
-on the dealer's word.
+00:00:00,500 --> 00:00:04,000
+The shop that sells the spray
+often gives the advice too.
 
 2
-00:00:05,000 --> 00:00:10,000
-Kom Bish says whether
-to spray at all.
+00:00:04,000 --> 00:00:08,000
+Kom Bish tells a rice farmer
+whether to spray at all.
 
 3
-00:00:10,000 --> 00:00:18,000
-TODO-C: narration line 2
+00:00:08,000 --> 00:00:12,000
+[App] Kom Bish is a computer program,
+not a government officer.
 
 4
-00:00:18,000 --> 00:00:26,000
-The farmer reads the consent text
-and ticks the box.
+00:00:12,000 --> 00:00:16,000
+[App] Your photo is only used
+to give advice. We do not keep it.
 
 5
-00:00:26,000 --> 00:00:36,000
-A rice-leaf photo is uploaded.
-(Sample image: RiceLeafBD test split)
+00:00:16,000 --> 00:00:20,000
+[App] We keep only the result,
+with no name or phone number.
 
 6
-00:00:36,000 --> 00:00:44,000
-"From the photo, this looks like
-bacterial leaf blight."
+00:00:20,000 --> 00:00:23,000
+[App] Tick if you agree.
 
 7
-00:00:44,000 --> 00:00:54,000
-No insecticide needed —
-fix the fertiliser
+00:00:23,000 --> 00:00:27,000
+The farmer uploads a leaf photo.
+(Sample image: RiceLeafBD test split)
 
 8
-00:00:54,000 --> 00:01:05,000
-The same reviewed text plays
-as a recorded human voice.
+00:00:27,000 --> 00:00:31,000
+[App] No insecticide needed,
+fix the fertiliser
 
 9
-00:01:05,000 --> 00:01:15,000
-"Before spraying anything else,
-talk to your agriculture officer."
+00:00:31,000 --> 00:00:35,000
+[App voice] It looks like
+bacterial leaf blight.
 
 10
-00:01:15,000 --> 00:01:22,000
-Blast: Spray correctly,
-and stay safe
+00:00:35,000 --> 00:00:40,000
+[App voice] Insecticide does not
+cure it, so don't buy any.
 
 11
-00:01:22,000 --> 00:01:27,000
-A safety clip plays
-with every spray answer.
+00:00:40,000 --> 00:00:44,000
+[App voice] Stop urea for now.
 
 12
-00:01:27,000 --> 00:01:33,000
-Not sure — call 16123
-or your agriculture officer
+00:00:44,000 --> 00:00:50,000
+[App voice] After the rain, per bigha:
+5 kg potash and 3.5 kg gypsum.
 
 13
-00:01:33,000 --> 00:01:38,000
-When it can't recognise the problem,
-Kom Bish doesn't guess.
+00:00:50,000 --> 00:00:55,000
+[App voice] Before spraying anything
+else, talk to your agriculture officer.
 
 14
-00:01:38,000 --> 00:01:44,000
-Code, live demo and evaluation:
-links on screen
+00:00:55,000 --> 00:00:59,000
+A second photo looks like blast.
+(Sample image: Paddy Doctor held-out)
 
 15
+00:00:59,000 --> 00:01:05,000
+[App] Are the spots eye- or spindle-
+shaped, grey centre, brown edge?
+
+16
+00:01:05,000 --> 00:01:08,000
+Only a "yes" gives spray advice.
+
+17
+00:01:08,000 --> 00:01:12,000
+[App] A spray is needed,
+but done correctly
+
+18
+00:01:12,000 --> 00:01:18,000
+[App voice] A tricyclazole-group
+fungicide. Dose: follow the label.
+
+19
+00:01:18,000 --> 00:01:23,000
+[App voice] Long sleeves, gloves,
+wind at your back. Wash afterwards.
+
+20
+00:01:23,000 --> 00:01:27,000
+A third photo is unclear.
+
+21
+00:01:27,000 --> 00:01:33,000
+[App] I can't be sure from this photo.
+Call 16123 or your local officer.
+
+22
+00:01:33,000 --> 00:01:38,000
+When it is not sure,
+Kom Bish does not guess.
+
+23
+00:01:38,000 --> 00:01:44,000
+Tested on photos from Bangladesh,
+India and the Philippines.
+
+24
 00:01:44,000 --> 00:01:50,000
-TODO-C: narration line 4 (thank you)
+Code, live demo and evaluation:
+links on screen

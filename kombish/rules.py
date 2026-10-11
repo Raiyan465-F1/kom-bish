@@ -37,6 +37,7 @@ class Advice:
     text_md: str
     clips: tuple[str, ...]
     sources: tuple[str, ...]
+    text_en_md: str = ""   # English translation of text_md, from the same CSV rows; shown only on request
 
 
 @lru_cache(maxsize=1)
@@ -101,7 +102,17 @@ def decide(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQuery |
         parts.append(clip_rows["voice_failed"]["text_bn"])
     if row["sources"]:
         parts.append(f"*{texts.SOURCE_LABEL_BN}: {row['sources']}*")
+    # The same answer in English, line for line, for reviewers (the "Show English" toggle).
+    parts_en = [f"## {row.get('headline_en', '')}"]
+    if rule_id in ("R1_BLB", "R2_BLAST"):
+        parts_en.append(texts.CONFIRM_TEMPLATE_EN.format(disease=texts.DISEASE_NAME_EN[label]))
+    parts_en += [clip_rows[c]["gloss_en"] for c in clip_ids]
+    if voice_failed and rule_id not in PROMPT_RULES:
+        parts_en.append(clip_rows["voice_failed"]["gloss_en"])
+    if row["sources"]:
+        parts_en.append(f"*{texts.SOURCE_LABEL_EN}: {row['sources']}*")
     return Advice(
+        text_en_md="\n\n".join(parts_en),
         rule_id=rule_id,
         decision=row["decision"],
         headline_bn=row["headline_bn"],

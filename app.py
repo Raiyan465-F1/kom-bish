@@ -45,15 +45,33 @@ def _question(visible: bool):
     return gr.Radio(value=None, visible=visible)
 
 
+def _answer_text(adv: rules.Advice, show_english: bool) -> str:
+    """The Bangla answer; with the toggle on, its English translation follows underneath (for reviewers)."""
+    if not show_english:
+        return adv.text_md
+    return f"{adv.text_md}\n\n---\n\n{texts.ENGLISH_NOTE}\n\n{adv.text_en_md}"
+
+
+def _english_labels(show_english):
+    """Toggle handler: show or hide the English under the consent text and beside each prompt."""
+    on = bool(show_english)
+    question = rules.load_rules()["R0_CONFIRM_BLAST"]
+    return (gr.Markdown(visible=on),
+            gr.Checkbox(label=texts.both(texts.CONSENT_CHECKBOX_BN, texts.CONSENT_CHECKBOX_EN, on)),
+            gr.Image(label=texts.both(texts.LABEL_PHOTO_BN, texts.LABEL_PHOTO_EN, on)),
+            gr.Radio(label=texts.both(texts.SPRAY_INTENT_Q_BN, texts.SPRAY_INTENT_Q_EN, on)),
+            gr.Radio(label=texts.both(question["headline_bn"], question["headline_en"], on)))
+
+
 def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
-    def advise(consent, img, audio_path, planning, blast_answer=None):
+    def advise(consent, img, audio_path, planning, blast_answer=None, show_english=False):
         t0 = time.perf_counter()
         planning_to_spray = {texts.YES_BN: True, texts.NO_BN: False}.get(planning)
         no_answer = (gr.Markdown(value="", visible=False), None, gr.Audio(value=None, visible=False), None,
                      gr.Button(visible=False), gr.Markdown(visible=False))
         if not consent or img is None:
             adv = rules.decide(None, 0.0, False, None, planning_to_spray, threshold=1.0, consent=bool(consent))
-            return (adv.text_md, *no_answer, _question(False))
+            return (_answer_text(adv, show_english), *no_answer, _question(False))
         m = meta_fn()
         pred = predict_fn(img)
         voice_used = bool(voice_on and audio_path)
@@ -63,7 +81,7 @@ def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
                            blast_threshold=m.get("blast_threshold"), blb_threshold=m.get("blb_threshold"),
                            blast_confirmed=BLAST_ANSWERS.get(blast_answer))
         if adv.rule_id in rules.PROMPT_RULES:   # ask the lesion-shape question first; no advice, no log yet
-            return (adv.text_md, *no_answer, _question(True))
+            return (_answer_text(adv, show_english), *no_answer, _question(True))
         consult_id = log_fn({
             "app_version": APP_VERSION, "predicted_class": pred.label, "confidence": round(pred.conf, 4),
             "probs": pred.probs, "abstained": pred.abstained, "voice_used": voice_used,
@@ -77,7 +95,7 @@ def make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on: bool):
         main = _clip(adv.clips[0]) if adv.clips else None
         extra = _clip(adv.clips[1]) if len(adv.clips) > 1 else None
         echo = _echo(vq.transcript_bn) if vq else ""
-        return (adv.text_md, gr.Markdown(value=echo, visible=bool(echo)), main,
+        return (_answer_text(adv, show_english), gr.Markdown(value=echo, visible=bool(echo)), main,
                 gr.Audio(value=extra, visible=extra is not None), consult_id,
                 gr.Button(visible=True), gr.Markdown(visible=False), _question(False))
     return advise
@@ -114,6 +132,9 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
         consult_id = gr.State(None)
         with gr.Tab(texts.TAB_ADVICE_BN):
             gr.Markdown(f"# কম বিষ (Kom Bish)\n\n{texts.CONSENT_BN}")
+            # For reviewers and judges: off by default. The app and the audio stay in Bangla either way.
+            show_english = gr.Checkbox(label=texts.SHOW_ENGLISH_LABEL, value=False)
+            consent_en = gr.Markdown(f"{texts.ENGLISH_NOTE}\n\n{texts.CONSENT_GLOSS_EN}", visible=False)
             if _clip("audio/consent.mp3"):
                 gr.Audio(value=_clip("audio/consent.mp3"), label=texts.LABEL_LISTEN_BN,
                          interactive=False, autoplay=False)
@@ -146,8 +167,10 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
                 gr.Examples(examples=[[p] for p in EXAMPLES], inputs=[img])
             consent.change(lambda c: gr.Button(interactive=bool(c)), inputs=consent, outputs=btn)
             img.change(lambda: _question(False), outputs=blast_q)   # a new photo starts with no answer
+            show_english.change(_english_labels, inputs=show_english,
+                                outputs=[consent_en, consent, img, planning, blast_q])
             btn.click(make_advise(predict_fn, meta_fn, voice_fn, log_fn, voice_on),
-                      inputs=[consent, img, aud, planning, blast_q],
+                      inputs=[consent, img, aud, planning, blast_q, show_english],
                       outputs=[answer, echo, out_audio, out_audio2, consult_id, fb_btn, fb_md, blast_q],
                       api_name="advise")
             fb_btn.click(make_feedback(feedback_fn), inputs=consult_id, outputs=[fb_md, fb_btn],
@@ -158,7 +181,7 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
                         "who said they were planning to spray. Nobody checked what the farmer did next.")
             nums = [gr.Number(label=lab, precision=0, interactive=False) for lab in (
                 "Consultations", "No-spray answers (R1 + R3)", "Correct-use answers (R2)",
-                "Referrals (R4-R6)", "Estimated sprays avoided (advice-based, unverified)")]
+                "Referrals (R4-R7)", "Estimated sprays avoided (advice-based, unverified)")]
             gr.Timer(5).tick(stats, outputs=nums)
             demo.load(stats, outputs=nums)
     return demo

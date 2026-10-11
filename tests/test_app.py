@@ -196,6 +196,35 @@ def test_planning_to_spray_mapping(advise, harness, answer, expected):
     assert out[0] == expected_text(101)   # never changes the answer
 
 
+@pytest.mark.parametrize("width,answer", [(101, None), (102, None), (102, texts.YES_BN), (103, None), (105, None)])
+def test_show_english_keeps_bangla_first_and_audio_bangla(advise, harness, width, answer):
+    plain = advise(True, img(width), None, None, answer)
+    english = advise(True, img(width), None, None, answer, True)
+    assert english[0].startswith(plain[0]) and english[0] != plain[0]      # Bangla first, English underneath
+    assert english[0].count(texts.ENGLISH_NOTE) == 1
+    label, conf, margin = FAKE[width]
+    adv = rules.decide(label, conf, margin >= MARGIN, None, None, threshold=T, blast_threshold=BLAST_T,
+                       blast_confirmed=app_module.BLAST_ANSWERS.get(answer))
+    assert english[0] == f"{adv.text_md}\n\n---\n\n{texts.ENGLISH_NOTE}\n\n{adv.text_en_md}"
+    assert english[2] == plain[2]                                          # the same (Bangla) clip either way
+    assert [r["rule_id"] for r in harness.records[:1]] == [r["rule_id"] for r in harness.records[1:2]]
+
+
+def test_show_english_also_translates_the_prompts_when_nothing_is_given(advise):
+    out = advise(False, None, None, None, None, True)
+    assert rules.load_rules()["R0_NO_CONSENT"]["headline_en"] in out[0]
+
+
+def test_english_toggle_labels():
+    off, on = app_module._english_labels(False), app_module._english_labels(True)
+    assert off[0].visible is False and on[0].visible is True               # English consent text
+    question = rules.load_rules()["R0_CONFIRM_BLAST"]
+    assert off[4].label == question["headline_bn"]
+    assert on[4].label == f"{question['headline_bn']} / {question['headline_en']}"
+    assert off[3].label == texts.SPRAY_INTENT_Q_BN and on[3].label.endswith(texts.SPRAY_INTENT_Q_EN)
+    assert off[1].label == texts.CONSENT_CHECKBOX_BN and off[2].label == texts.LABEL_PHOTO_BN
+
+
 def markdown_values(demo) -> list[str]:
     return [str(getattr(b, "value", "")) for b in demo.blocks.values() if type(b).__name__ == "Markdown"]
 
@@ -272,10 +301,20 @@ def api(server):
     h, client, images, wav = server
     h.reset()
 
-    def call(consent=True, width=None, audio=False, planning=None, blast=None):
+    def call(consent=True, width=None, audio=False, planning=None, blast=None, english=False):
         return client.predict(consent, images[width] if width else None, wav if audio else None, planning,
-                              blast, api_name="/advise")
+                              blast, english, api_name="/advise")
     return h, call
+
+
+def test_api_show_english_adds_the_translation_under_the_bangla(api):
+    h, call = api
+    bangla = call(width=101)[0]
+    both = call(width=101, english=True)[0]
+    assert bangla == expected_text(101)                       # default: Bangla only
+    assert both.startswith(bangla) and texts.ENGLISH_NOTE in both
+    assert "No insecticide needed" in both and "No insecticide needed" not in bangla
+    assert [r["rule_id"] for r in h.records] == ["R1_BLB", "R1_BLB"]   # the toggle never changes the decision
 
 
 @pytest.mark.parametrize("width", sorted(FAKE))

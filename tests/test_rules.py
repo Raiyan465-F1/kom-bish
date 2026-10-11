@@ -195,6 +195,25 @@ def test_blast_includes_safety_and_neck_blast_line():
     assert nfc("শীষ") in nfc(load_clips()["blast"]["text_bn"])   # update deliberately if reviewers reword
 
 
+def test_english_translation_comes_from_the_same_csv_rows():
+    """The "Show English" text is built line for line from the CSVs, like the Bangla; it never replaces it."""
+    rows, clips = load_rules(), load_clips()
+    for rid, row in rows.items():
+        assert row["headline_en"].strip(), rid
+    allowed = {f"## {r['headline_en']}" for r in rows.values()}
+    allowed |= {f"*{texts.SOURCE_LABEL_EN}: {r['sources']}*" for r in rows.values() if r["sources"]}
+    allowed |= {texts.CONFIRM_TEMPLATE_EN.format(disease=d) for d in texts.DISEASE_NAME_EN.values()}
+    allowed |= {c["gloss_en"] for c in clips.values()}
+    for label in list(rules.CLASSES) + [None]:
+        for confirmed in (None, True, False):
+            for failed in (False, True):
+                a = decide(label, 0.99, True, None, None, threshold=T, blast_confirmed=confirmed, voice_failed=failed)
+                assert a.text_en_md.split("\n\n")[0] == f"## {rows[a.rule_id]['headline_en']}"
+                assert set(a.text_en_md.split("\n\n")) <= allowed, (label, confirmed, a.text_en_md)
+                assert len(a.text_en_md.split("\n\n")) == len(a.text_md.split("\n\n"))   # line for line
+                assert not re.search(r"[ঀ-৿]", a.text_en_md) and "No insecticide" not in a.text_md
+
+
 def test_healthy_answer_tells_the_farmer_what_to_do_if_spots_appear():
     """ "No spray now" must not be the last word: if spots appear or spread, take a new photo or call 16123."""
     healthy, not_sure = nfc(load_clips()["healthy"]["text_bn"]), nfc(load_clips()["not_sure"]["text_bn"])

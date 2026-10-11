@@ -103,8 +103,12 @@ def main() -> int:
           "from the photo alone. Needed only if voice is switched on.",
           "- **A photo instruction that asks for a close-up of one leaf.** Today the only photo text is the box label "
           "(`LABEL_PHOTO_BN`) and the no-photo prompt (`R0_NO_PHOTO`). The model works best on a close-up of one "
-          "leaf, so a short instruction would help. Not written.",
-          "- **A one-line Bangla pitch for the README.**"]
+          "leaf, so a short instruction would help. Not written.", "",
+          "Language decision (11 Oct 2026): the app, its answers and its audio are Bangla. The README, model card, "
+          "deck, video script, Worker Studio summary and email draft are English. In the app, the \"Show English\" "
+          "toggle (off by default) shows the English translation under each answer, headline and prompt; the "
+          "English lines are `gloss_en` in `data/clips.csv`, `headline_en` in `data/rules.csv` and the `*_EN` names "
+          "in `kombish/texts.py`. If a Bangla line changes, its English line must change with it."]
     out = ROOT / "docs" / "bangla_review.md"
     out.write_text("\n".join(L) + "\n", "utf-8", newline="\n")
     print(f"Wrote {out} ({n} numbered items)")

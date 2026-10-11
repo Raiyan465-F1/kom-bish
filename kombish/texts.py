@@ -36,3 +36,19 @@ FEEDBACK_BN = "ভুল মনে হচ্ছে"                        # NEW
 FEEDBACK_THANKS_BN = "ধন্যবাদ"                       # NEW
 # Shown next to the audio players while the clips are generated with text-to-speech, not recorded by a person.
 AUDIO_SYNTHETIC_NOTE_BN = "কম্পিউটারে তৈরি কণ্ঠ"        # NEW ("computer-generated voice"), DRAFT written 11 Oct 2026
+
+# ---- English translations, shown only when the "Show English" toggle is on (for reviewers and judges).
+# The farmer-facing app and the audio are Bangla. Keep each line in step with its Bangla original.
+SHOW_ENGLISH_LABEL = "Show English (for reviewers)"
+ENGLISH_NOTE = "*English translation for reviewers. The app and the audio are in Bangla.*"
+CONSENT_CHECKBOX_EN = "Tick if you agree."
+LABEL_PHOTO_EN = "Photo of a rice leaf"
+SPRAY_INTENT_Q_EN = "Were you thinking of spraying?"
+CONFIRM_TEMPLATE_EN = "From the photo, it looks like your rice has {disease}."
+DISEASE_NAME_EN = {"bacterial_leaf_blight": "bacterial leaf blight", "blast": "blast"}
+SOURCE_LABEL_EN = "Source"
+
+
+def both(bn: str, en: str, show_english: bool) -> str:
+    """A label in Bangla, with its English translation after it when the toggle is on."""
+    return f"{bn} / {en}" if show_english else bn

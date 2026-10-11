@@ -13,6 +13,9 @@ recorded, the model is not published and nothing is hosted yet (see `docs/gates.
   `R7_BLAST_UNCONFIRMED`; draft Bangla awaiting review). Test coverage fell from 0.8780 to 0.7585
 - External test on Paddy Doctor (India), n = 200 (`training/external_test.py`): 192 referred, 8 answered,
   1 right, 0 wrong spray answers. The model does not transfer to wide shots of whole plants
+- Language decision: the app stays Bangla; documents and the video are English. New "Show English (for
+  reviewers)" toggle shows the English translation under each Bangla answer, headline and prompt (audio stays
+  Bangla). Video narration is now English, with English subtitles for everything the app shows or says
 - Audio: six clips generated with Gemini text-to-speech (`scripts/tts_fallback.py`), labelled
   "computer-generated voice" in the app; audio stays optional. Review rule is now one native-speaker reviewer.
   `docs/bangla_review.md` lists every farmer-facing Bangla string
