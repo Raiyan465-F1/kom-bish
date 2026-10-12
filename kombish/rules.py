@@ -25,8 +25,9 @@ LABEL_TO_RULE = {"bacterial_leaf_blight": "R1_BLB", "blast": "R2_BLAST",
 RED_FLAG_SYMPTOMS = frozenset({"hopper_burn", "insects_seen"})
 NO_SPRAY_RULES = frozenset({"R1_BLB", "R3_HEALTHY"})
 CORRECT_USE_RULES = frozenset({"R2_BLAST"})
-REFERRAL_RULES = frozenset({"R4_OTHER", "R5_ABSTAIN", "R6_VOICE_REDFLAG", "R7_BLAST_UNCONFIRMED"})
-PROMPT_RULES = frozenset({"R0_NO_CONSENT", "R0_NO_PHOTO", "R0_CONFIRM_BLAST"})
+REFERRAL_RULES = frozenset({"R4_OTHER", "R5_ABSTAIN", "R6_VOICE_REDFLAG", "R7_BLAST_UNCONFIRMED",
+                            "R8_BLB_UNCONFIRMED"})
+PROMPT_RULES = frozenset({"R0_NO_CONSENT", "R0_NO_PHOTO", "R0_CONFIRM_BLAST", "R0_CONFIRM_BLB"})
 
 
 @dataclass(frozen=True)
@@ -54,12 +55,15 @@ def load_clips() -> dict[str, dict]:
 
 def select_rule(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQuery | None",
                 *, threshold: float, consent: bool = True, blast_threshold: float | None = None,
-                blast_confirmed: bool | None = None, blb_threshold: float | None = None) -> str:
+                blast_confirmed: bool | None = None, blb_threshold: float | None = None,
+                blb_confirmed: bool | None = None) -> str:
     """Return the rule_id. Priority order is fixed here and mirrored in rules.csv.
 
     Spray advice is held to a stricter standard than no-spray advice. A blast answer needs (1) confidence
     at or above the blast-only threshold and (2) the farmer's own "yes" to the lesion-shape question.
     Unanswered -> ask the question first (R0_CONFIRM_BLAST). "No" or "not sure" -> referral.
+    The BLB answer is gated the same way: its own threshold, then the farmer's "yes" to the BLB question
+    (R0_CONFIRM_BLB); "no" or "not sure" -> referral (R8_BLB_UNCONFIRMED).
     """
     if not consent:
         return "R0_NO_CONSENT"
@@ -75,6 +79,11 @@ def select_rule(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQu
             and voice.confidence in ("medium", "high")
             and RED_FLAG_SYMPTOMS & set(voice.symptoms)):
         return "R6_VOICE_REDFLAG"
+    if label == "bacterial_leaf_blight":
+        if blb_confirmed is None:
+            return "R0_CONFIRM_BLB"
+        if blb_confirmed is not True:
+            return "R8_BLB_UNCONFIRMED"
     if label == "blast":
         if blast_confirmed is None:
             return "R0_CONFIRM_BLAST"
@@ -86,11 +95,12 @@ def select_rule(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQu
 def decide(label: str | None, conf: float, margin_ok: bool, voice: "VoiceQuery | None",
            planning_to_spray: bool | None, *, threshold: float, consent: bool = True,
            voice_failed: bool = False, blast_threshold: float | None = None,
-           blast_confirmed: bool | None = None, blb_threshold: float | None = None) -> Advice:
+           blast_confirmed: bool | None = None, blb_threshold: float | None = None,
+           blb_confirmed: bool | None = None) -> Advice:
     """planning_to_spray is logged and counted only; it never changes the decision (tested)."""
     rule_id = select_rule(label, conf, margin_ok, voice, threshold=threshold, consent=consent,
                           blast_threshold=blast_threshold, blast_confirmed=blast_confirmed,
-                          blb_threshold=blb_threshold)
+                          blb_threshold=blb_threshold, blb_confirmed=blb_confirmed)
     row = load_rules()[rule_id]
     clip_rows = load_clips()
     clip_ids = [c for c in (row["clip"], row["extra_clip"]) if c]

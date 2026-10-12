@@ -29,21 +29,23 @@ def _voice(symptom: str, confidence: str) -> VoiceQuery:
 
 
 FAILED = "voice failed"
-# (expected rule, consent, width or None, voice result / FAILED / None, planning answer, lesion-question answer)
+# (expected rule, consent, width or None, voice result / FAILED / None, planning answer,
+#  answer to the confirmation question: the BLB question for a BLB photo, the lesion question otherwise)
 CONSULTATIONS = [
-    ("R1_BLB", True, 201, None, texts.YES_BN, None), ("R1_BLB", True, 201, None, texts.NO_BN, None),
-    ("R1_BLB", True, 201, None, None, None),
+    ("R1_BLB", True, 201, None, texts.YES_BN, texts.YES_BN),            # BLB, confirmed by the farmer
+    ("R8_BLB_UNCONFIRMED", True, 201, None, texts.NO_BN, texts.NOT_SURE_BN),
+    (None, True, 201, None, None, None),                                 # BLB: the question is asked first
     ("R2_BLAST", True, 202, None, texts.YES_BN, texts.YES_BN),          # blast, confirmed by the farmer
     ("R7_BLAST_UNCONFIRMED", True, 202, None, texts.NO_BN, texts.NO_BN),
     (None, True, 202, None, None, None),                                 # blast: the question is asked first
     ("R3_HEALTHY", True, 203, None, texts.YES_BN, None), ("R3_HEALTHY", True, 203, None, texts.NO_BN, None),
     ("R3_HEALTHY", True, 203, None, None, None),
     ("R4_OTHER", True, 204, None, texts.YES_BN, None), ("R4_OTHER", True, 204, None, None, None),
-    ("R5_ABSTAIN", True, 205, None, texts.YES_BN, None), ("R5_ABSTAIN", True, 206, None, None, texts.YES_BN),
+    ("R5_ABSTAIN", True, 205, None, texts.YES_BN, texts.YES_BN), ("R5_ABSTAIN", True, 206, None, None, texts.YES_BN),
     ("R5_ABSTAIN", True, 207, None, texts.NO_BN, None),
     ("R6_VOICE_REDFLAG", True, 203, _voice("insects_seen", "high"), texts.YES_BN, None),
     ("R6_VOICE_REDFLAG", True, 203, _voice("hopper_burn", "medium"), None, None),
-    ("R3_HEALTHY", True, 203, FAILED, None, None), ("R1_BLB", True, 201, FAILED, texts.YES_BN, None),
+    ("R3_HEALTHY", True, 203, FAILED, None, None), ("R1_BLB", True, 201, FAILED, texts.YES_BN, texts.YES_BN),
     (None, True, None, None, None, None),            # no photo
     (None, False, 202, None, texts.YES_BN, texts.YES_BN),    # no consent
 ]
@@ -85,11 +87,13 @@ def run_offscript() -> dict:
     advise = app_module.make_advise(_fake_predict, lambda: {"threshold": T, "margin": MARGIN},
                                     lambda path: state["voice"], log, True)
     offscript, doses, wrong_rule, details = 0, 0, 0, []
-    for expected_rule, consent, width, voice, planning, lesion in CONSULTATIONS:
+    for expected_rule, consent, width, voice, planning, confirm in CONSULTATIONS:
         state["voice"] = None if voice in (None, FAILED) else voice
         before = len(logged)
         image = Image.new("RGB", (width, 60), "green") if width else None
-        answer = advise(consent, image, "note.wav" if voice is not None else None, planning, lesion)[0]
+        is_blb = width is not None and CASES_BY_WIDTH[width][0] == "bacterial_leaf_blight"
+        lesion, blb = (None, confirm) if is_blb else (confirm, None)
+        answer = advise(consent, image, "note.wav" if voice is not None else None, planning, lesion, False, blb)[0]
         segments = [nfc(s) for s in re.split(r"\n\s*\n", answer) if s.strip()]
         bad_segments = [s for s in segments if s not in allowed]
         low = nfc(answer).lower()

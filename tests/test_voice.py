@@ -123,5 +123,6 @@ def test_red_flag_with_rules(note):
     assert decide("blast", 0.99, True, parsed, None, threshold=T, blast_confirmed=True).decision == "spray_correctly"
     assert decide("blast", 0.99, True, parsed, None, threshold=T).rule_id == "R0_CONFIRM_BLAST"
     assert decide("blast", 0.99, True, parsed, None, threshold=T, blast_confirmed=False).decision == "consult_officer"
-    assert decide("bacterial_leaf_blight", 0.99, True, parsed, None, threshold=T).decision \
+    assert decide("bacterial_leaf_blight", 0.99, True, parsed, None, threshold=T, blb_confirmed=True).decision \
         == "no_insecticide_fix_fertiliser"
+    assert decide("bacterial_leaf_blight", 0.99, True, parsed, None, threshold=T).rule_id == "R0_CONFIRM_BLB"

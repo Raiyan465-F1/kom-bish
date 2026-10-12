@@ -35,3 +35,18 @@ From `candidates_comparison.json` (`python training/compare_candidates.py`), wit
 | B (published) | Paddy Doctor held-out | 500 | 332 (66.4%) | 221 (44.2%) | 220 | 1 | 6 (6 / 0) | 273 |
 
 CPU latency (median of 30 predictions on a 1024x768 image): v1 (previous) 10.1 ms; A (not published) 12.7 ms; B (published) 12.7 ms.
+
+## BLB threshold re-chosen on validation (12 Oct 2026, no training)
+
+`python training/choose_blb_threshold.py --write`, result in `blb_threshold_v2_1/choice.json`. Rule: the
+smallest threshold with no wrong BLB answer on the 1716 field-background validation photos. Only the
+validation split is read; `model.onnx` is unchanged.
+
+| BLB threshold | BLB answers on validation | Wrong on validation | Wrong on field validation |
+|---|---|---|---|
+| 0.94 (before) | 74 | 3 | 3 |
+| 0.955 (now) | 66 | 0 | 0 |
+
+The table above this section is the one model B was chosen from (11 Oct 2026, BLB answered without a
+question). `candidates_comparison.md` was made again on 12 Oct 2026 with the BLB question in the rule engine
+and the new threshold.

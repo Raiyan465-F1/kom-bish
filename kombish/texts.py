@@ -29,7 +29,8 @@ SPRAY_INTENT_Q_BN = "আপনি কি স্প্রে করার কথ�
 YES_BN, NO_BN = "হ্যাঁ", "না"
 NOT_SURE_BN = "নিশ্চিত নই"
 # The lesion-shape question asked before any blast (spray) answer is the R0_CONFIRM_BLAST headline in
-# data/rules.csv. Yes -> the blast answer. No or not sure -> referral.
+# data/rules.csv. Yes -> the blast answer. No or not sure -> referral. The BLB answer has its own question
+# in the same way (R0_CONFIRM_BLB, reviewed 2026-10-12).
 CONFIRM_TEMPLATE_BN = "ছবি দেখে মনে হচ্ছে আপনার ধানে {disease} হয়েছে।"
 DISEASE_NAME_BN = {"bacterial_leaf_blight": "পাতা পোড়া রোগ", "blast": "ব্লাস্ট রোগ"}
 VOICE_ECHO_BN = 'আপনি বলেছেন: "{transcript}"'

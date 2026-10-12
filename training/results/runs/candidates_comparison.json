@@ -12,14 +12,17 @@
    "10.17632/sjkptpgv79.2",
    "10.17632/znsxdctwtt.1"
   ],
-  "cpu_latency_ms_median": 10.1,
+  "cpu_latency_ms_median": 10.3,
   "sets": {
    "our test split": {
     "n": 828,
     "classifier_confident": 629,
-    "advice_given": 183,
-    "right_advice": 177,
-    "wrong_advice": 6,
+    "advice_given": 146,
+    "right_advice": 142,
+    "wrong_advice": 4,
+    "blb_question_asked": 37,
+    "blb_question_on_true_blb": 35,
+    "blb_question_on_other_classes": 2,
     "blast_question_asked": 29,
     "blast_question_on_true_blast": 28,
     "blast_question_on_other_classes": 1,
@@ -28,8 +31,9 @@
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 50,
-      "right_advice": 35,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 35,
       "blast_question_asked": 0,
       "referred": 15
      },
@@ -37,6 +41,7 @@
       "n": 135,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 28,
       "referred": 107
      },
@@ -44,13 +49,15 @@
       "n": 152,
       "right_advice": 142,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 10
      },
      "other": {
       "n": 491,
       "right_advice": 0,
-      "wrong_advice": 6,
+      "wrong_advice": 4,
+      "blb_question_asked": 2,
       "blast_question_asked": 1,
       "referred": 484
      }
@@ -59,9 +66,12 @@
    "our field photos": {
     "n": 272,
     "classifier_confident": 208,
-    "advice_given": 72,
-    "right_advice": 70,
-    "wrong_advice": 2,
+    "advice_given": 35,
+    "right_advice": 35,
+    "wrong_advice": 0,
+    "blb_question_asked": 37,
+    "blb_question_on_true_blb": 35,
+    "blb_question_on_other_classes": 2,
     "blast_question_asked": 0,
     "blast_question_on_true_blast": 0,
     "blast_question_on_other_classes": 0,
@@ -70,8 +80,9 @@
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 50,
-      "right_advice": 35,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 35,
       "blast_question_asked": 0,
       "referred": 15
      },
@@ -79,6 +90,7 @@
       "n": 18,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 18
      },
@@ -86,13 +98,15 @@
       "n": 37,
       "right_advice": 35,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 2
      },
      "other": {
       "n": 167,
       "right_advice": 0,
-      "wrong_advice": 2,
+      "wrong_advice": 0,
+      "blb_question_asked": 2,
       "blast_question_asked": 0,
       "referred": 165
      }
@@ -101,9 +115,12 @@
    "Paddy Doctor held-out": {
     "n": 500,
     "classifier_confident": 194,
-    "advice_given": 20,
+    "advice_given": 7,
     "right_advice": 7,
-    "wrong_advice": 13,
+    "wrong_advice": 0,
+    "blb_question_asked": 13,
+    "blb_question_on_true_blb": 0,
+    "blb_question_on_other_classes": 13,
     "blast_question_asked": 0,
     "blast_question_on_true_blast": 0,
     "blast_question_on_other_classes": 0,
@@ -114,13 +131,15 @@
       "n": 125,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 125
      },
      "blast": {
       "n": 125,
       "right_advice": 0,
-      "wrong_advice": 4,
+      "wrong_advice": 0,
+      "blb_question_asked": 4,
       "blast_question_asked": 0,
       "referred": 121
      },
@@ -128,13 +147,15 @@
       "n": 125,
       "right_advice": 7,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 118
      },
      "other": {
       "n": 125,
       "right_advice": 0,
-      "wrong_advice": 9,
+      "wrong_advice": 0,
+      "blb_question_asked": 9,
       "blast_question_asked": 0,
       "referred": 116
      }
@@ -155,14 +176,17 @@
    "10.17632/sjkptpgv79.2",
    "10.17632/znsxdctwtt.1"
   ],
-  "cpu_latency_ms_median": 12.7,
+  "cpu_latency_ms_median": 14.0,
   "sets": {
    "our test split": {
     "n": 828,
     "classifier_confident": 503,
-    "advice_given": 168,
-    "right_advice": 161,
-    "wrong_advice": 7,
+    "advice_given": 131,
+    "right_advice": 127,
+    "wrong_advice": 4,
+    "blb_question_asked": 37,
+    "blb_question_on_true_blb": 34,
+    "blb_question_on_other_classes": 3,
     "blast_question_asked": 51,
     "blast_question_on_true_blast": 51,
     "blast_question_on_other_classes": 0,
@@ -171,8 +195,9 @@
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 50,
-      "right_advice": 34,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 34,
       "blast_question_asked": 0,
       "referred": 16
      },
@@ -180,6 +205,7 @@
       "n": 135,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 51,
       "referred": 84
      },
@@ -187,13 +213,15 @@
       "n": 152,
       "right_advice": 127,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 25
      },
      "other": {
       "n": 491,
       "right_advice": 0,
-      "wrong_advice": 7,
+      "wrong_advice": 4,
+      "blb_question_asked": 3,
       "blast_question_asked": 0,
       "referred": 484
      }
@@ -202,9 +230,12 @@
    "our field photos": {
     "n": 272,
     "classifier_confident": 152,
-    "advice_given": 71,
-    "right_advice": 67,
-    "wrong_advice": 4,
+    "advice_given": 33,
+    "right_advice": 33,
+    "wrong_advice": 0,
+    "blb_question_asked": 38,
+    "blb_question_on_true_blb": 34,
+    "blb_question_on_other_classes": 4,
     "blast_question_asked": 0,
     "blast_question_on_true_blast": 0,
     "blast_question_on_other_classes": 0,
@@ -213,15 +244,17 @@
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 50,
-      "right_advice": 34,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 34,
       "blast_question_asked": 0,
       "referred": 16
      },
      "blast": {
       "n": 18,
       "right_advice": 0,
-      "wrong_advice": 1,
+      "wrong_advice": 0,
+      "blb_question_asked": 1,
       "blast_question_asked": 0,
       "referred": 17
      },
@@ -229,13 +262,15 @@
       "n": 37,
       "right_advice": 33,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 4
      },
      "other": {
       "n": 167,
       "right_advice": 0,
-      "wrong_advice": 3,
+      "wrong_advice": 0,
+      "blb_question_asked": 3,
       "blast_question_asked": 0,
       "referred": 164
      }
@@ -244,9 +279,12 @@
    "Paddy Doctor held-out": {
     "n": 500,
     "classifier_confident": 84,
-    "advice_given": 3,
+    "advice_given": 0,
     "right_advice": 0,
-    "wrong_advice": 3,
+    "wrong_advice": 0,
+    "blb_question_asked": 3,
+    "blb_question_on_true_blb": 0,
+    "blb_question_on_other_classes": 3,
     "blast_question_asked": 0,
     "blast_question_on_true_blast": 0,
     "blast_question_on_other_classes": 0,
@@ -257,13 +295,15 @@
       "n": 125,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 125
      },
      "blast": {
       "n": 125,
       "right_advice": 0,
-      "wrong_advice": 2,
+      "wrong_advice": 0,
+      "blb_question_asked": 2,
       "blast_question_asked": 0,
       "referred": 123
      },
@@ -271,13 +311,15 @@
       "n": 125,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 125
      },
      "other": {
       "n": 125,
       "right_advice": 0,
-      "wrong_advice": 1,
+      "wrong_advice": 0,
+      "blb_question_asked": 1,
       "blast_question_asked": 0,
       "referred": 124
      }
@@ -290,7 +332,7 @@
    "threshold": 0.91,
    "margin": 0.2,
    "blast_threshold": 0.999,
-   "blb_threshold": 0.94
+   "blb_threshold": 0.955
   },
   "temperature": 0.6396,
   "trained_on": [
@@ -299,31 +341,36 @@
    "10.17632/znsxdctwtt.1",
    "arXiv:2205.11108 (Paddy Doctor, Kaggle paddy-disease-classification, CC BY 4.0)"
   ],
-  "cpu_latency_ms_median": 12.7,
+  "cpu_latency_ms_median": 13.7,
   "sets": {
    "our test split": {
     "n": 828,
-    "classifier_confident": 518,
-    "advice_given": 185,
-    "right_advice": 172,
-    "wrong_advice": 13,
+    "classifier_confident": 515,
+    "advice_given": 150,
+    "right_advice": 139,
+    "wrong_advice": 11,
+    "blb_question_asked": 32,
+    "blb_question_on_true_blb": 31,
+    "blb_question_on_other_classes": 1,
     "blast_question_asked": 0,
     "blast_question_on_true_blast": 0,
     "blast_question_on_other_classes": 0,
-    "referred": 643,
+    "referred": 646,
     "top_guess_right": 747,
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 50,
-      "right_advice": 33,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 31,
       "blast_question_asked": 0,
-      "referred": 17
+      "referred": 19
      },
      "blast": {
       "n": 135,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 135
      },
@@ -331,41 +378,48 @@
       "n": 152,
       "right_advice": 139,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 13
      },
      "other": {
       "n": 491,
       "right_advice": 0,
-      "wrong_advice": 13,
+      "wrong_advice": 11,
+      "blb_question_asked": 1,
       "blast_question_asked": 0,
-      "referred": 478
+      "referred": 479
      }
     }
    },
    "our field photos": {
     "n": 272,
-    "classifier_confident": 159,
-    "advice_given": 71,
-    "right_advice": 69,
-    "wrong_advice": 2,
+    "classifier_confident": 156,
+    "advice_given": 36,
+    "right_advice": 36,
+    "wrong_advice": 0,
+    "blb_question_asked": 32,
+    "blb_question_on_true_blb": 31,
+    "blb_question_on_other_classes": 1,
     "blast_question_asked": 0,
     "blast_question_on_true_blast": 0,
     "blast_question_on_other_classes": 0,
-    "referred": 201,
+    "referred": 204,
     "top_guess_right": 237,
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 50,
-      "right_advice": 33,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 31,
       "blast_question_asked": 0,
-      "referred": 17
+      "referred": 19
      },
      "blast": {
       "n": 18,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 18
      },
@@ -373,41 +427,48 @@
       "n": 37,
       "right_advice": 36,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 1
      },
      "other": {
       "n": 167,
       "right_advice": 0,
-      "wrong_advice": 2,
+      "wrong_advice": 0,
+      "blb_question_asked": 1,
       "blast_question_asked": 0,
-      "referred": 165
+      "referred": 166
      }
     }
    },
    "Paddy Doctor held-out": {
     "n": 500,
-    "classifier_confident": 332,
-    "advice_given": 221,
-    "right_advice": 220,
+    "classifier_confident": 327,
+    "advice_given": 113,
+    "right_advice": 112,
     "wrong_advice": 1,
+    "blb_question_asked": 103,
+    "blb_question_on_true_blb": 103,
+    "blb_question_on_other_classes": 0,
     "blast_question_asked": 6,
     "blast_question_on_true_blast": 6,
     "blast_question_on_other_classes": 0,
-    "referred": 273,
+    "referred": 278,
     "top_guess_right": 489,
     "by_true_class": {
      "bacterial_leaf_blight": {
       "n": 125,
-      "right_advice": 108,
+      "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 103,
       "blast_question_asked": 0,
-      "referred": 17
+      "referred": 22
      },
      "blast": {
       "n": 125,
       "right_advice": 0,
       "wrong_advice": 1,
+      "blb_question_asked": 0,
       "blast_question_asked": 6,
       "referred": 118
      },
@@ -415,6 +476,7 @@
       "n": 125,
       "right_advice": 112,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 13
      },
@@ -422,6 +484,7 @@
       "n": 125,
       "right_advice": 0,
       "wrong_advice": 0,
+      "blb_question_asked": 0,
       "blast_question_asked": 0,
       "referred": 125
      }

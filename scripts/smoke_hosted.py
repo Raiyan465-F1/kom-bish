@@ -39,11 +39,11 @@ def main(argv: list[str] | None = None) -> int:
     client = Client(args.base_url, verbose=False, httpx_kwargs={"timeout": 90})   # Render can take ~1 min to wake
     print(f"connected to {args.base_url} in {time.perf_counter() - t0:.1f}s")
 
-    # The last input is the lesion-shape question. Left unanswered, a blast photo shows the question itself.
-    # The last input is the "Show English" toggle (off: the app answers in Bangla, as a farmer sees it).
-    cases = [("consent off", (False, handle_file(str(images[0])) if images else None, None, None, None, False)),
-             ("no photo", (True, None, None, None, None, False))]
-    cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN, None, False)) for q in images]
+    # Inputs 5 and 7 are the two confirmation questions (blast lesion shape, BLB patches). Left unanswered, a
+    # blast or BLB photo shows the question itself. Input 6 is the "Show English" toggle (off: Bangla only).
+    cases = [("consent off", (False, handle_file(str(images[0])) if images else None, None, None, None, False, None)),
+             ("no photo", (True, None, None, None, None, False, None))]
+    cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN, None, False, None)) for q in images]
 
     errors = 0
     for name, inputs in cases:

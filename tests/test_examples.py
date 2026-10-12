@@ -9,7 +9,7 @@ from kombish import classifier, rules
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = sorted((ROOT / "examples").glob("*.jpg"))
-EXPECTED = {"blb_": "R1_BLB", "blast_": "R0_CONFIRM_BLAST", "healthy_": "R3_HEALTHY", "other_": "R4_OTHER",
+EXPECTED = {"blb_": "R0_CONFIRM_BLB", "blast_": "R0_CONFIRM_BLAST", "healthy_": "R3_HEALTHY", "other_": "R4_OTHER",
             "not_sure_": "R5_ABSTAIN"}
 
 if not EXAMPLES:
@@ -39,13 +39,14 @@ needs_model = pytest.mark.skipif(
     reason="No model: set MODEL_REPO or put model.onnx and labels.json in models/.")
 
 
-def decide(path: Path, blast_confirmed):
+def decide(path: Path, confirmed):
+    """confirmed: the farmer's answer to whichever confirmation question the photo triggers."""
     m = classifier.meta()
     with Image.open(path) as im:
         pred = classifier.predict(im)
     return rules.decide(pred.label, pred.conf, pred.margin >= m["margin"], None, None, threshold=m["threshold"],
                         blast_threshold=m.get("blast_threshold"), blb_threshold=m.get("blb_threshold"),
-                        blast_confirmed=blast_confirmed)
+                        blast_confirmed=confirmed, blb_confirmed=confirmed)
 
 
 @needs_model
@@ -59,3 +60,10 @@ def test_blast_example_reaches_spray_only_on_yes():
     blast = next(p for p in EXAMPLES if p.name.startswith("blast_"))
     assert decide(blast, True).rule_id == "R2_BLAST"
     assert decide(blast, False).rule_id == "R7_BLAST_UNCONFIRMED"
+
+
+@needs_model
+def test_blb_example_reaches_the_blb_answer_only_on_yes():
+    blb = next(p for p in EXAMPLES if p.name.startswith("blb_"))
+    assert decide(blb, True).rule_id == "R1_BLB"
+    assert decide(blb, False).rule_id == "R8_BLB_UNCONFIRMED"

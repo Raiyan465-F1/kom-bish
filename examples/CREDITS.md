@@ -7,7 +7,7 @@ path it is meant to show.
 
 | File | Shows | Source | Licence |
 |---|---|---|---|
-| `blb_riceleafbd_test.jpg` | `R1_BLB`: "no insecticide needed, fix the fertiliser" | Sample image from the RiceLeafBD test split (class Bacterial Leaf Blight). RiceLeafBD, Mendeley Data, DOI 10.17632/kx9rx8p2mz.1 (see also arXiv 2501.08912) | CC BY 4.0 |
+| `blb_riceleafbd_test.jpg` | `R0_CONFIRM_BLB`, then `R1_BLB` ("no insecticide needed, fix the fertiliser") on "yes" or `R8_BLB_UNCONFIRMED` (referral) on "no" / "not sure" | Sample image from the RiceLeafBD test split (class Bacterial Leaf Blight). RiceLeafBD, Mendeley Data, DOI 10.17632/kx9rx8p2mz.1 (see also arXiv 2501.08912) | CC BY 4.0 |
 | `blast_paddy_doctor_heldout.jpg` | `R0_CONFIRM_BLAST`, then `R2_BLAST` ("spray correctly") on "yes" or `R7_BLAST_UNCONFIRMED` (referral) on "no" / "not sure" | Sample image from our Paddy Doctor held-out set (class blast, `train_images/blast/107817.jpg`). Petchiammal A, Briskline Kiruba S, D. Murugan, Pandarasamy A (2022), "Paddy Doctor: A Visual Image Dataset for Automated Paddy Disease Classification and Benchmarking", arXiv:2205.11108; project page https://paddydoc.github.io/; Kaggle competition https://www.kaggle.com/competitions/paddy-disease-classification | CC BY 4.0 (competition rules, section 7.A) |
 | `healthy_riceleafbd_test.jpg` | `R3_HEALTHY`: "no spray now" | Sample image from the RiceLeafBD test split (class Healthy Leaf). DOI 10.17632/kx9rx8p2mz.1 | CC BY 4.0 |
 | `other_brown_spot_riceleafbd_test.jpg` | `R4_OTHER`: referral (another disease) | Sample image from the RiceLeafBD test split (class Brown Spot). DOI 10.17632/kx9rx8p2mz.1 | CC BY 4.0 |

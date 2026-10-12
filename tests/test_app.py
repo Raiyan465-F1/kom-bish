@@ -18,6 +18,7 @@ EXPECTED_RULE = {101: "R1_BLB", 102: "R2_BLAST", 103: "R3_HEALTHY", 104: "R4_OTH
                  106: "R5_ABSTAIN"}
 T, MARGIN, BLAST_T = 0.7, 0.2, 0.9
 YES = {102: texts.YES_BN}   # a blast answer needs the farmer's "yes" to the lesion-shape question
+BLB_YES = {101: texts.YES_BN}   # the BLB answer needs the farmer's "yes" to the BLB question
 RED_FLAG = VoiceQuery(transcript_bn="x", symptoms=["insects_seen"], growth_stage="unknown",
                       farmer_wants_to_spray=False, confidence="high")
 
@@ -59,9 +60,10 @@ class Harness:
 
 
 def expected_text(width, voice=None, voice_failed=False, planning=None, confirmed=True) -> str:
+    """confirmed: the farmer's answer to whichever confirmation question the photo triggers."""
     label, conf, margin = FAKE[width]
     return rules.decide(label, conf, margin >= MARGIN, voice, planning, threshold=T, voice_failed=voice_failed,
-                        blast_threshold=BLAST_T, blast_confirmed=confirmed).text_md
+                        blast_threshold=BLAST_T, blast_confirmed=confirmed, blb_confirmed=confirmed).text_md
 
 
 def assert_only_allowed_keys(record: dict) -> None:
@@ -88,7 +90,7 @@ def img(width: int) -> Image.Image:
 
 @pytest.mark.parametrize("width", sorted(FAKE))
 def test_each_label_path(advise, harness, width):
-    out = advise(True, img(width), None, None, YES.get(width))
+    out = advise(True, img(width), None, None, YES.get(width), False, BLB_YES.get(width))
     assert out[0] == expected_text(width)
     (rec,) = harness.records
     assert rec["rule_id"] == EXPECTED_RULE[width]
@@ -97,7 +99,8 @@ def test_each_label_path(advise, harness, width):
     assert_only_allowed_keys(rec)
     assert out[4] == "id1"            # consult id kept in gr.State for the feedback button
     assert out[5].visible is True     # feedback button
-    assert out[7].visible is False and out[7].value is None   # the lesion question is cleared after an answer
+    for question in (out[7], out[8]):   # both confirmation questions are cleared after an answer
+        assert question.visible is False and question.value is None
 
 
 def test_blast_asks_the_lesion_question_first_and_logs_nothing(advise, harness):
@@ -105,7 +108,37 @@ def test_blast_asks_the_lesion_question_first_and_logs_nothing(advise, harness):
     assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLAST']['headline_bn']}"
     assert harness.records == []                        # no advice was given, so nothing is logged
     assert out[7].visible is True and out[7].value is None
+    assert out[8].visible is False                      # the BLB question stays hidden for a blast photo
     assert out[2] is None and out[4] is None and out[5].visible is False
+
+
+def test_blb_asks_its_question_first_and_logs_nothing(advise, harness):
+    out = advise(True, img(101), None, texts.YES_BN)   # no answer to the question yet
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLB']['headline_bn']}"
+    assert harness.records == []                        # no advice was given, so nothing is logged
+    assert out[8].visible is True and out[8].value is None
+    assert out[7].visible is False                      # the lesion question stays hidden for a BLB photo
+    assert out[2] is None and out[4] is None and out[5].visible is False
+
+
+@pytest.mark.parametrize("answer", [texts.NO_BN, texts.NOT_SURE_BN, "anything else"])
+def test_blb_without_a_yes_refers(advise, harness, answer):
+    out = advise(True, img(101), None, None, None, False, answer)
+    if answer == "anything else":                       # an unknown value is treated as unanswered
+        assert harness.records == [] and out[8].visible is True
+        return
+    assert out[0] == expected_text(101, confirmed=False)
+    rec = harness.records[0]
+    assert rec["rule_id"] == "R8_BLB_UNCONFIRMED" and rec["decision"] == "consult_officer"
+    assert_only_allowed_keys(rec)
+
+
+def test_a_yes_to_the_other_question_confirms_nothing(advise, harness):
+    out = advise(True, img(101), None, None, texts.YES_BN)                  # "yes" to the lesion question, BLB photo
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLB']['headline_bn']}"
+    out = advise(True, img(102), None, None, None, False, texts.YES_BN)     # "yes" to the BLB question, blast photo
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLAST']['headline_bn']}"
+    assert harness.records == []
 
 
 @pytest.mark.parametrize("answer", [texts.NO_BN, texts.NOT_SURE_BN, "anything else"])
@@ -128,14 +161,14 @@ def test_blast_below_the_blast_threshold_refers_whatever_the_farmer_says(advise,
     assert out[7].visible is False                      # the question is never asked
 
 
-@pytest.mark.parametrize("width", [101, 103, 104])
+@pytest.mark.parametrize("width", [103, 104])
 def test_a_stray_yes_does_nothing_for_other_classes(advise, harness, width):
-    assert advise(True, img(width), None, None, texts.YES_BN)[0] == expected_text(width)
+    assert advise(True, img(width), None, None, texts.YES_BN, False, texts.YES_BN)[0] == expected_text(width)
     assert harness.records[0]["rule_id"] == EXPECTED_RULE[width]
 
 
 def test_only_yes_confirms():
-    assert app_module.BLAST_ANSWERS == {texts.YES_BN: True, texts.NO_BN: False, texts.NOT_SURE_BN: False}
+    assert app_module.CONFIRM_ANSWERS == {texts.YES_BN: True, texts.NO_BN: False, texts.NOT_SURE_BN: False}
 
 
 def test_blast_shows_second_audio_when_clips_exist(harness, monkeypatch):
@@ -191,20 +224,22 @@ def test_no_consent_prompts_and_logs_nothing(advise, harness):
 
 @pytest.mark.parametrize("answer,expected", [(texts.YES_BN, True), (texts.NO_BN, False), (None, None)])
 def test_planning_to_spray_mapping(advise, harness, answer, expected):
-    out = advise(True, img(101), None, answer)
+    out = advise(True, img(101), None, answer, None, False, texts.YES_BN)
     assert harness.records[0]["planning_to_spray"] is expected
     assert out[0] == expected_text(101)   # never changes the answer
 
 
-@pytest.mark.parametrize("width,answer", [(101, None), (102, None), (102, texts.YES_BN), (103, None), (105, None)])
+@pytest.mark.parametrize("width,answer", [(101, None), (101, texts.YES_BN), (102, None), (102, texts.YES_BN),
+                                          (103, None), (105, None)])
 def test_show_english_keeps_bangla_first_and_audio_bangla(advise, harness, width, answer):
-    plain = advise(True, img(width), None, None, answer)
-    english = advise(True, img(width), None, None, answer, True)
+    plain = advise(True, img(width), None, None, answer, False, answer)
+    english = advise(True, img(width), None, None, answer, True, answer)
     assert english[0].startswith(plain[0]) and english[0] != plain[0]      # Bangla first, English underneath
     assert english[0].count(texts.ENGLISH_NOTE) == 1
     label, conf, margin = FAKE[width]
     adv = rules.decide(label, conf, margin >= MARGIN, None, None, threshold=T, blast_threshold=BLAST_T,
-                       blast_confirmed=app_module.BLAST_ANSWERS.get(answer))
+                       blast_confirmed=app_module.CONFIRM_ANSWERS.get(answer),
+                       blb_confirmed=app_module.CONFIRM_ANSWERS.get(answer))
     assert english[0] == f"{adv.text_md}\n\n---\n\n{texts.ENGLISH_NOTE}\n\n{adv.text_en_md}"
     assert english[2] == plain[2]                                          # the same (Bangla) clip either way
     assert [r["rule_id"] for r in harness.records[:1]] == [r["rule_id"] for r in harness.records[1:2]]
@@ -224,6 +259,9 @@ def test_english_toggle_labels():
     assert off[3].label == texts.SPRAY_INTENT_Q_BN and on[3].label.endswith(texts.SPRAY_INTENT_Q_EN)
     assert off[1].label == texts.CONSENT_CHECKBOX_BN and off[2].label == texts.LABEL_PHOTO_BN
     assert off[5].value == texts.PHOTO_INSTRUCTION_BN                      # the photo instruction, Bangla only
+    blb_question = rules.load_rules()["R0_CONFIRM_BLB"]
+    assert off[6].label == blb_question["headline_bn"]
+    assert on[6].label == f"{blb_question['headline_bn']} / {blb_question['headline_en']}"
     assert on[5].value.startswith(texts.PHOTO_INSTRUCTION_BN) and texts.PHOTO_INSTRUCTION_EN in on[5].value
 
 
@@ -262,7 +300,7 @@ def test_no_voice_label_and_no_crash_without_audio(harness, monkeypatch):
                and texts.AUDIO_SYNTHETIC_NOTE_BN in str(b.value) and b.visible]
     assert visible == []
     advise = app_module.make_advise(fake_predict, fake_meta, harness.voice, harness.log, False)
-    out = advise(True, img(101), None, None)
+    out = advise(True, img(101), None, None, None, False, texts.YES_BN)
     assert out[0] == expected_text(101) and out[2] is None and out[3].visible is False
 
 
@@ -314,16 +352,16 @@ def api(server):
     h, client, images, wav = server
     h.reset()
 
-    def call(consent=True, width=None, audio=False, planning=None, blast=None, english=False):
+    def call(consent=True, width=None, audio=False, planning=None, blast=None, english=False, blb=None):
         return client.predict(consent, images[width] if width else None, wav if audio else None, planning,
-                              blast, english, api_name="/advise")
+                              blast, english, blb, api_name="/advise")
     return h, call
 
 
 def test_api_show_english_adds_the_translation_under_the_bangla(api):
     h, call = api
-    bangla = call(width=101)[0]
-    both = call(width=101, english=True)[0]
+    bangla = call(width=101, blb=texts.YES_BN)[0]
+    both = call(width=101, english=True, blb=texts.YES_BN)[0]
     assert bangla == expected_text(101)                       # default: Bangla only
     assert both.startswith(bangla) and texts.ENGLISH_NOTE in both
     assert "No insecticide needed" in both and "No insecticide needed" not in bangla
@@ -333,7 +371,7 @@ def test_api_show_english_adds_the_translation_under_the_bangla(api):
 @pytest.mark.parametrize("width", sorted(FAKE))
 def test_api_each_label_path(api, width):
     h, call = api
-    out = call(width=width, blast=YES.get(width))
+    out = call(width=width, blast=YES.get(width), blb=BLB_YES.get(width))
     assert out[0] == expected_text(width)
     (rec,) = h.records
     assert rec["rule_id"] == EXPECTED_RULE[width]
@@ -353,6 +391,23 @@ def test_api_blast_question_then_answer(api):
     out = call(width=102, blast=texts.YES_BN)              # only "yes" gives the spray answer
     assert out[0] == expected_text(102, confirmed=True)
     assert h.records[-1]["rule_id"] == "R2_BLAST" and h.records[-1]["decision"] == "spray_correctly"
+
+
+def test_api_blb_question_then_answer(api):
+    h, call = api
+    out = call(width=101)                                  # first press: the question, no advice, no log
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLB']['headline_bn']}"
+    out = call(width=101, blast=texts.YES_BN)              # a "yes" to the lesion question confirms nothing
+    assert out[0] == f"## {rules.load_rules()['R0_CONFIRM_BLB']['headline_bn']}"
+    assert h.records == []
+    out = call(width=101, blb=texts.NOT_SURE_BN)           # "not sure" refers
+    assert out[0] == expected_text(101, confirmed=False)
+    assert h.records[-1]["rule_id"] == "R8_BLB_UNCONFIRMED"
+    out = call(width=101, blb=texts.NO_BN)                 # "no" refers
+    assert h.records[-1]["rule_id"] == "R8_BLB_UNCONFIRMED" and h.records[-1]["decision"] == "consult_officer"
+    out = call(width=101, blb=texts.YES_BN)                # only "yes" gives the BLB answer
+    assert out[0] == expected_text(101, confirmed=True)
+    assert h.records[-1]["rule_id"] == "R1_BLB"
 
 
 def test_api_voice_red_flag(api):
@@ -387,5 +442,5 @@ def test_api_no_consent(api):
 @pytest.mark.parametrize("answer,expected", [(texts.YES_BN, True), (texts.NO_BN, False), (None, None)])
 def test_api_planning_to_spray(api, answer, expected):
     h, call = api
-    call(width=101, planning=answer)
+    call(width=103, planning=answer)
     assert h.records[0]["planning_to_spray"] is expected

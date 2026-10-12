@@ -5,15 +5,18 @@ Published model: `mobilenetv3_large_100.ra_in1k`, trained 2026-10-11. Every prop
 ## Definitions (the same in every table)
 
 - **Classifier confident:** the prediction passes the thresholds and the margin. A confident `other` counts.
-- **Advice given:** a confident BLB or healthy answer. This is what the farmer is told from the photo.
+- **Advice given:** a confident healthy answer ("no spray now"). It is the only answer the farmer gets from the photo alone.
+- **BLB question asked:** a confident BLB prediction. The app then asks where the patches start and gives the BLB answer only on "yes", so with the question unanswered this is **not** counted as advice. A BLB question on a photo that is not BLB would become a wrong "no insecticide needed" if the farmer said yes.
 - **Blast question asked:** a confident blast prediction. The app then asks the lesion-shape question and gives the spray answer only on "yes", so with the question unanswered this is **not** counted as advice. A blast question on a photo that is not blast would become a wrong "spray correctly" if the farmer said yes.
 - **Referred:** everything else: not confident, or a confident `other`.
 
-**Why two numbers.** Earlier write-ups gave two figures for the previous model on our test split that looked inconsistent. Its "coverage" was classifier confident: 629 of 828 (76.0%), which includes 417 confident `other` predictions that the app turns into referrals. Its "answered" count was 212: 183 BLB or healthy answers plus 29 confident blast predictions. Both were right; they measured different things. From here on only the names above are used.
+**Why two numbers.** Earlier write-ups gave two figures for the previous model on our test split that looked inconsistent. Its "coverage" was classifier confident: 629 of 828 (76.0%), which includes 417 confident `other` predictions that the app turns into referrals. Its "answered" count was 212: 183 confident BLB or healthy predictions plus 29 confident blast predictions. Both were right; they measured different things. From here on only the names above are used.
+
+**What changed on 12 Oct 2026.** Until then a confident BLB prediction got the BLB answer straight away and was counted under "advice given". Now the app asks the BLB question first, so those photos are counted under "BLB question asked" and "advice given" means the healthy answer only.
 
 ## Method
 
-Byte-identical duplicate files were removed, and photos filed under two classes with different targets were dropped. Our images were split once into train/validation/test (70/15/15, seed 42, stratified by source and class; near-duplicates kept in one split). One temperature T = 0.6396 was fitted on validation logits. All thresholds were chosen on validation only: general threshold 0.91 and margin 0.2 (field: the strict rule, and on field-background validation photos at most 5% of advice answers (BLB, blast, healthy) are wrong); blast-only threshold 0.999 (the smallest value with no wrong blast answer on validation); BLB-only threshold 0.94 (the smallest value with at most 5% wrong BLB answers on validation; the 5% is our choice).
+Byte-identical duplicate files were removed, and photos filed under two classes with different targets were dropped. Our images were split once into train/validation/test (70/15/15, seed 42, stratified by source and class; near-duplicates kept in one split). One temperature T = 0.6396 was fitted on validation logits. All thresholds were chosen on validation only: general threshold 0.91 and margin 0.2 (field: the strict rule, and on field-background validation photos at most 5% of advice answers (BLB, blast, healthy) are wrong); blast-only threshold 0.999 (the smallest value with no wrong blast answer on validation); BLB-only threshold 0.955 (the smallest value with no wrong BLB answer on the 1716 field-background validation photos; 66 validation BLB answers are left; `training/choose_blb_threshold.py`, 12 Oct 2026. It was 0.94, chosen for at most 5% wrong BLB answers on validation). No weights were changed after training.
 
 Training data: RiceLeafBD and BD5; Dhan-Shomadhan (766 train, 167 validation, 155 test images); Paddy Doctor (8227 train, 1452 validation images; 500 more are held out and never trained on). Augmentation: strong.
 
@@ -28,19 +31,20 @@ n = 828. Macro-F1 of the top guess, no abstention: **0.8832**.
 | healthy | 152 | 150/169 = 0.888 (95% CI 0.831–0.927) | 150/152 = 0.987 (95% CI 0.953–0.996) | 0.935 |
 | other | 491 | 421/432 = 0.975 (95% CI 0.955–0.986) | 421/491 = 0.857 (95% CI 0.824–0.886) | 0.912 |
 
-Outcomes at the published thresholds:
+Outcomes at the published thresholds, through the app's own code path (both confirmation questions unanswered):
 
-- Classifier confident: 518/828 = 0.626 (95% CI 0.592–0.658)
-- Advice given: 185/828 = 0.223 (95% CI 0.196–0.253); right 172, wrong 13
+- Classifier confident: 515/828 = 0.622 (95% CI 0.588–0.654)
+- Advice given: 150/828 = 0.181 (95% CI 0.156–0.209); right 139, wrong 11
+- BLB question asked: 32 (on true BLB 31, on other classes 1)
 - Blast question asked: 0 (on true blast 0, on other classes 0)
-- Referred: 643/828 = 0.777 (95% CI 0.747–0.804)
+- Referred: 646/828 = 0.780 (95% CI 0.751–0.807)
 
-| True class | n | Right advice | Wrong advice | Blast question asked | Referred |
-|---|---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 33 | 0 | 0 | 17 |
-| blast | 135 | 0 | 0 | 0 | 135 |
-| healthy | 152 | 139 | 0 | 0 | 13 |
-| other | 491 | 0 | 13 | 0 | 478 |
+| True class | n | Right advice | Wrong advice | BLB question asked | Blast question asked | Referred |
+|---|---|---|---|---|---|---|
+| bacterial_leaf_blight | 50 | 0 | 0 | 31 | 0 | 19 |
+| blast | 135 | 0 | 0 | 0 | 0 | 135 |
+| healthy | 152 | 139 | 0 | 0 | 0 | 13 |
+| other | 491 | 0 | 11 | 1 | 0 | 479 |
 
 Confusion matrix of the top guess (rows = true class):
 
@@ -82,52 +86,54 @@ Confusion matrix of the top guess (rows = true class):
 
 Field-background test photos plus the 18 held-out Dhan-Shomadhan field blast photos. Farmers send field photos, so this matters more than the full test split, most of which is leaves on a white sheet.
 
-- Classifier confident: 159/272 = 0.585 (95% CI 0.525–0.642)
-- Advice given: 71/272 = 0.261 (95% CI 0.212–0.316); right 69, wrong 2
+- Classifier confident: 156/272 = 0.574 (95% CI 0.514–0.631)
+- Advice given: 36/272 = 0.132 (95% CI 0.097–0.178); right 36, wrong 0
+- BLB question asked: 32 (on true BLB 31, on other classes 1)
 - Blast question asked: 0 (on true blast 0, on other classes 0)
-- Referred: 201/272 = 0.739 (95% CI 0.684–0.788)
+- Referred: 204/272 = 0.750 (95% CI 0.695–0.798)
 
-| True class | n | Right advice | Wrong advice | Blast question asked | Referred |
-|---|---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 33 | 0 | 0 | 17 |
-| blast | 18 | 0 | 0 | 0 | 18 |
-| healthy | 37 | 36 | 0 | 0 | 1 |
-| other | 167 | 0 | 2 | 0 | 165 |
+| True class | n | Right advice | Wrong advice | BLB question asked | Blast question asked | Referred |
+|---|---|---|---|---|---|---|
+| bacterial_leaf_blight | 50 | 0 | 0 | 31 | 0 | 19 |
+| blast | 18 | 0 | 0 | 0 | 0 | 18 |
+| healthy | 37 | 36 | 0 | 0 | 0 | 1 |
+| other | 167 | 0 | 0 | 1 | 0 | 166 |
 
 ## 3. Three models through the app's own code path
 
-`python training/compare_candidates.py`: `kombish/classifier.py` and `kombish/rules.py`, ONNX on the CPU, the lesion-shape question unanswered. v1 is the previously published model; A is the same recipe with stronger augmentation only; B adds Paddy Doctor training photos and is the published model. The Paddy Doctor held-out set (500 photos, never used for training, validation or thresholds) comes from the **same source as some of B's training data**, so for B it is not an external test.
+`python training/compare_candidates.py`: `kombish/classifier.py` and `kombish/rules.py`, ONNX on the CPU, both confirmation questions unanswered. v1 is the previously published model; A is the same recipe with stronger augmentation only; B adds Paddy Doctor training photos and is the published model, here with its current BLB threshold. The table was made again on 12 Oct 2026 with the BLB question in the rule engine; the table B was chosen from is in `training/results/runs/README.md`. The Paddy Doctor held-out set (500 photos, never used for training, validation or thresholds) comes from the **same source as some of B's training data**, so for B it is not an external test.
 
-| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | Blast question asked (true blast / other = wrong spray if "yes") | Referred |
-|---|---|---|---|---|---|---|---|---|
-| v1 (previous) | our test split | 828 | 629 (76.0%) | 183 (22.1%) | 177 | 6 | 29 (28 / 1) | 616 |
-| v1 (previous) | our field photos | 272 | 208 (76.5%) | 72 (26.5%) | 70 | 2 | 0 (0 / 0) | 200 |
-| v1 (previous) | Paddy Doctor held-out | 500 | 194 (38.8%) | 20 (4.0%) | 7 | 13 | 0 (0 / 0) | 480 |
-| A (not published) | our test split | 828 | 503 (60.7%) | 168 (20.3%) | 161 | 7 | 51 (51 / 0) | 609 |
-| A (not published) | our field photos | 272 | 152 (55.9%) | 71 (26.1%) | 67 | 4 | 0 (0 / 0) | 201 |
-| A (not published) | Paddy Doctor held-out | 500 | 84 (16.8%) | 3 (0.6%) | 0 | 3 | 0 (0 / 0) | 497 |
-| B (published) | our test split | 828 | 518 (62.6%) | 185 (22.3%) | 172 | 13 | 0 (0 / 0) | 643 |
-| B (published) | our field photos | 272 | 159 (58.5%) | 71 (26.1%) | 69 | 2 | 0 (0 / 0) | 201 |
-| B (published) | Paddy Doctor held-out (**same source as some training data**) | 500 | 332 (66.4%) | 221 (44.2%) | 220 | 1 | 6 (6 / 0) | 273 |
+| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | BLB question asked (true BLB / other = wrong BLB answer if "yes") | Blast question asked (true blast / other = wrong spray if "yes") | Referred |
+|---|---|---|---|---|---|---|---|---|---|
+| v1 (previous) | our test split | 828 | 629 (76.0%) | 146 (17.6%) | 142 | 4 | 37 (35 / 2) | 29 (28 / 1) | 616 |
+| v1 (previous) | our field photos | 272 | 208 (76.5%) | 35 (12.9%) | 35 | 0 | 37 (35 / 2) | 0 (0 / 0) | 200 |
+| v1 (previous) | Paddy Doctor held-out | 500 | 194 (38.8%) | 7 (1.4%) | 7 | 0 | 13 (0 / 13) | 0 (0 / 0) | 480 |
+| A (not published) | our test split | 828 | 503 (60.7%) | 131 (15.8%) | 127 | 4 | 37 (34 / 3) | 51 (51 / 0) | 609 |
+| A (not published) | our field photos | 272 | 152 (55.9%) | 33 (12.1%) | 33 | 0 | 38 (34 / 4) | 0 (0 / 0) | 201 |
+| A (not published) | Paddy Doctor held-out | 500 | 84 (16.8%) | 0 (0.0%) | 0 | 0 | 3 (0 / 3) | 0 (0 / 0) | 497 |
+| B (published) | our test split | 828 | 515 (62.2%) | 150 (18.1%) | 139 | 11 | 32 (31 / 1) | 0 (0 / 0) | 646 |
+| B (published) | our field photos | 272 | 156 (57.4%) | 36 (13.2%) | 36 | 0 | 32 (31 / 1) | 0 (0 / 0) | 204 |
+| B (published) | Paddy Doctor held-out (**same source as some training data**) | 500 | 327 (65.4%) | 113 (22.6%) | 112 | 1 | 103 (103 / 0) | 6 (6 / 0) | 278 |
 
-CPU latency, median of 30 predictions on a 1024×768 image: v1 (previous) 10.1 ms; A (not published) 12.7 ms; B (published) 12.7 ms (the same architecture; the differences are run-to-run noise).
+CPU latency, median of 30 predictions on a 1024×768 image: v1 (previous) 10.3 ms; A (not published) 14.0 ms; B (published) 13.7 ms (the same architecture; the differences are run-to-run noise).
 
 ## 4. External test: a dataset the model has never seen
 
-**Zambali Rice Dataset (Public V1) (Philippines), n = 200.** Source: https://www.kaggle.com/datasets/gettingintoml/zambali-rice-dataset-v3-1. Licence: Apache-2.0 (as stated on the Kaggle dataset page). Kaggle user gettingintoml. Rice leaf images collected on farms in Iba and Botolan, Zambales, Philippines, verified with the Provincial Agricultural Office of Zambales (dataset description). Seeded sample (seed 42) of up to 50 images per mapped class; 0 near-duplicates of the 14516 training and validation images dropped (perceptual hash, distance ≤ 5). Evaluated once, after the model and thresholds were fixed; nothing was changed because of it.
+**Zambali Rice Dataset (Public V1) (Philippines), n = 200.** Source: https://www.kaggle.com/datasets/gettingintoml/zambali-rice-dataset-v3-1. Licence: Apache-2.0 (as stated on the Kaggle dataset page). Kaggle user gettingintoml. Rice leaf images collected on farms in Iba and Botolan, Zambales, Philippines, verified with the Provincial Agricultural Office of Zambales (dataset description). Seeded sample (seed 42) of up to 50 images per mapped class; 0 near-duplicates of the 14516 training and validation images dropped (perceptual hash, distance ≤ 5). First scored on 11 Oct 2026, after the model and thresholds were fixed. Scored again on the same sample on 2026-10-12, after the BLB question was added and the BLB threshold was raised on validation data. Nothing was changed because of this set.
 
 - Classifier confident: 69/200 = 0.345 (95% CI 0.283–0.413)
 - Advice given: 28/200 = 0.140 (95% CI 0.099–0.195); right 27, wrong 1
+- BLB question asked: 0 (on true BLB 0, on other classes 0)
 - Blast question asked: 0 (on true blast 0, on other classes 0)
 - Referred: 172/200 = 0.860 (95% CI 0.805–0.901)
 - Top guess right, no abstention: 84/200 = 0.420 (95% CI 0.354–0.489)
 
-| True class | n | Right advice | Wrong advice | Blast question asked | Referred |
-|---|---|---|---|---|---|
-| bacterial_leaf_blight | 50 | 0 | 0 | 0 | 50 |
-| blast | 50 | 0 | 1 | 0 | 49 |
-| healthy | 50 | 27 | 0 | 0 | 23 |
-| other | 50 | 0 | 0 | 0 | 50 |
+| True class | n | Right advice | Wrong advice | BLB question asked | Blast question asked | Referred |
+|---|---|---|---|---|---|---|
+| bacterial_leaf_blight | 50 | 0 | 0 | 0 | 0 | 50 |
+| blast | 50 | 0 | 1 | 0 | 0 | 49 |
+| healthy | 50 | 27 | 0 | 0 | 0 | 23 |
+| other | 50 | 0 | 0 | 0 | 0 | 50 |
 
 Confusion matrix of the top guess (rows = true class):
 
@@ -138,7 +144,7 @@ Confusion matrix of the top guess (rows = true class):
 | healthy | 0 | 1 | 42 | 7 |
 | other | 0 | 17 | 1 | 32 |
 
-Not-a-rice-leaf images from the same dataset: 50/50 = 1.000 (95% CI 0.929–1.000) referred; advice given 0; blast question asked 0.
+Not-a-rice-leaf images from the same dataset: 50/50 = 1.000 (95% CI 0.929–1.000) referred; advice given 0; BLB question asked 0; blast question asked 0.
 
 Wrong advice: `LEAF_BLAST/Leaf_Blast (548).jpg` (true LEAF_BLAST, answered healthy, confidence 0.9878).
 
@@ -162,12 +168,13 @@ Not measured yet: `training/results/own_photos.json` does not exist (steps 19 an
 ## Limitations
 
 - **Diseases are not recognised on a new source.** On the external test the model mostly recognises healthy leaves; BLB, blast and brown spot photos are referred, not answered.
+- **Close-up web photos of blast were not recognised.** Four textbook-style blast photos from the web (not a test set; labels not checked by an agronomist) were tried on 11 Oct 2026: none was called blast. One got the BLB answer, which led to the BLB question and the higher BLB threshold. `docs/gates.md` has the per-photo result before and after.
 - **The Paddy Doctor held-out result is not an external test** for the published model: it is the same source as some of its training data.
 - **Blast is rarely answered.** The blast-only threshold is 0.999: on our test split the blast question was asked 0 times.
-- **Narrow brown spot on a white sheet is told "no spray now".** 13 `other` photos on our test split got wrong advice; `runs/README.md` and `docs/gates.md` break them down (11 are BD5 narrow brown spot leaves answered healthy).
+- **Narrow brown spot on a white sheet is told "no spray now".** 11 `other` photos on our test split got wrong advice; `runs/README.md` and `docs/gates.md` break them down (11 are BD5 narrow brown spot leaves answered healthy).
 - Source and background confound: every BLB image comes from RiceLeafBD (field photos) and most of our own blast images from BD5 (leaves on a white sheet). The first model learned the background.
 - BD5's official archive (version 2, SHA-256 verified) holds 3,150 images, while its own description says 2,545. We used what the archive contains.
 - The test split was looked at while comparing runs and tightening the threshold rules, so its numbers are somewhat optimistic. The external test was run once, after everything was fixed.
-- The lesion-shape question relies on the farmer's judgement and is not part of any number here.
+- The two confirmation questions (BLB, blast) rely on the farmer's judgement and have not been tested with farmers. The "if yes" columns show the worst case: the farmer answers yes to every question.
 - No field trial. Nobody checked what a farmer did after an answer.
 - Agronomy review: none yet; rules and scripts are not reviewed by an agronomist (TODO-HUMAN: name, role and date once someone reads the six rules and four answer scripts).

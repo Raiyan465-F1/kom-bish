@@ -1,0 +1,331 @@
+{
+ "rule": "smallest threshold >= the general threshold with no wrong BLB answer on field-background validation photos; if none reaches 0, the smallest with the fewest",
+ "split": "val",
+ "val_n": 2315,
+ "val_field_n": 1716,
+ "general_threshold": 0.91,
+ "margin": 0.2,
+ "previous_blb_threshold": 0.94,
+ "chosen_blb_threshold": 0.955,
+ "table": [
+  {
+   "threshold": 0.91,
+   "val_blb_answers": 82,
+   "val_wrong": 7,
+   "field_val_blb_answers": 82,
+   "field_val_wrong": 7
+  },
+  {
+   "threshold": 0.915,
+   "val_blb_answers": 81,
+   "val_wrong": 6,
+   "field_val_blb_answers": 81,
+   "field_val_wrong": 6
+  },
+  {
+   "threshold": 0.92,
+   "val_blb_answers": 79,
+   "val_wrong": 5,
+   "field_val_blb_answers": 79,
+   "field_val_wrong": 5
+  },
+  {
+   "threshold": 0.925,
+   "val_blb_answers": 78,
+   "val_wrong": 4,
+   "field_val_blb_answers": 78,
+   "field_val_wrong": 4
+  },
+  {
+   "threshold": 0.93,
+   "val_blb_answers": 76,
+   "val_wrong": 4,
+   "field_val_blb_answers": 76,
+   "field_val_wrong": 4
+  },
+  {
+   "threshold": 0.935,
+   "val_blb_answers": 76,
+   "val_wrong": 4,
+   "field_val_blb_answers": 76,
+   "field_val_wrong": 4
+  },
+  {
+   "threshold": 0.94,
+   "val_blb_answers": 74,
+   "val_wrong": 3,
+   "field_val_blb_answers": 74,
+   "field_val_wrong": 3
+  },
+  {
+   "threshold": 0.945,
+   "val_blb_answers": 71,
+   "val_wrong": 3,
+   "field_val_blb_answers": 71,
+   "field_val_wrong": 3
+  },
+  {
+   "threshold": 0.95,
+   "val_blb_answers": 70,
+   "val_wrong": 3,
+   "field_val_blb_answers": 70,
+   "field_val_wrong": 3
+  },
+  {
+   "threshold": 0.955,
+   "val_blb_answers": 66,
+   "val_wrong": 0,
+   "field_val_blb_answers": 66,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.96,
+   "val_blb_answers": 63,
+   "val_wrong": 0,
+   "field_val_blb_answers": 63,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.965,
+   "val_blb_answers": 62,
+   "val_wrong": 0,
+   "field_val_blb_answers": 62,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.97,
+   "val_blb_answers": 60,
+   "val_wrong": 0,
+   "field_val_blb_answers": 60,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.975,
+   "val_blb_answers": 59,
+   "val_wrong": 0,
+   "field_val_blb_answers": 59,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.98,
+   "val_blb_answers": 53,
+   "val_wrong": 0,
+   "field_val_blb_answers": 53,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.985,
+   "val_blb_answers": 50,
+   "val_wrong": 0,
+   "field_val_blb_answers": 50,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.99,
+   "val_blb_answers": 45,
+   "val_wrong": 0,
+   "field_val_blb_answers": 45,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.995,
+   "val_blb_answers": 29,
+   "val_wrong": 0,
+   "field_val_blb_answers": 29,
+   "field_val_wrong": 0
+  },
+  {
+   "threshold": 0.999,
+   "val_blb_answers": 4,
+   "val_wrong": 0,
+   "field_val_blb_answers": 4,
+   "field_val_wrong": 0
+  }
+ ],
+ "wrong_blb_predictions_on_val": [
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__310470779_794875571608690_8000422143451305191_n_512459b0.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.9528
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__310206884_643854170860834_5690548384887000617_n_6bce9580.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.9527
+  },
+  {
+   "path": "val/other/DhanShomadhan__field_rice_turgro__00302.jpg",
+   "true": "other",
+   "source": "DhanShomadhan",
+   "source_class": "Field Rice Turgro",
+   "field": true,
+   "conf": 0.9513
+  },
+  {
+   "path": "val/other/RiceLeafBD__brown_spot__311462290_1523806308136409_1620723249680699873_n_caa8d256.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Brown Spot",
+   "field": true,
+   "conf": 0.9373
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__310816596_4932092406894303_4101681100577008840_n_40cfab1a.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.9218
+  },
+  {
+   "path": "val/other/DhanShomadhan__field_browon_spot__00039.jpg",
+   "true": "other",
+   "source": "DhanShomadhan",
+   "source_class": "Field Browon Spot",
+   "field": true,
+   "conf": 0.916
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__315102597_1266038787574065_7208802774790833818_n_f7f8a8cf.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.9119
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__310253654_839268957321041_7259669799050819404_n_7dff2d52.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.9082
+  },
+  {
+   "path": "val/other/RiceLeafBD__brown_spot__310885383_815755239635944_8200766767589677304_n_be2b13cc.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Brown Spot",
+   "field": true,
+   "conf": 0.9011
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__311450267_523683082982950_6831924632383006359_n_9760643b.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.856
+  },
+  {
+   "path": "val/other/DhanShomadhan__field_leaf_scaled__00124.jpg",
+   "true": "other",
+   "source": "DhanShomadhan",
+   "source_class": "Field Leaf Scaled",
+   "field": true,
+   "conf": 0.8045
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__311124010_952353622391471_5418530257230415945_n_b67e9dd0.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.7746
+  },
+  {
+   "path": "val/blast/PaddyDoctor__blast__106527.jpg",
+   "true": "blast",
+   "source": "PaddyDoctor",
+   "source_class": "blast",
+   "field": true,
+   "conf": 0.7635
+  },
+  {
+   "path": "val/other/RiceLeafBD__brown_spot__315532476_678564123619299_2314158013159928732_n_8d0b86fe.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Brown Spot",
+   "field": true,
+   "conf": 0.7109
+  },
+  {
+   "path": "val/other/RiceLeafBD__brown_spot__315092006_5840330365988599_5190716989043173993_n_6beaa43a.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Brown Spot",
+   "field": true,
+   "conf": 0.7036
+  },
+  {
+   "path": "val/other/DhanShomadhan__field_sheath_blight__00234.jpg",
+   "true": "other",
+   "source": "DhanShomadhan",
+   "source_class": "Field Sheath Blight",
+   "field": true,
+   "conf": 0.6877
+  },
+  {
+   "path": "val/other/PaddyDoctor__tungro__102636.jpg",
+   "true": "other",
+   "source": "PaddyDoctor",
+   "source_class": "tungro",
+   "field": true,
+   "conf": 0.658
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__0a854ee6_4eb7_4a97_8c9e_064b78f96d92_9f257b7a.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.6457
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__311378852_1005025434221404_1147904174313826797_n_91484d91.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.6435
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__310517900_535047628013452_188626495743857687_n_bf7a9a1e.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.6398
+  },
+  {
+   "path": "val/other/RiceLeafBD__brown_spot__315111727_1257256914842639_765387376634031605_n_0890aa7f.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Brown Spot",
+   "field": true,
+   "conf": 0.6059
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__312201200_682722439795341_8854308435112613352_n_2d157ac0.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.5803
+  },
+  {
+   "path": "val/other/RiceLeafBD__tungro_virus__20231027_084901_e02c26c7.jpg",
+   "true": "other",
+   "source": "RiceLeafBD",
+   "source_class": "Tungro Virus",
+   "field": true,
+   "conf": 0.527
+  }
+ ]
+}

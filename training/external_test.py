@@ -7,8 +7,8 @@ This is a test, not training data: nothing here may be used to change the model 
 1. Sample up to 50 images per mapped class (seed 42; "other" drawn evenly across its source classes).
 2. Leak check: drop any sampled image with a near-duplicate (64-bit perceptual hash, Hamming distance <= 5)
    among ALL training and validation images of the shipped model (--prepared), Paddy Doctor included.
-3. Evaluate with training/outcomes.py (kombish.classifier.predict + kombish.rules.decide; the lesion-shape
-   question unanswered). Not-a-rice-leaf images, if the dataset has them, are reported separately as junk.
+3. Evaluate with training/outcomes.py (kombish.classifier.predict + kombish.rules.decide; both confirmation
+   questions unanswered). Not-a-rice-leaf images, if the dataset has them, are reported separately as junk.
 4. Write aggregate results to training/results/external_test.json and a manifest CSV. No image is copied.
 """
 from __future__ import annotations
@@ -108,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         junk_result = {"n": len(kept_junk),
                        "referred": sum(i["outcome"] == "referred" for i in kept_junk),
                        "advice_given": sum(i["outcome"] == "advice" for i in kept_junk),
+                       "blb_question_asked": sum(i["outcome"] == "blb_question" for i in kept_junk),
                        "blast_question_asked": sum(i["outcome"] == "blast_question" for i in kept_junk),
                        "classifier_confident": sum(i["classifier_confident"] for i in kept_junk),
                        "predicted": dict(Counter(i["predicted"] for i in kept_junk))}
@@ -126,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "dataset": {k: ds[k] for k in ("name", "country", "source", "licence", "credit")} | {"used_for_training": False},
         "date": dt.date.today().isoformat(), "seed": args.seed, "per_class": args.per_class,
-        "label_map": ds["label_map"], "definitions": "training/outcomes.py; the lesion-shape question is unanswered",
+        "label_map": ds["label_map"], "definitions": "training/outcomes.py; both confirmation questions are unanswered",
         "model": {"name": m.get("model"), "threshold": m["threshold"], "margin": m["margin"],
                   "blast_threshold": m.get("blast_threshold"), "blb_threshold": m.get("blb_threshold"),
                   "temperature": m["temperature"], "trained_on": m.get("trained_on"),
@@ -138,6 +139,8 @@ def main(argv: list[str] | None = None) -> int:
         "confusion_matrix_top_guess": {"labels": CLASSES, "rows_true_cols_predicted": [
             [sum(r["true"] == t and r["predicted"] == q for r in kept) for q in CLASSES] for t in CLASSES]},
         "wrong_advice_list": listing([r for r in kept if r["outcome"] == "advice" and r["advice"] != r["true"]]),
+        "blb_question_on_other_classes_list": listing([r for r in kept if r["outcome"] == "blb_question"
+                                                       and r["true"] != "bacterial_leaf_blight"]),
         "blast_question_on_other_classes_list": listing([r for r in kept if r["outcome"] == "blast_question"
                                                          and r["true"] != "blast"]),
         "junk": junk_result,
@@ -146,7 +149,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\nEXTERNAL TEST ({ds['name']}, {ds['country']}) n={results['n']}: classifier confident "
           f"{results['classifier_confident']}, advice given {results['advice_given']} (right {results['right_advice']}, "
-          f"wrong {results['wrong_advice']}), blast question asked {results['blast_question_asked']} "
+          f"wrong {results['wrong_advice']}), BLB question asked {results['blb_question_asked']} (true BLB "
+          f"{results['blb_question_on_true_blb']}, other classes {results['blb_question_on_other_classes']}), "
+          f"blast question asked {results['blast_question_asked']} "
           f"(true blast {results['blast_question_on_true_blast']}, other classes "
           f"{results['blast_question_on_other_classes']}), referred {results['referred']}, top guess right "
           f"{results['top_guess_right']}")

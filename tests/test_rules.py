@@ -12,7 +12,8 @@ from kombish.voice import VoiceQuery
 ROOT = Path(__file__).resolve().parent.parent
 T = 0.70
 ORDER = ["R0_NO_CONSENT", "R0_NO_PHOTO", "R5_ABSTAIN", "R6_VOICE_REDFLAG",
-         "R1_BLB", "R0_CONFIRM_BLAST", "R7_BLAST_UNCONFIRMED", "R2_BLAST", "R3_HEALTHY", "R4_OTHER"]
+         "R0_CONFIRM_BLB", "R8_BLB_UNCONFIRMED", "R1_BLB",
+         "R0_CONFIRM_BLAST", "R7_BLAST_UNCONFIRMED", "R2_BLAST", "R3_HEALTHY", "R4_OTHER"]
 SYMPTOMS = ["brown_spots", "spindle_lesions", "yellowing", "leaf_tip_drying",
             "insects_seen", "hopper_burn", "wilting", "none", "unclear"]
 
@@ -58,7 +59,7 @@ def test_low_confidence_always_refers(label):
 
 
 def test_label_mapping_when_confident():
-    got = {lab: decide(lab, 0.99, True, None, None, threshold=T, blast_confirmed=True).decision
+    got = {lab: decide(lab, 0.99, True, None, None, threshold=T, blast_confirmed=True, blb_confirmed=True).decision
            for lab in rules.CLASSES}
     assert got == {"bacterial_leaf_blight": "no_insecticide_fix_fertiliser", "blast": "spray_correctly",
                    "healthy": "no_spray_monitor", "other": "consult_officer"}
@@ -107,11 +108,13 @@ def test_spray_is_only_reachable_through_a_confirmed_confident_blast():
             for margin_ok in (True, False):
                 for confirmed in (None, False, True):
                     for consent in (True, False):
-                        d = decide(label, conf, margin_ok, None, True, threshold=T, consent=consent,
-                                   blast_threshold=BLAST_T, blast_confirmed=confirmed).decision
-                        allowed = (label == "blast" and conf >= BLAST_T and margin_ok and confirmed is True
-                                   and consent)
-                        assert (d == "spray_correctly") == allowed, (label, conf, margin_ok, confirmed, consent)
+                        for blb_yes in (None, False, True):   # a "yes" to the BLB question never unlocks spray
+                            d = decide(label, conf, margin_ok, None, True, threshold=T, consent=consent,
+                                       blast_threshold=BLAST_T, blast_confirmed=confirmed,
+                                       blb_confirmed=blb_yes).decision
+                            allowed = (label == "blast" and conf >= BLAST_T and margin_ok and confirmed is True
+                                       and consent)
+                            assert (d == "spray_correctly") == allowed, (label, conf, margin_ok, confirmed, consent)
 
 
 @pytest.mark.parametrize("confirmed", [None, False, True])
@@ -139,9 +142,11 @@ def test_blb_threshold_refers_below_it_and_touches_nothing_else():
     from kombish.classifier import should_abstain
 
     kw = {"threshold": T, "blb_threshold": 0.93}
-    assert decide("bacterial_leaf_blight", 0.90, True, None, None, **kw).rule_id == "R5_ABSTAIN"
-    assert decide("bacterial_leaf_blight", 0.93, True, None, None, **kw).rule_id == "R1_BLB"
-    assert decide("bacterial_leaf_blight", 0.90, True, None, None, threshold=T).rule_id == "R1_BLB"   # no key: as before
+    for yes in (None, False, True):   # below the BLB threshold the question is never asked
+        assert decide("bacterial_leaf_blight", 0.90, True, None, None, blb_confirmed=yes, **kw).rule_id == "R5_ABSTAIN"
+    assert decide("bacterial_leaf_blight", 0.93, True, None, None, blb_confirmed=True, **kw).rule_id == "R1_BLB"
+    # no key in labels.json: only the general threshold applies
+    assert decide("bacterial_leaf_blight", 0.90, True, None, None, threshold=T, blb_confirmed=True).rule_id == "R1_BLB"
     for label in ("healthy", "other"):
         assert decide(label, 0.80, True, None, None, **kw) == decide(label, 0.80, True, None, None, threshold=T)
     assert decide("blast", 0.99, True, None, None, blast_confirmed=True, **kw).rule_id == "R2_BLAST"
@@ -152,10 +157,70 @@ def test_blb_threshold_refers_below_it_and_touches_nothing_else():
 
 
 def test_prompt_and_referral_sets_cover_the_new_rules():
-    assert "R0_CONFIRM_BLAST" in rules.PROMPT_RULES and "R7_BLAST_UNCONFIRMED" in rules.REFERRAL_RULES
     rows = load_rules()
-    assert rows["R0_CONFIRM_BLAST"]["decision"] == "none" and not rows["R0_CONFIRM_BLAST"]["clip"]
-    assert rows["R7_BLAST_UNCONFIRMED"]["headline_bn"] == rows["R5_ABSTAIN"]["headline_bn"]
+    for question, unconfirmed in (("R0_CONFIRM_BLAST", "R7_BLAST_UNCONFIRMED"), ("R0_CONFIRM_BLB", "R8_BLB_UNCONFIRMED")):
+        assert question in rules.PROMPT_RULES and unconfirmed in rules.REFERRAL_RULES
+        assert rows[question]["decision"] == "none" and not rows[question]["clip"]
+        assert rows[unconfirmed]["decision"] == "consult_officer" and rows[unconfirmed]["clip"] == "not_sure"
+        assert rows[unconfirmed]["headline_bn"] == rows["R5_ABSTAIN"]["headline_bn"]
+    assert rows["R0_CONFIRM_BLB"]["headline_bn"] != rows["R0_CONFIRM_BLAST"]["headline_bn"]
+
+
+# ---- the BLB answer is as cautious as the blast answer ----
+def blb(conf, confirmed, voice=None, margin_ok=True, blast_confirmed=None):
+    return decide("bacterial_leaf_blight", conf, margin_ok, voice, None, threshold=T, blb_threshold=BLAST_T,
+                  blb_confirmed=confirmed, blast_confirmed=blast_confirmed)
+
+
+def test_blb_needs_the_farmers_yes():
+    asked = blb(0.99, None)
+    assert asked.rule_id == "R0_CONFIRM_BLB" and asked.decision == "none" and asked.clips == ()
+    assert asked.text_md == f"## {load_rules()['R0_CONFIRM_BLB']['headline_bn']}"   # the question, nothing else
+    yes = blb(0.99, True)
+    assert yes.rule_id == "R1_BLB" and yes.decision == "no_insecticide_fix_fertiliser"
+    no = blb(0.99, False)
+    assert no.rule_id == "R8_BLB_UNCONFIRMED" and no.decision == "consult_officer"
+    assert no.clips == ("audio/not_sure.mp3",)
+
+
+def test_a_yes_to_one_question_never_confirms_the_other():
+    for blast_yes in (None, False, True):   # the blast answer is ignored for a BLB photo
+        assert blb(0.99, None, blast_confirmed=blast_yes).rule_id == "R0_CONFIRM_BLB"
+        assert blb(0.99, False, blast_confirmed=blast_yes).rule_id == "R8_BLB_UNCONFIRMED"
+    for blb_yes in (None, False, True):     # the BLB answer is ignored for a blast photo
+        kw = {"threshold": T, "blast_threshold": BLAST_T, "blb_confirmed": blb_yes}
+        assert decide("blast", 0.99, True, None, None, **kw).rule_id == "R0_CONFIRM_BLAST"
+        assert decide("blast", 0.99, True, None, None, blast_confirmed=False, **kw).rule_id == "R7_BLAST_UNCONFIRMED"
+
+
+@pytest.mark.parametrize("label", ["healthy", "other"])
+def test_the_blb_question_does_not_touch_healthy_or_other(label):
+    plain = decide(label, 0.80, True, None, None, threshold=T)
+    for confirmed in (None, False, True):
+        assert decide(label, 0.80, True, None, None, threshold=T, blb_threshold=BLAST_T,
+                      blb_confirmed=confirmed) == plain
+
+
+@pytest.mark.parametrize("confirmed", [None, False, True])
+def test_voice_never_changes_a_blb_outcome_except_towards_referral(confirmed):
+    base = blb(0.99, confirmed).decision
+    for v in all_voices():
+        assert blb(0.99, confirmed, voice=v).decision in {base, "consult_officer"}
+        assert blb(0.80, confirmed, voice=v).decision == "consult_officer"   # below the BLB threshold
+
+
+def test_the_blb_answer_is_only_reachable_through_a_confirmed_confident_blb():
+    for label in list(rules.CLASSES) + [None, "not_a_class"]:
+        for conf in (0.0, 0.5, T, 0.9, BLAST_T, 0.999):
+            for margin_ok in (True, False):
+                for confirmed in (None, False, True):
+                    for consent in (True, False):
+                        a = decide(label, conf, margin_ok, None, None, threshold=T, consent=consent,
+                                   blb_threshold=BLAST_T, blb_confirmed=confirmed, blast_confirmed=True)
+                        allowed = (label == "bacterial_leaf_blight" and conf >= BLAST_T and margin_ok
+                                   and confirmed is True and consent)
+                        assert (a.rule_id == "R1_BLB") == allowed, (label, conf, margin_ok, confirmed, consent)
+                        assert (a.decision == "no_insecticide_fix_fertiliser") == allowed
 
 
 def test_prompts_have_no_clips():
@@ -205,9 +270,10 @@ def test_english_translation_comes_from_the_same_csv_rows():
     allowed |= {texts.CONFIRM_TEMPLATE_EN.format(disease=d) for d in texts.DISEASE_NAME_EN.values()}
     allowed |= {c["gloss_en"] for c in clips.values()}
     for label in list(rules.CLASSES) + [None]:
-        for confirmed in (None, True, False):
+        for confirmed in (None, True, False):   # the same answer to both questions: every rule row is reached
             for failed in (False, True):
-                a = decide(label, 0.99, True, None, None, threshold=T, blast_confirmed=confirmed, voice_failed=failed)
+                a = decide(label, 0.99, True, None, None, threshold=T, blast_confirmed=confirmed,
+                           blb_confirmed=confirmed, voice_failed=failed)
                 assert a.text_en_md.split("\n\n")[0] == f"## {rows[a.rule_id]['headline_en']}"
                 assert set(a.text_en_md.split("\n\n")) <= allowed, (label, confirmed, a.text_en_md)
                 assert len(a.text_en_md.split("\n\n")) == len(a.text_md.split("\n\n"))   # line for line
@@ -302,7 +368,7 @@ def test_computer_generated_clips_say_the_current_text():
 
 def test_audio_is_optional():
     """Audio never blocks an answer: a rule still returns its text when a clip file does not exist."""
-    a = decide("bacterial_leaf_blight", 0.99, True, None, None, threshold=T)
+    a = decide("bacterial_leaf_blight", 0.99, True, None, None, threshold=T, blb_confirmed=True)
     assert a.text_md and a.clips == ("audio/blb.mp3",)   # the app shows the text and skips a missing file
 
 

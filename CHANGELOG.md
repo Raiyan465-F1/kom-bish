@@ -13,6 +13,14 @@ recorded, the model is not published and nothing is hosted yet (see `docs/gates.
   `R7_BLAST_UNCONFIRMED`; draft Bangla awaiting review). Test coverage fell from 0.8780 to 0.7585
 - External test on Paddy Doctor (India), n = 200 (`training/external_test.py`): 192 referred, 8 answered,
   1 right, 0 wrong spray answers. The model does not transfer to wide shots of whole plants
+- **The BLB answer is now as cautious as the blast answer** (12 Oct 2026; model v2 kept, no retraining).
+  New rules `R0_CONFIRM_BLB` (a question about where the patches start; Bangla reviewed 12 Oct 2026) and
+  `R8_BLB_UNCONFIRMED` (referral on "no" or "not sure"). BLB threshold raised from 0.94 to 0.955, chosen on
+  validation only (`training/choose_blb_threshold.py`); published as revision `v2.1` (`model.onnx` unchanged).
+  "Advice given" now means the healthy answer only; confident BLB predictions are counted under "BLB question
+  asked". Comparison, external test, evaluation report and model card regenerated
+- Four close-up web photos of blast tried on 11 Oct 2026: none recognised, one got the BLB answer; after the
+  change above all four are referred (`docs/gates.md`)
 - **Deployed** to a free ZeroGPU Gradio Space: https://raiyan465-kom-bish.hf.space (`scripts/deploy_space.py`);
   hosted smoke test 7 of 7, logging confirmed, laptop `--share` backup confirmed
 - Bangla reviewed by one native speaker (11 Oct 2026): 12 lines edited, a voice-failed line and a photo

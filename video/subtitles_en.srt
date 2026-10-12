@@ -33,83 +33,93 @@ The farmer uploads a leaf photo.
 (Sample image: RiceLeafBD test split)
 
 8
-00:00:27,000 --> 00:00:31,000
+00:00:27,000 --> 00:00:30,000
+[App] Do the yellow or straw-coloured
+patches start at the leaf tip or edge
+
+9
+00:00:30,000 --> 00:00:33,000
+and run down along the edge?
+(The farmer answers yes.)
+
+10
+00:00:33,000 --> 00:00:37,000
 [App] No insecticide needed,
 fix the fertiliser
 
-9
-00:00:31,000 --> 00:00:35,000
+11
+00:00:37,000 --> 00:00:41,000
 [App voice] It looks like
 bacterial leaf blight.
 
-10
-00:00:35,000 --> 00:00:40,000
+12
+00:00:41,000 --> 00:00:46,000
 [App voice] Insecticide does not
 cure it, so don't buy any.
 
-11
-00:00:40,000 --> 00:00:44,000
+13
+00:00:46,000 --> 00:00:50,000
 [App voice] Stop urea for now.
 
-12
-00:00:44,000 --> 00:00:50,000
+14
+00:00:50,000 --> 00:00:56,000
 [App voice] After the rain, per bigha:
 5 kg potash and 3.5 kg gypsum.
 
-13
-00:00:50,000 --> 00:00:55,000
+15
+00:00:56,000 --> 00:01:01,000
 [App voice] Before spraying anything
 else, talk to your agriculture officer.
 
-14
-00:00:55,000 --> 00:00:59,000
+16
+00:01:01,000 --> 00:01:05,000
 A second photo looks like blast.
 (Sample image: Paddy Doctor held-out)
 
-15
-00:00:59,000 --> 00:01:05,000
+17
+00:01:05,000 --> 00:01:11,000
 [App] Are the spots long like an eye,
 narrow ends, grey centre, brown edge?
 
-16
-00:01:05,000 --> 00:01:08,000
+18
+00:01:11,000 --> 00:01:14,000
 Only a "yes" gives spray advice.
 
-17
-00:01:08,000 --> 00:01:12,000
+19
+00:01:14,000 --> 00:01:18,000
 [App] A spray is needed,
 but done correctly
 
-18
-00:01:12,000 --> 00:01:18,000
+20
+00:01:18,000 --> 00:01:24,000
 [App voice] A tricyclazole-group
 fungicide. Dose: follow the packet.
 
-19
-00:01:18,000 --> 00:01:23,000
+21
+00:01:24,000 --> 00:01:29,000
 [App voice] Long sleeves, gloves,
 wind at your back. Wash afterwards.
 
-20
-00:01:23,000 --> 00:01:27,000
+22
+00:01:29,000 --> 00:01:33,000
 A third photo is unclear.
 
-21
-00:01:27,000 --> 00:01:33,000
+23
+00:01:33,000 --> 00:01:39,000
 [App] I can't be sure from this photo.
 Call 16123 or your local officer.
 
-22
-00:01:33,000 --> 00:01:38,000
+24
+00:01:39,000 --> 00:01:44,000
 When it is not sure,
 Kom Bish does not guess.
 
-23
-00:01:38,000 --> 00:01:44,000
+25
+00:01:44,000 --> 00:01:50,000
 Tested on photos from Bangladesh,
 India and the Philippines.
 
-24
-00:01:44,000 --> 00:01:50,000
+26
+00:01:50,000 --> 00:01:56,000
 Code, live demo and evaluation:
 links on screen

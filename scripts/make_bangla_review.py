@@ -19,11 +19,11 @@ from kombish import texts  # noqa: E402
 WIRED = ["consent", "blb", "blast", "safety", "healthy", "not_sure", "voice_failed"]
 WHERE = {
     "consent": "Shown at the top of the app and played with the Listen button, before any input",
-    "blb": "Answer for bacterial leaf blight (rule R1_BLB): shown and played",
+    "blb": "Answer for bacterial leaf blight (rule R1_BLB), only after the farmer answers \"yes\" to the BLB question: shown and played",
     "blast": "Answer for blast (rule R2_BLAST), only after the farmer answers \"yes\" to the lesion question: shown and played",
     "safety": "Second clip with every blast answer (spray safety): shown and played",
     "healthy": "Answer for a healthy leaf (rule R3_HEALTHY): shown and played",
-    "not_sure": "Referral answer (rules R4, R5, R6, R7): shown and played",
+    "not_sure": "Referral answer (rules R4, R5, R6, R7, R8): shown and played",
     "voice_failed": "Extra line when a voice note could not be understood (only when voice is switched on)",
 }
 UI = [   # (name in kombish/texts.py, English meaning, where it appears)
@@ -34,9 +34,9 @@ UI = [   # (name in kombish/texts.py, English meaning, where it appears)
     ("LABEL_VOICE_BN", "Voice note (optional)", "Label of the microphone box (only when voice is on)"),
     ("VOICE_PRIVACY_NOTE_BN", "Voice notes are processed on Google's servers", "Under the microphone box"),
     ("SPRAY_INTENT_Q_BN", "Were you thinking of spraying?", "Question above the yes / no choice"),
-    ("YES_BN", "Yes", "Answer option (spray question and lesion question)"),
-    ("NO_BN", "No", "Answer option (spray question and lesion question)"),
-    ("NOT_SURE_BN", "Not sure", "Answer option for the lesion question"),
+    ("YES_BN", "Yes", "Answer option (spray question, BLB question and lesion question)"),
+    ("NO_BN", "No", "Answer option (spray question, BLB question and lesion question)"),
+    ("NOT_SURE_BN", "Not sure", "Answer option for the BLB question and the lesion question"),
     ("BUTTON_ADVISE_BN", "Get advice", "The main button"),
     ("LABEL_LISTEN_BN", "Listen", "Label of the audio players"),
     ("LABEL_SAFETY_BN", "Spray safety", "Label of the second audio player"),
@@ -96,7 +96,8 @@ def main() -> int:
             continue
         n += 1
         seen[r["headline_bn"]] = n
-        extra = " **This is the lesion-shape question asked before any blast answer.**" if r["rule_id"] == "R0_CONFIRM_BLAST" else ""
+        extra = {"R0_CONFIRM_BLAST": " **This is the lesion-shape question asked before any blast answer.**",
+                 "R0_CONFIRM_BLB": " **This is the question asked before any BLB answer.**"}.get(r["rule_id"], "")
         L += [f"**{n}. `{r['rule_id']}`** — when: {r['conditions']}. Status: {r['review_status']}.{extra}", "",
               f"> {r['headline_bn']}", ""]
     L += ["## C. Buttons, labels and short lines (`kombish/texts.py`)", ""]

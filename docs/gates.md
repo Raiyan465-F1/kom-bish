@@ -504,9 +504,52 @@ through `kombish.classifier.predict` with the published model (B):
 - This agrees with the limitation already recorded: the model recognises blast on its own sources (top-1
   blast recall on our test split: 0.956 on white-sheet photos, n = 135; 0.667 on field photos, n = 18) and
   not on a new source. Four photos are an anecdote, not a test set; no threshold was changed because of them.
-- TODO-HUMAN: decide whether the model stays frozen at v2. Options: (a) keep v2 and show this limit openly;
-  (b) raise the BLB threshold, chosen on validation only, never on these four photos; (c) retrain with
-  close-up field photos of blast from a new source, which we do not have yet.
+- Decision (Raiyan, 12 Oct 2026): keep model v2, no retraining, and make the BLB answer as cautious as the
+  blast answer. See the next block.
+
+**The BLB answer made as cautious as the blast answer (12 Oct 2026; model v2 kept, no retraining).**
+
+1. **BLB question.** New rules `R0_CONFIRM_BLB` (asked before any BLB answer) and `R8_BLB_UNCONFIRMED`
+   (referral on "no" or "not sure"); only "yes" gives `R1_BLB`. The Bangla question and its English were
+   supplied and reviewed by Raiyan Rahman on 2026-10-12 (`data/rules.csv`). The question has its own answer
+   box in the app, so a "yes" to the lesion question can never confirm BLB and the other way round (tested).
+2. **BLB threshold 0.94 → 0.955**, chosen on the validation split only
+   (`python training/choose_blb_threshold.py --write`; `training/results/runs/blb_threshold_v2_1/choice.json`).
+   Rule: the smallest threshold with no wrong BLB answer on the 1716 field-background validation photos
+   (of 2315 validation photos). At 0.94: 74 BLB answers on validation, 3 wrong. At
+   0.955: 66 BLB answers, 0 wrong. The closest wrong predictions sit just below the new
+   threshold (0.9528 RiceLeafBD/Tungro Virus, 0.9527 RiceLeafBD/Tungro Virus, 0.9513 DhanShomadhan/Field Rice Turgro), so the margin is thin. The four web photos, the
+   test split, the held-out set and the external set were not used.
+3. **Published** as revision `v2.1` of the model repo: `labels.json` and the model card only; `model.onnx`
+   is byte-identical (SHA-256 checked before and after). Revision `v2` keeps the 11 Oct thresholds.
+4. **Outcomes for B through the app's code path, before → after** (`training/compare_candidates.py`,
+   `training/external_test.py`). "Advice given" now means the healthy answer only; confident BLB predictions
+   moved to "BLB question asked", which is not advice until the farmer answers "yes".
+
+| Set | n | Classifier confident | Advice given before (BLB or healthy) | Advice given now (healthy only) | BLB question asked (true BLB / other) | Blast question asked (true blast / other) | Referred |
+|---|---|---|---|---|---|---|---|
+| our test split | 828 | 518 → 515 | 185 (172 right, 13 wrong) | 150 (139 right, 11 wrong) | 32 (31 / 1) | 0 (0 / 0) | 643 → 646 |
+| our field photos | 272 | 159 → 156 | 71 (69 right, 2 wrong) | 36 (36 right, 0 wrong) | 32 (31 / 1) | 0 (0 / 0) | 201 → 204 |
+| Paddy Doctor held-out (same source as some training data) | 500 | 332 → 327 | 221 (220 right, 1 wrong) | 113 (112 right, 1 wrong) | 103 (103 / 0) | 6 (6 / 0) | 273 → 278 |
+| External (Zambali) | 200 | 69 → 69 | 28 (27 right, 1 wrong) | 28 (27 right, 1 wrong) | 0 (0 / 0) | 0 (0 / 0) | 172 → 172 |
+
+   - Wrong advice now: every one on our test split is a BD5 narrow brown spot leaf told "no spray now"; the
+     one on the held-out set and the one on the external set are blast leaves told "no spray now".
+   - The one BLB question on a photo that is not BLB is a RiceLeafBD tungro photo from our test split
+     (confidence 0.984). If the farmer answered "yes" there, the BLB answer would be wrong.
+   - Wrong "spray correctly" if the farmer answers "yes" to every blast question: 0 on every set, as before.
+
+5. **The four web photos again** (`app.make_advise` with the published `v2.1` files; nothing logged):
+
+| Photo | Top class | Confidence | Blast probability | What the app answers now | Question shown |
+|---|---|---|---|---|---|
+| 1 | `other` | 0.964 | 0.007 | Referral (`R4_OTHER`) | no |
+| 2 | `bacterial_leaf_blight` | 0.940 | 0.002 | Referral (`R5_ABSTAIN`) | no |
+| 3 | `other` | 0.635 | 0.007 | Referral (`R5_ABSTAIN`) | no |
+| 4 | `other` | 0.693 | 0.027 | Referral (`R5_ABSTAIN`) | no |
+
+   All four are referred to 16123 or an officer; none is recognised as blast. Photo 2 (BLB at 0.940) is now
+   below the BLB threshold. Had it been above, the app would have asked the BLB question first.
 
 ## Code checks done without the real model (11 Oct 2026)
 

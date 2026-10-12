@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from outcomes import ROOT, classifier, photo_outcome, tally, use_model  # noqa: E402
 
 COLUMNS = ("| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | "
+           "BLB question asked (true BLB / other = wrong BLB answer if \"yes\") | "
            "Blast question asked (true blast / other = wrong spray if \"yes\") | Referred |")
 
 
@@ -54,6 +55,7 @@ def latency_ms(n: int = 30) -> float:
 def row(name: str, s: str, e: dict) -> str:
     return (f"| {name} | {s} | {e['n']} | {e['classifier_confident']} ({e['classifier_confident'] / e['n']:.1%}) | "
             f"{e['advice_given']} ({e['advice_given'] / e['n']:.1%}) | {e['right_advice']} | {e['wrong_advice']} | "
+            f"{e['blb_question_asked']} ({e['blb_question_on_true_blb']} / {e['blb_question_on_other_classes']}) | "
             f"{e['blast_question_asked']} ({e['blast_question_on_true_blast']} / {e['blast_question_on_other_classes']}) | "
             f"{e['referred']} |")
 
@@ -69,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sets = load_sets(args.prepared, args.paddy, args.heldout_manifest)
 
-    results, lines = {}, [COLUMNS, "|---|---|---|---|---|---|---|---|---|"]
+    results, lines = {}, [COLUMNS, "|---|---|---|---|---|---|---|---|---|---|"]
     for spec in args.model:
         name, folder = spec.split("=", 1)
         m = use_model(ROOT / folder)

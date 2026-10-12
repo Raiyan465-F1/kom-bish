@@ -7,7 +7,7 @@
   "credit": "Kaggle user gettingintoml. Rice leaf images collected on farms in Iba and Botolan, Zambales, Philippines, verified with the Provincial Agricultural Office of Zambales (dataset description).",
   "used_for_training": false
  },
- "date": "2026-10-11",
+ "date": "2026-10-12",
  "seed": 42,
  "per_class": 50,
  "label_map": {
@@ -16,13 +16,13 @@
   "HEALTHY": "healthy",
   "BROWN_SPOT": "other"
  },
- "definitions": "training/outcomes.py; the lesion-shape question is unanswered",
+ "definitions": "training/outcomes.py; both confirmation questions are unanswered",
  "model": {
   "name": "mobilenetv3_large_100.ra_in1k",
   "threshold": 0.91,
   "margin": 0.2,
   "blast_threshold": 0.999,
-  "blb_threshold": 0.94,
+  "blb_threshold": 0.955,
   "temperature": 0.6396,
   "trained_on": [
    "10.17632/kx9rx8p2mz.1",
@@ -44,6 +44,9 @@
  "advice_given": 28,
  "right_advice": 27,
  "wrong_advice": 1,
+ "blb_question_asked": 0,
+ "blb_question_on_true_blb": 0,
+ "blb_question_on_other_classes": 0,
  "blast_question_asked": 0,
  "blast_question_on_true_blast": 0,
  "blast_question_on_other_classes": 0,
@@ -54,6 +57,7 @@
    "n": 50,
    "right_advice": 0,
    "wrong_advice": 0,
+   "blb_question_asked": 0,
    "blast_question_asked": 0,
    "referred": 50
   },
@@ -61,6 +65,7 @@
    "n": 50,
    "right_advice": 0,
    "wrong_advice": 1,
+   "blb_question_asked": 0,
    "blast_question_asked": 0,
    "referred": 49
   },
@@ -68,6 +73,7 @@
    "n": 50,
    "right_advice": 27,
    "wrong_advice": 0,
+   "blb_question_asked": 0,
    "blast_question_asked": 0,
    "referred": 23
   },
@@ -75,6 +81,7 @@
    "n": 50,
    "right_advice": 0,
    "wrong_advice": 0,
+   "blb_question_asked": 0,
    "blast_question_asked": 0,
    "referred": 50
   }
@@ -121,11 +128,13 @@
    "confidence": 0.9878
   }
  ],
+ "blb_question_on_other_classes_list": [],
  "blast_question_on_other_classes_list": [],
  "junk": {
   "n": 50,
   "referred": 50,
   "advice_given": 0,
+  "blb_question_asked": 0,
   "blast_question_asked": 0,
   "classifier_confident": 6,
   "predicted": {

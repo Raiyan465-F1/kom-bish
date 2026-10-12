@@ -278,32 +278,39 @@ def advice_outcomes(p: torch.Tensor, y: torch.Tensor, t: float, margin: float) -
 
 
 def outcome_counts(p: torch.Tensor, y: torch.Tensor, t, margin: float) -> dict:
-    """The same four numbers everywhere (reports, README, model card, comparison scripts).
+    """The same numbers everywhere (reports, README, model card, comparison scripts): training/outcomes.py.
 
     classifier confident: the prediction passes the thresholds and margin (confident "other" included).
-    advice given:         a confident BLB or healthy answer. This is what the farmer is told from the photo.
+    advice given:         a confident healthy answer: the only answer given from the photo alone.
+    BLB question asked:   a confident BLB prediction. The app then asks the BLB question; it gives the BLB
+                          answer only on "yes", so this is NOT counted as advice.
     blast question asked: a confident blast prediction. The app then asks the lesion-shape question; it gives
                           the spray answer only on "yes", so this is NOT counted as advice.
     referred:             everything else (not confident, or a confident "other").
     """
     pred = p.argmax(1)
     confident = answered_mask(p, t, margin)
-    blast, other = CLASSES.index("blast"), CLASSES.index("other")
-    advice = confident & (pred != other) & (pred != blast)
-    question = confident & (pred == blast)
+    blb, blast, healthy = (CLASSES.index(c) for c in ("bacterial_leaf_blight", "blast", "healthy"))
+    advice = confident & (pred == healthy)
+    blb_q, question = confident & (pred == blb), confident & (pred == blast)
+    referred = ~advice & ~blb_q & ~question
     by_true = {}
     for k, cls in enumerate(CLASSES):
         true = y == k
         by_true[cls] = {"n": int(true.sum()), "right_advice": int((true & advice & (pred == k)).sum()),
                         "wrong_advice": int((true & advice & (pred != k)).sum()),
+                        "blb_question_asked": int((true & blb_q).sum()),
                         "blast_question_asked": int((true & question).sum()),
-                        "referred": int((true & ~advice & ~question).sum())}
+                        "referred": int((true & referred).sum())}
     return {"n": int(len(y)), "classifier_confident": int(confident.sum()), "advice_given": int(advice.sum()),
             "right_advice": int((advice & (pred == y)).sum()), "wrong_advice": int((advice & (pred != y)).sum()),
+            "blb_question_asked": int(blb_q.sum()),
+            "blb_question_on_true_blb": int((blb_q & (y == blb)).sum()),
+            "blb_question_on_other_classes": int((blb_q & (y != blb)).sum()),   # wrong BLB answer if answered "yes"
             "blast_question_asked": int(question.sum()),
             "blast_question_on_true_blast": int((question & (y == blast)).sum()),
             "blast_question_on_other_classes": int((question & (y != blast)).sum()),   # wrong spray if answered "yes"
-            "referred": int((~advice & ~question).sum()), "by_true_class": by_true}
+            "referred": int(referred.sum()), "by_true_class": by_true}
 
 
 def field_advice_ok(p: torch.Tensor, y: torch.Tensor, field: torch.Tensor | None, t: float, margin: float) -> bool:
@@ -675,7 +682,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--aug", choices=["standard", "strong"], default="standard",
                    help="strong: zoom-out onto field backgrounds, wider crops, rotation, blur, JPEG, brightness")
     p.add_argument("--blb-threshold", action="store_true",
-                   help="also choose a BLB-only threshold on validation (at most 5%% wrong BLB answers)")
+                   help="also choose a BLB-only threshold on validation (at most 5%% wrong BLB answers). The "
+                        "published threshold was re-chosen later by training/choose_blb_threshold.py")
     p.add_argument("--subset", type=int, help="max images per split (CPU smoke runs only)")
     p.add_argument("--no-pretrained", action="store_true", help="offline smoke test only; never for the real run")
     p.add_argument("--skip-export", action="store_true", help="train and save best.pt only")

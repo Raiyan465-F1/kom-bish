@@ -2,9 +2,10 @@
 
   python training/make_eval_report.py        # run in .venv
 
-Reads training/results/: metrics.json (the published model), runs/candidates_comparison.json (app code path),
-external_test.json, leak_check.json and own_photos.json when present, and runs the off-script test. Every
-number is copied or counted from those files; nothing is typed by hand. Smoke-run metrics are refused.
+Reads training/results/: metrics.json (the training run of the published model), runs/candidates_comparison.json
+(app code path, current thresholds), runs/blb_threshold_v2_1/choice.json, external_test.json, leak_check.json and
+own_photos.json when present, and runs the off-script test. Every number is copied or counted from those files;
+nothing is typed by hand. Smoke-run metrics are refused.
 The outcome definitions are the ones in training/outcomes.py and are the same in every table.
 """
 from __future__ import annotations
@@ -23,7 +24,11 @@ PUBLISHED = "B (published)"
 PREVIOUS = "v1 (previous)"
 DEFINITIONS = [
     "- **Classifier confident:** the prediction passes the thresholds and the margin. A confident `other` counts.",
-    "- **Advice given:** a confident BLB or healthy answer. This is what the farmer is told from the photo.",
+    "- **Advice given:** a confident healthy answer (\"no spray now\"). It is the only answer the farmer gets "
+    "from the photo alone.",
+    "- **BLB question asked:** a confident BLB prediction. The app then asks where the patches start and gives the "
+    "BLB answer only on \"yes\", so with the question unanswered this is **not** counted as advice. A BLB question "
+    "on a photo that is not BLB would become a wrong \"no insecticide needed\" if the farmer said yes.",
     "- **Blast question asked:** a confident blast prediction. The app then asks the lesion-shape question and "
     "gives the spray answer only on \"yes\", so with the question unanswered this is **not** counted as advice. "
     "A blast question on a photo that is not blast would become a wrong \"spray correctly\" if the farmer said yes.",
@@ -84,29 +89,35 @@ def agronomy_status() -> str:
 
 
 def outcome_table(by_true: dict) -> list[str]:
-    lines = ["| True class | n | Right advice | Wrong advice | Blast question asked | Referred |", "|---|---|---|---|---|---|"]
+    lines = ["| True class | n | Right advice | Wrong advice | BLB question asked | Blast question asked | Referred |",
+             "|---|---|---|---|---|---|---|"]
     for cls, r in by_true.items():
-        lines.append(f"| {cls} | {r['n']} | {r['right_advice']} | {r['wrong_advice']} | {r['blast_question_asked']} | "
-                     f"{r['referred']} |")
+        lines.append(f"| {cls} | {r['n']} | {r['right_advice']} | {r['wrong_advice']} | {r['blb_question_asked']} | "
+                     f"{r['blast_question_asked']} | {r['referred']} |")
     return lines
 
 
 def outcome_lines(o: dict) -> list[str]:
     return [f"- Classifier confident: {prop(o['classifier_confident'], o['n'])}",
             f"- Advice given: {prop(o['advice_given'], o['n'])}; right {o['right_advice']}, wrong {o['wrong_advice']}",
+            f"- BLB question asked: {o['blb_question_asked']} (on true BLB {o['blb_question_on_true_blb']}, on "
+            f"other classes {o['blb_question_on_other_classes']})",
             f"- Blast question asked: {o['blast_question_asked']} (on true blast {o['blast_question_on_true_blast']}, on "
             f"other classes {o['blast_question_on_other_classes']})",
             f"- Referred: {prop(o['referred'], o['n'])}"]
 
 
 def comparison_table(cmp: dict) -> list[str]:
-    lines = ["| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | Blast question "
-             "asked (true blast / other = wrong spray if \"yes\") | Referred |", "|---|---|---|---|---|---|---|---|---|"]
+    lines = ["| Model | Set | n | Classifier confident | Advice given | Right advice | Wrong advice | BLB question "
+             "asked (true BLB / other = wrong BLB answer if \"yes\") | Blast question "
+             "asked (true blast / other = wrong spray if \"yes\") | Referred |", "|---|---|---|---|---|---|---|---|---|---|"]
     for name, r in cmp.items():
         for s, e in r["sets"].items():
             label = s + (" (**same source as some training data**)" if s.startswith("Paddy") and "B" in name else "")
             lines.append(f"| {name} | {label} | {e['n']} | {e['classifier_confident']} ({e['classifier_confident'] / e['n']:.1%}) "
                          f"| {e['advice_given']} ({e['advice_given'] / e['n']:.1%}) | {e['right_advice']} | {e['wrong_advice']} | "
+                         f"{e['blb_question_asked']} ({e['blb_question_on_true_blb']} / "
+                         f"{e['blb_question_on_other_classes']}) | "
                          f"{e['blast_question_asked']} ({e['blast_question_on_true_blast']} / "
                          f"{e['blast_question_on_other_classes']}) | {e['referred']} |")
     lines += ["", "CPU latency, median of 30 predictions on a 1024×768 image: "
@@ -118,11 +129,14 @@ def comparison_table(cmp: dict) -> list[str]:
 def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tuple[str, dict]:
     t, classes, cm = metrics["test"], metrics["classes"], metrics["test"]["confusion_matrix"]
     n = t["n"]
-    outcomes = metrics.get("outcomes") or {}
-    o_test, o_field = outcomes.get("test") or {}, outcomes.get("field") or {}
     cmp = load("runs/candidates_comparison.json") or {}
     pub = (cmp.get(PUBLISHED) or {}).get("sets") or {}
+    # Outcomes come from the app's own code path at the published thresholds. metrics.json keeps the training
+    # run's own outcome counts, made before the BLB question and the higher BLB threshold (12 Oct 2026).
+    o_test, o_field = pub.get("our test split") or {}, pub.get("our field photos") or {}
     held = pub.get("Paddy Doctor held-out") or {}
+    thresholds = (cmp.get(PUBLISHED) or {}).get("thresholds") or {}
+    blb_choice = load("runs/blb_threshold_v2_1/choice.json")
     ext, leak = load("external_test.json"), load("leak_check.json")
     paddy, dhs_in = metrics.get("paddy_doctor_images") or {}, metrics.get("dhs_images") or {}
     healthy, symptomatic, junk = ((own or {}).get(k) for k in ("healthy_looking", "symptomatic", "junk"))
@@ -130,16 +144,28 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     def rate(k, total):
         return None if (k is None or not total) else k / total
 
+    chosen_row = next((r for r in (blb_choice or {}).get("table", [])
+                       if r["threshold"] == blb_choice["chosen_blb_threshold"]), {})
+
     summary = {
         "test_n": n, "test_macro_f1": t["macro_f1_no_abstention"], "temperature": metrics["temperature"],
         "threshold": metrics["threshold"], "margin": metrics["margin"],
-        "blast_threshold": metrics.get("blast_threshold"), "blb_threshold": metrics.get("blb_threshold"),
+        "blast_threshold": thresholds.get("blast_threshold", metrics.get("blast_threshold")),
+        "blb_threshold": thresholds.get("blb_threshold", metrics.get("blb_threshold")),
+        "previous_blb_threshold": (blb_choice or {}).get("previous_blb_threshold"),
+        "blb_threshold_val_blb_answers": chosen_row.get("val_blb_answers"),
+        "blb_threshold_field_val_wrong": chosen_row.get("field_val_wrong"),
         "target_met": metrics["target_met"], "threshold_rule": metrics.get("threshold_rule"),
-        # our test split (PyTorch on the GPU, as in metrics.json)
+        # our test split (the app's code path: ONNX on the CPU, kombish/rules.py)
         "test_classifier_confident": o_test.get("classifier_confident"), "test_advice_given": o_test.get("advice_given"),
         "test_right_advice": o_test.get("right_advice"), "test_wrong_advice": o_test.get("wrong_advice"),
         "test_blast_question_asked": o_test.get("blast_question_asked"),
         "test_blast_question_on_other_classes": o_test.get("blast_question_on_other_classes"),
+        # BLB question asked, per set: on a photo that is not BLB it is a wrong BLB answer if the farmer says yes
+        **{f"{name}_blb_question_{key}": src.get(field)
+           for name, src in (("test", o_test), ("field", o_field), ("heldout", held), ("external", ext or {}))
+           for key, field in (("asked", "blb_question_asked"), ("on_true_blb", "blb_question_on_true_blb"),
+                              ("on_other_classes", "blb_question_on_other_classes"))},
         # our field photos (field-background test photos plus the held-out field blast)
         "field_n": o_field.get("n"), "field_classifier_confident": o_field.get("classifier_confident"),
         "field_advice_given": o_field.get("advice_given"), "field_right_advice": o_field.get("right_advice"),
@@ -194,11 +220,15 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         L += ["**Why two numbers.** Earlier write-ups gave two figures for the previous model on our test split that "
               f"looked inconsistent. Its \"coverage\" was classifier confident: {v1['classifier_confident']} of "
               f"{v1['n']} ({v1['classifier_confident'] / v1['n']:.1%}), which includes "
-              f"{v1['classifier_confident'] - v1['advice_given'] - v1['blast_question_asked']} confident `other` "
-              f"predictions that the app turns into referrals. Its \"answered\" count was "
-              f"{v1['advice_given'] + v1['blast_question_asked']}: {v1['advice_given']} BLB or healthy answers plus "
+              f"{v1['classifier_confident'] - v1['advice_given'] - v1['blb_question_asked'] - v1['blast_question_asked']} "
+              f"confident `other` predictions that the app turns into referrals. Its \"answered\" count was "
+              f"{v1['advice_given'] + v1['blb_question_asked'] + v1['blast_question_asked']}: "
+              f"{v1['advice_given'] + v1['blb_question_asked']} confident BLB or healthy predictions plus "
               f"{v1['blast_question_asked']} confident blast predictions. Both were right; they measured different "
-              "things. From here on only the names above are used.", ""]
+              "things. From here on only the names above are used.", "",
+              "**What changed on 12 Oct 2026.** Until then a confident BLB prediction got the BLB answer straight "
+              "away and was counted under \"advice given\". Now the app asks the BLB question first, so those photos "
+              "are counted under \"BLB question asked\" and \"advice given\" means the healthy answer only.", ""]
 
     L += ["## Method", "",
           "Byte-identical duplicate files were removed, and photos filed under two classes with different targets "
@@ -207,9 +237,12 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
           f"T = {metrics['temperature']:.4f}" + (" (clamped)" if metrics["temperature_clamped"] else "")
           + f" was fitted on validation logits. All thresholds were chosen on validation only: general threshold "
           f"{metrics['threshold']:.2f} and margin {metrics['margin']} ({metrics.get('threshold_rule')}); blast-only "
-          f"threshold {metrics.get('blast_threshold')} (the smallest value with no wrong blast answer on validation)"
-          + (f"; BLB-only threshold {metrics['blb_threshold']} (the smallest value with at most 5% wrong BLB answers "
-             "on validation; the 5% is our choice)" if metrics.get("blb_threshold") is not None else "") + ".", "",
+          f"threshold {summary['blast_threshold']} (the smallest value with no wrong blast answer on validation)"
+          + (f"; BLB-only threshold {blb_choice['chosen_blb_threshold']} (the smallest value with no wrong BLB answer "
+             f"on the {blb_choice['val_field_n']} field-background validation photos; {chosen_row['val_blb_answers']} "
+             f"validation BLB answers are left; `training/choose_blb_threshold.py`, 12 Oct 2026. It was "
+             f"{blb_choice['previous_blb_threshold']}, chosen for at most 5% wrong BLB answers on validation)"
+             if blb_choice else "") + ". No weights were changed after training.", "",
           f"Training data: RiceLeafBD and BD5; Dhan-Shomadhan ({dhs_in.get('train', 0)} train, {dhs_in.get('val', 0)} "
           f"validation, {dhs_in.get('test', 0)} test images)"
           + (f"; Paddy Doctor ({paddy.get('train', 0)} train, {paddy.get('val', 0)} validation images; 500 more are "
@@ -225,7 +258,8 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         row_n, col_n = sum(cm[i]), sum(r[i] for r in cm)
         L.append(f"| {c} | {row_n} | {prop(cm[i][i], col_n)} | {prop(cm[i][i], row_n)} | {t['per_class'][c]['f1']:.3f} |")
     if o_test:
-        L += ["", "Outcomes at the published thresholds:", "", *outcome_lines(o_test), "", *outcome_table(o_test["by_true_class"])]
+        L += ["", "Outcomes at the published thresholds, through the app's own code path (both confirmation "
+              "questions unanswered):", "", *outcome_lines(o_test), "", *outcome_table(o_test["by_true_class"])]
     L += ["", "Confusion matrix of the top guess (rows = true class):", "",
           "| true \\ predicted | " + " | ".join(classes) + " |", "|---|" + "---|" * len(classes)]
     L += [f"| {c} | " + " | ".join(str(v) for v in cm[i]) + " |" for i, c in enumerate(classes)]
@@ -246,8 +280,10 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     if cmp:
         L += ["## 3. Three models through the app's own code path", "",
               "`python training/compare_candidates.py`: `kombish/classifier.py` and `kombish/rules.py`, ONNX on the CPU, "
-              "the lesion-shape question unanswered. v1 is the previously published model; A is the same recipe with "
-              "stronger augmentation only; B adds Paddy Doctor training photos and is the published model. The "
+              "both confirmation questions unanswered. v1 is the previously published model; A is the same recipe with "
+              "stronger augmentation only; B adds Paddy Doctor training photos and is the published model, here with "
+              "its current BLB threshold. The table was made again on 12 Oct 2026 with the BLB question in the rule "
+              "engine; the table B was chosen from is in `training/results/runs/README.md`. The "
               "Paddy Doctor held-out set (500 photos, never used for training, validation or thresholds) comes from "
               "the **same source as some of B's training data**, so for B it is not an external test.", "",
               *comparison_table(cmp), ""]
@@ -258,8 +294,10 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         L += [f"**{d['name']} ({d['country']}), n = {ext['n']}.** Source: {d['source']}. Licence: {d['licence']}. "
               f"{d['credit']} Seeded sample (seed {ext['seed']}) of up to {ext['per_class']} images per mapped class; "
               f"{lk['near_duplicates_dropped']} near-duplicates of the {lk['compared_with_training_images']} training "
-              f"and validation images dropped (perceptual hash, distance ≤ {lk['phash_distance']}). Evaluated once, "
-              "after the model and thresholds were fixed; nothing was changed because of it.", "",
+              f"and validation images dropped (perceptual hash, distance ≤ {lk['phash_distance']}). First scored on "
+              "11 Oct 2026, after the model and thresholds were fixed. Scored again on the same sample on "
+              f"{ext['date']}, after the BLB question was added and the BLB threshold was raised on validation data. "
+              "Nothing was changed because of this set.", "",
               *outcome_lines(ext), f"- Top guess right, no abstention: {prop(ext['top_guess_right'], ext['n'])}", "",
               *outcome_table(ext["by_true_class"]), "",
               "Confusion matrix of the top guess (rows = true class):", "",
@@ -271,7 +309,8 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
         if ext.get("junk"):
             j = ext["junk"]
             L += [f"Not-a-rice-leaf images from the same dataset: {prop(j['referred'], j['n'])} referred; advice given "
-                  f"{j['advice_given']}; blast question asked {j['blast_question_asked']}.", ""]
+                  f"{j['advice_given']}; BLB question asked {j['blb_question_asked']}; blast question asked "
+                  f"{j['blast_question_asked']}.", ""]
         if ext["wrong_advice_list"]:
             L += ["Wrong advice: " + "; ".join(f"`{w['file']}` (true {w['source_label']}, answered {w['answered_as']}, "
                                                 f"confidence {w['confidence']})" for w in ext["wrong_advice_list"]) + ".", ""]
@@ -312,6 +351,10 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
     L += ["## Limitations", "",
           "- **Diseases are not recognised on a new source.** On the external test the model mostly recognises "
           "healthy leaves; BLB, blast and brown spot photos are referred, not answered.",
+          "- **Close-up web photos of blast were not recognised.** Four textbook-style blast photos from the web "
+          "(not a test set; labels not checked by an agronomist) were tried on 11 Oct 2026: none was called blast. "
+          "One got the BLB answer, which led to the BLB question and the higher BLB threshold. `docs/gates.md` has "
+          "the per-photo result before and after.",
           "- **The Paddy Doctor held-out result is not an external test** for the published model: it is the same "
           "source as some of its training data.",
           f"- **Blast is rarely answered.** The blast-only threshold is {metrics.get('blast_threshold')}: on our test "
@@ -325,7 +368,8 @@ def build(metrics: dict, own: dict | None, off: dict, image_prefix: str) -> tupl
           "says 2,545. We used what the archive contains.",
           "- The test split was looked at while comparing runs and tightening the threshold rules, so its numbers "
           "are somewhat optimistic. The external test was run once, after everything was fixed.",
-          "- The lesion-shape question relies on the farmer's judgement and is not part of any number here.",
+          "- The two confirmation questions (BLB, blast) rely on the farmer's judgement and have not been tested "
+          "with farmers. The \"if yes\" columns show the worst case: the farmer answers yes to every question.",
           "- No field trial. Nobody checked what a farmer did after an answer.",
           f"- Agronomy review: {agronomy_status()}."]
     if not metrics["target_met"]:
