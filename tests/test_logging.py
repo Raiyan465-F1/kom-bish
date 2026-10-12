@@ -82,6 +82,22 @@ def test_bootstrap_ignores_check_script_records(store):
     assert store.counts() == {"total": 1, "no_spray": 1, "correct_use": 0, "referrals": 0, "sprays_avoided": 1}
 
 
+def test_bootstrap_leaves_out_records_tagged_as_test_traffic(store):
+    """Smoke tests and live checks stay in the log but not in the public counters (scripts/tag_test_records.py)."""
+    real = store.log_consult({**record("R3_HEALTHY", True), "app_version": "1.0.0-rc"})
+    smoke = store.log_consult({**record("R1_BLB", True), "app_version": "1.0.0-rc"})
+    check = store.log_consult({**record("R5_ABSTAIN"), "app_version": "1.0.0-rc"})
+    tags = store.LOG_DIR / "test_records.json"
+    tags.write_text(json.dumps({smoke: "smoke test", check: "live check"}), "utf-8")
+    store.bootstrap_counts()
+    assert store.counts() == {"total": 1, "no_spray": 1, "correct_use": 0, "referrals": 0, "sprays_avoided": 1}
+    assert {r["id"] for r in lines(store)} == {real, smoke, check}   # nothing is deleted from the log
+    assert all(set(r) == SECTION_6_CONSULT_KEYS for r in lines(store))   # the tag is not a new field in a record
+    tags.write_text("not json", "utf-8")                               # a broken tag file excludes nothing
+    store.bootstrap_counts()
+    assert store.counts()["total"] == 3
+
+
 def test_bootstrap_restores_counts_after_restart(store):
     for rule_id, planning in [("R1_BLB", True), ("R2_BLAST", None), ("R5_ABSTAIN", None)]:
         rid = store.log_consult({**record(rule_id, planning), "app_version": "0.1.0"})

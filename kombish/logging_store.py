@@ -3,6 +3,10 @@
 Appends JSON Lines to a private HF dataset repo through huggingface_hub.CommitScheduler
 (every=5 minutes, append-only, UUID file names). Never stores the photo, the audio, the
 transcript, IP addresses, names or phone numbers. Up to 5 minutes can be lost on a crash.
+
+The public counters leave out the team's own test traffic (smoke tests, live checks, screenshots). Those
+records stay in the log; scripts/tag_test_records.py lists their ids in TEST_TAGS, and the counters skip
+them when the app starts.
 """
 from __future__ import annotations
 
@@ -18,6 +22,7 @@ from kombish import rules
 ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = ROOT / "logs"
 LOG_FILE = LOG_DIR / f"consults_{uuid.uuid4().hex}.jsonl"
+TEST_TAGS = "tags/test_records.json"   # in the log dataset: {"<record id>": "<why it is test traffic>"}
 
 CONSULT_KEYS = {"app_version", "predicted_class", "confidence", "probs", "abstained", "voice_used",
                 "voice_symptoms", "voice_confidence", "growth_stage", "planning_to_spray", "rule_id",
@@ -88,20 +93,34 @@ def counts() -> dict:
         return dict(_counts)
 
 
+def _test_ids(path: Path) -> set[str]:
+    """Ids of records tagged as test traffic. A missing or unreadable tag file excludes nothing."""
+    try:
+        return set(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return set()
+
+
 def bootstrap_counts() -> None:
-    """Seed counters from the persistent log (dataset repo if configured, else local logs/)."""
+    """Seed counters from the persistent log (dataset repo if configured, else local logs/).
+
+    Records tagged as test traffic are left out. A record tagged after startup is left out from the next start.
+    """
     files: list[Path] = []
+    tagged: set[str] = set()
     repo, token = os.getenv("LOG_REPO"), os.getenv("HF_TOKEN")
     if repo and token:
         try:
             from huggingface_hub import snapshot_download
             local = snapshot_download(repo_id=repo, repo_type="dataset",
-                                      allow_patterns=["data/*.jsonl"], token=token)
+                                      allow_patterns=["data/*.jsonl", TEST_TAGS], token=token)
             files = sorted(Path(local, "data").glob("*.jsonl"))
+            tagged = _test_ids(Path(local, TEST_TAGS))
         except Exception as exc:  # empty or new repo, network error: start from zero
             print(f"[logging_store] bootstrap skipped: {exc}")
     else:
         files = sorted(LOG_DIR.glob("*.jsonl"))
+        tagged = _test_ids(LOG_DIR / Path(TEST_TAGS).name)
     with _lock:
         for k in _counts:
             _counts[k] = 0
@@ -112,5 +131,6 @@ def bootstrap_counts() -> None:
             except json.JSONDecodeError:
                 continue
             # scripts/check_logging.py writes app_version="test" records; they are not consultations.
-            if rec.get("type") == "consultation" and rec.get("app_version") != "test":
+            if (rec.get("type") == "consultation" and rec.get("app_version") != "test"
+                    and rec.get("id") not in tagged):
                 _bump(rec)

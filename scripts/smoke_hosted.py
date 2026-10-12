@@ -4,10 +4,14 @@
 
 Calls /advise with: consent off; consent on and no photo; then each image in <dir> (consent on, no audio,
 planning "no"). Prints the headline of each answer and the latency. Exits non-zero if any call errors.
+
+Every answer the app gives is logged as a consultation. The script ends by printing the command that tags
+those records as test traffic, so the public dashboard counters leave them out.
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import sys
 import time
 from pathlib import Path
@@ -46,6 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     cases += [(q.name, (True, handle_file(str(q)), None, texts.NO_BN, None, False, None)) for q in images]
 
     errors = 0
+    started = dt.datetime.now(dt.timezone.utc)
     for name, inputs in cases:
         t0 = time.perf_counter()
         try:
@@ -55,6 +60,10 @@ def main(argv: list[str] | None = None) -> int:
             errors += 1
             print(f"{(time.perf_counter() - t0) * 1000:>8.0f} ms  {name:<32} ERROR {type(e).__name__}: {e}")
     print(f"{len(cases) - errors} / {len(cases)} calls succeeded")
+    ended = dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=5)
+    print("Tag these calls as test traffic (wait 5 minutes for the log to be saved, then restart the Space):\n"
+          f"  python scripts/tag_test_records.py --from {started:%Y-%m-%dT%H:%M:%S} --to {ended:%Y-%m-%dT%H:%M:%S} "
+          "--reason \"smoke test\"")
     return 1 if errors else 0
 
 

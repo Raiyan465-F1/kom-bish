@@ -13,6 +13,11 @@ recorded, the model is not published and nothing is hosted yet (see `docs/gates.
   `R7_BLAST_UNCONFIRMED`; draft Bangla awaiting review). Test coverage fell from 0.8780 to 0.7585
 - External test on Paddy Doctor (India), n = 200 (`training/external_test.py`): 192 referred, 8 answered,
   1 right, 0 wrong spray answers. The model does not transfer to wide shots of whole plants
+- **App frozen, tag `v1.0-submission` (12 Oct 2026).** The team's own test traffic (smoke tests, live
+  checks, deck screenshots) is tagged in the log dataset and left out of the public dashboard counters
+  (`scripts/tag_test_records.py`, `kombish/logging_store.py`); the counters read 0 after the last redeploy
+- Final deck: `deck/Kom_Bish_deck.pptx` (8 slides, 16:9, English, v2.1 numbers) with screenshots of the live
+  app (`deck/take_screenshots.py`); video plan tightened to 1:45; `submission/links.txt`
 - **The BLB answer is now as cautious as the blast answer** (12 Oct 2026; model v2 kept, no retraining).
   New rules `R0_CONFIRM_BLB` (a question about where the patches start; Bangla reviewed 12 Oct 2026) and
   `R8_BLB_UNCONFIRMED` (referral on "no" or "not sure"). BLB threshold raised from 0.94 to 0.955, chosen on

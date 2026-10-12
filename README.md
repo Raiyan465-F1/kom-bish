@@ -47,7 +47,8 @@ Hack for Humanity BD 2026, Round 2 · Team Unsick · Track: Inclusive Rural Deve
 - **Live demo:** <https://raiyan465-kom-bish.hf.space> (open this direct link on a phone; the Space page is https://huggingface.co/spaces/Raiyan465/kom-bish)
 - **Mirror:** none. For a live pitch the same app runs from a laptop with `python app.py --share`.
 - **Demo video:** VIDEO_URL_TODO
-- **Pitch deck:** `deck/Kom_Bish_deck.pptx` (TODO-HUMAN: not generated yet, step 22)
+- **Pitch deck:** [`deck/Kom_Bish_deck.pptx`](deck/Kom_Bish_deck.pptx) (8 slides, made by `deck/make_deck.py`)
+- **All links in one file:** [`submission/links.txt`](submission/links.txt)
 - **Test photos:** [`examples/`](examples/), one per rule path, credited in [`examples/CREDITS.md`](examples/CREDITS.md). The BLB and blast examples each show a confirmation question first.
 
 How to try: tick the consent box, upload a rice-leaf photo, press **পরামর্শ নিন**.
@@ -60,7 +61,7 @@ How to try: tick the consent box, upload a rice-leaf photo, press **পরাম
 | Rule engine | Real: pure Python, six rules, [`kombish/rules.py`](kombish/rules.py), tested |
 | Voice parsing | Code is real (Gemini `gemini-3.5-flash-lite` returns a fixed symptom list or nothing). Switched **off** until the 10-note accuracy test (gate G3). |
 | Spoken answer | **Computer-generated voice.** Seven clips were generated offline with Gemini text-to-speech (`gemini-3.8-flash-tts`; the short "voice failed" clip with `gemini-3.8-flash-lite-tts`) from the exact reviewed on-screen text, and the app labels them "computer-generated voice". Nothing is synthesised live. **No person has listened to them yet**; a machine check could not confirm that the product name is pronounced clearly in the consent clip. A human recording can replace any clip later (`scripts/process_clips.py`). |
-| "Estimated sprays avoided" | Advice-based count, unverified: nobody checked what the farmer did next |
+| "Estimated sprays avoided" | Advice-based count, unverified: nobody checked what the farmer did next. The team's own smoke tests, live checks and screenshots stay in the log but are tagged and left out of the dashboard counters ([`scripts/tag_test_records.py`](scripts/tag_test_records.py)), so the counters started at 0 on 12 Oct 2026. |
 | Telegram, WhatsApp, phone call | Not built |
 | Agronomist review | Not yet reviewed by an agronomist |
 | Bangla review | Every farmer-facing Bangla line was reviewed by one native speaker (Raiyan Rahman) on 11 Oct 2026, and the BLB question on 12 Oct 2026. The full list is in [`docs/bangla_review.md`](docs/bangla_review.md). |

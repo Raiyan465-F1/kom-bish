@@ -196,7 +196,9 @@ def build_demo(predict_fn=None, meta_fn=None, voice_fn=None, log_fn=None,
         with gr.Tab(texts.TAB_DASHBOARD_BN):
             gr.Markdown("Anonymous counts from the consultation log. **Estimated sprays avoided "
                         "(advice-based, unverified)** = a no-spray answer (R1 or R3) given to a farmer "
-                        "who said they were planning to spray. Nobody checked what the farmer did next.")
+                        "who said they were planning to spray. Nobody checked what the farmer did next. "
+                        "The team's own smoke tests, live checks and screenshots are tagged in the log and "
+                        "left out of these counts.")
             nums = [gr.Number(label=lab, precision=0, interactive=False) for lab in (
                 "Consultations", "No-spray answers (R1 + R3)", "Correct-use answers (R2)",
                 "Referrals (R4-R8)", "Estimated sprays avoided (advice-based, unverified)")]

@@ -562,6 +562,33 @@ through `kombish.classifier.predict` with the published model (B):
    - The four web photos sent to the live app: four referrals, no question.
    - These checks added 11 consultation records to the log (test traffic, like the 8 from 11 Oct).
 
+**App frozen (12 Oct 2026).** Last changes before the freeze:
+
+- **Test traffic is tagged and left out of the public counters.** The tags are a separate file in the private
+  log dataset, `tags/test_records.json` (`{record id: reason}`); no record is changed or deleted and no field
+  is added to a record. `kombish/logging_store.py` skips tagged ids when it rebuilds the counters at startup.
+  `python scripts/tag_test_records.py --list` shows every record and its tag.
+- Tagged, 34 records in four groups: 8 from the hosted smoke test and the laptop backup check (11 Oct); 9 from
+  the team's own live check on 11 Oct (their confidences match the example photos and the four web photos);
+  11 from the smoke test and live checks after the BLB change (12 Oct); 6 from the deck screenshots (12 Oct).
+  The 3 older records written by `scripts/check_logging.py` (`app_version` "test") were already left out.
+- **Redeployed** with `python scripts/deploy_space.py --files-only` and read the counters through the app's
+  API (`/stats`): consultations 0, no-spray 0, correct-use 0, referrals 0, sprays avoided 0, with 37
+  consultation records in the log. Four calls that give no advice (consent off, no photo, the BLB question,
+  the lesion question) ran correctly and left the counters at 0. No call that logs was made after the redeploy.
+- **Later test traffic** (phone test, video recording, another smoke test): tag it by time window with
+  `scripts/tag_test_records.py --from ... --to ... --reason ...`, then restart the Space
+  (`--restart Raiyan465/kom-bish`); the counters are rebuilt at startup. `scripts/smoke_hosted.py` prints the
+  exact command. A record tagged while the app is running stays in the counters until that restart.
+- **Deck:** `python deck/make_deck.py` (8 slides, 16:9, English, v2.1 numbers from `training/eval_summary.json`)
+  with screenshots of the live app taken by `python deck/take_screenshots.py` (Playwright with the installed
+  Edge). Neither PowerPoint nor LibreOffice is installed on the build machine, so the layout was checked with
+  an approximate preview only. TODO-HUMAN: open the deck once in PowerPoint and look at every slide.
+- **Video plan** tightened to 1:45 (`video/shot_list.md`, `video/subtitles_en.srt`, `video/narration_en.md`).
+- `submission/links.txt` written; the YouTube line is a placeholder until the video is uploaded.
+- Git tag `v1.0-submission`. The Space runs the same app files as the tag; its copy of `README.md` is the
+  one from the redeploy and lacks the last two README lines (deck link, counter note).
+
 ## Code checks done without the real model (11 Oct 2026)
 
 These prove the code runs. They are not results and must never be reported as accuracy.

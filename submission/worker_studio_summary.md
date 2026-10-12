@@ -4,7 +4,7 @@
 
 **Summary** (paste into the form; trim if the form has a limit):
 
-Kom Bish is a Bangla rice adviser that says whether to spray at all. A farmer ticks a consent box, uploads a rice-leaf photo and may add a Bangla voice note. A small image classifier recognises bacterial leaf blight, blast, a healthy leaf or "other". Plain code then picks one of four pre-written, reviewed Bangla answers, shown as text and played as a recorded human voice: no insecticide needed, spray correctly, no spray now, or not sure. Low confidence always refers the farmer to 16123. Nothing is generated live. TODO-HUMAN: one evaluation number with n from `training/eval_summary.json`. Limitation: each disease's training images come from a single dataset, and there is no field trial yet.
+Kom Bish is a Bangla rice adviser that says whether to spray at all. A farmer ticks a consent box, uploads a rice-leaf photo and may add a Bangla voice note. A small image classifier recognises bacterial leaf blight, blast, a healthy leaf or "other". Plain code then picks one of four pre-written, reviewed Bangla answers, shown as text and played as a pre-generated Bangla audio clip (computer-generated voice): no insecticide needed, spray correctly, no spray now, or not sure. Low confidence always refers the farmer to 16123. Nothing is generated live. TODO-HUMAN: one evaluation number with n from `training/eval_summary.json`. Limitation: each disease's training images come from a single dataset, and there is no field trial yet.
 
 TODO-HUMAN before pasting:
 
