@@ -1,6 +1,7 @@
 """Deploy Kom Bish to a Hugging Face ZeroGPU Gradio Space (the app itself runs ONNX on the CPU).
 
   python scripts/deploy_space.py [--space <user>/kom-bish] [--zerogpu-mode noop|wrap]
+  python scripts/deploy_space.py --files-only      # update the app; leave variables and secrets as they are
 
 Reads the token from .env and never prints it. Uploads only the files the app needs (an allow-list, so .env,
 models, datasets and training code never leave the machine), then sets the Space variables and the log secret.
@@ -24,6 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--zerogpu-mode", choices=["noop", "wrap"], default="noop")
     p.add_argument("--app-version", default="1.0.0-rc")
     p.add_argument("--settings-only", action="store_true", help="only set variables and secrets, upload nothing")
+    p.add_argument("--files-only", action="store_true",
+                   help="only upload the app files. Use this for updates, so a secret that was replaced in the "
+                        "Space settings (for example by a narrower token) is not overwritten from .env")
     args = p.parse_args(argv)
 
     from dotenv import dotenv_values
@@ -33,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     api = HfApi(token=env["HF_TOKEN"])
     space = args.space or f"{api.whoami()['name']}/kom-bish"
 
+    commit = None
     if not args.settings_only:
         try:
             api.create_repo(space, repo_type="space", space_sdk="gradio", space_hardware="zero-a10g", private=False,
@@ -40,33 +45,37 @@ def main(argv: list[str] | None = None) -> int:
         except Exception as e:
             print(f"REFUSED: Hugging Face would not create the ZeroGPU Space: {type(e).__name__}: {str(e)[:600]}")
             return 2
-        api.upload_folder(repo_id=space, repo_type="space", folder_path=str(ROOT), allow_patterns=ALLOW,
-                          commit_message="Deploy Kom Bish")
-        print(f"uploaded the app files to {space}")
+        commit = api.upload_folder(repo_id=space, repo_type="space", folder_path=str(ROOT), allow_patterns=ALLOW,
+                                   commit_message="Deploy Kom Bish").oid
+        print(f"uploaded the app files to {space} (commit {commit[:10]})")
 
-    voice_on = (env.get("VOICE_ENABLED") or "false").strip().lower() == "true"
-    variables = {"MODEL_REPO": env.get("MODEL_REPO"), "LOG_REPO": env.get("LOG_REPO"),
-                 "GEMINI_MODEL": env.get("GEMINI_MODEL") or "gemini-3.5-flash-lite",
-                 "VOICE_ENABLED": "true" if voice_on else "false", "APP_VERSION": args.app_version,
-                 "ZEROGPU_MODE": args.zerogpu_mode}
-    for key, value in variables.items():
-        if not value:
-            raise SystemExit(f"{key} is empty in .env")
-        api.add_space_variable(space, key, value)
-    secrets = {"HF_TOKEN": env.get("HF_TOKEN")}
-    if voice_on:
-        secrets["GEMINI_API_KEY"] = env.get("GEMINI_API_KEY")
-    for key, value in secrets.items():
-        if not value:
-            raise SystemExit(f"{key} is empty in .env")
-        api.add_space_secret(space, key, value)
-    print(f"variables set: {sorted(variables)} | secrets set (values not shown): {sorted(secrets)}")
+    if not args.files_only:
+        voice_on = (env.get("VOICE_ENABLED") or "false").strip().lower() == "true"
+        variables = {"MODEL_REPO": env.get("MODEL_REPO"), "LOG_REPO": env.get("LOG_REPO"),
+                     "GEMINI_MODEL": env.get("GEMINI_MODEL") or "gemini-3.5-flash-lite",
+                     "VOICE_ENABLED": "true" if voice_on else "false", "APP_VERSION": args.app_version,
+                     "ZEROGPU_MODE": args.zerogpu_mode}
+        for key, value in variables.items():
+            if not value:
+                raise SystemExit(f"{key} is empty in .env")
+            api.add_space_variable(space, key, value)
+        secrets = {"HF_TOKEN": env.get("HF_TOKEN")}
+        if voice_on:
+            secrets["GEMINI_API_KEY"] = env.get("GEMINI_API_KEY")
+        for key, value in secrets.items():
+            if not value:
+                raise SystemExit(f"{key} is empty in .env")
+            api.add_space_secret(space, key, value)
+        print(f"variables set: {sorted(variables)} | secrets set (values not shown): {sorted(secrets)}")
 
     for _ in range(90):   # wait for the build, up to 15 minutes
         runtime = api.get_space_runtime(space)
         hardware = getattr(runtime, "hardware", None)
-        print(f"stage: {runtime.stage} | hardware: {hardware}")
-        if runtime.stage in ("RUNNING", "RUNTIME_ERROR", "BUILD_ERROR", "CONFIG_ERROR", "PAUSED", "NO_APP_FILE"):
+        running_sha = (getattr(runtime, "raw", None) or {}).get("sha")
+        current = commit is None or running_sha in (None, commit)   # after an upload the old build keeps running for a while
+        print(f"stage: {runtime.stage} | hardware: {hardware} | running the new files: {current}")
+        if runtime.stage in ("RUNTIME_ERROR", "BUILD_ERROR", "CONFIG_ERROR", "PAUSED", "NO_APP_FILE") or (
+                runtime.stage == "RUNNING" and current):
             break
         time.sleep(10)
     owner, name = space.split("/")

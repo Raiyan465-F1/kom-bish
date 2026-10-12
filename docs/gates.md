@@ -459,7 +459,7 @@ the model:
   - The Space's `HF_TOKEN` secret is the broad token from `.env` (it can write to every repo of the account).
     Replace it in Space Settings → Secrets with a fine-grained token that can write to `kom-bish-logs` only.
   - GitHub → Space sync is not active: it needs the Actions variable `HF_SPACE_ID=Raiyan465/kom-bish` and the
-    secret `HF_SYNC_TOKEN`. Until then, update the Space with `python scripts/deploy_space.py`.
+    secret `HF_SYNC_TOKEN`. Until then, update the Space with `python scripts/deploy_space.py --files-only`.
   - A free ZeroGPU Space sleeps after long inactivity; open the link a few minutes before a demo.
 
 **Published (step 11, 11 Oct 2026):** `model.onnx`, `labels.json` and the model card are public at
@@ -550,6 +550,17 @@ through `kombish.classifier.predict` with the published model (B):
 
    All four are referred to 16123 or an officer; none is recognised as blast. Photo 2 (BLB at 0.940) is now
    below the BLB threshold. Had it been above, the app would have asked the BLB question first.
+
+6. **Redeployed and checked live (12 Oct 2026).** `python scripts/deploy_space.py --files-only` (the new flag
+   uploads the app files and leaves the Space's variables and secrets as they are, so a secret replaced in
+   the Space settings is not overwritten from `.env`). On https://raiyan465-kom-bish.hf.space:
+   - `scripts/smoke_hosted.py` on the five examples: 7 of 7 calls succeeded. The BLB example shows the BLB
+     question, the blast example the lesion question, healthy "no spray now", the other two the referral.
+   - BLB example: "yes" gives the BLB answer with `blb.mp3`; "not sure" gives the referral; a "yes" in the
+     lesion-question box gives the BLB question again. Blast example: "yes" in the BLB box gives the lesion
+     question again; "yes" to the lesion question gives the spray answer. "Show English" shows the translation.
+   - The four web photos sent to the live app: four referrals, no question.
+   - These checks added 11 consultation records to the log (test traffic, like the 8 from 11 Oct).
 
 ## Code checks done without the real model (11 Oct 2026)
 
