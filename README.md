@@ -46,7 +46,7 @@ Hack for Humanity BD 2026, Round 2 · Team Unsick · Track: Inclusive Rural Deve
 
 - **Live demo:** <https://raiyan465-kom-bish.hf.space> (open this direct link on a phone; the Space page is https://huggingface.co/spaces/Raiyan465/kom-bish)
 - **Mirror:** none. For a live pitch the same app runs from a laptop with `python app.py --share`.
-- **Demo video:** VIDEO_URL_TODO
+- **Demo video:** <https://youtu.be/UUdfN2WERf4> (unlisted, 1:58)
 - **Pitch deck:** [`deck/Kom_Bish_deck.pptx`](deck/Kom_Bish_deck.pptx) (8 slides, made by `deck/make_deck.py`)
 - **All links in one file:** [`submission/links.txt`](submission/links.txt)
 - **Test photos:** [`examples/`](examples/), one per rule path, credited in [`examples/CREDITS.md`](examples/CREDITS.md). The BLB and blast examples each show a confirmation question first.

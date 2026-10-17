@@ -1,9 +1,9 @@
-Kom Bish (কম বিষ) — Team Unsick — Hack for Humanity BD 2026, Round 2
+Team: Team Unsick
+Project: Kom Bish: AI Voice Crop Doctor for Fewer, Safer Sprays
+Prototype status: photo-based advice is live; Bangla voice input is built but switched off for the demo (planned for the pilot).
 Track: Inclusive Rural Development & Agriculture
-
-Live app:            https://raiyan465-kom-bish.hf.space
-                     How to try: tick the consent box, upload a rice-leaf photo, press পরামর্শ নিন.
-                     Test photos: https://github.com/Raiyan465-F1/kom-bish/tree/main/examples
-GitHub repository:   https://github.com/Raiyan465-F1/kom-bish   (submitted version: tag v1.0-submission)
-Hugging Face model:  https://huggingface.co/Raiyan465/kom-bish-rice-leaf   (revision v2.1)
-Demo video (YouTube): VIDEO_URL_TODO
+Live app: https://raiyan465-kom-bish.hf.space
+GitHub: https://github.com/Raiyan465-F1/kom-bish
+Model: https://huggingface.co/Raiyan465/kom-bish-rice-leaf
+Worker Studio showcase: https://h4hbd.ezassist.me/projects/22d8096a-7184-5b03-b892-beababc3744b
+Demo video (YouTube): https://youtu.be/UUdfN2WERf4 (also included as MP4 in this folder)

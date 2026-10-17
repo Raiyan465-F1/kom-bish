@@ -1,125 +1,152 @@
 1
-00:00:00,500 --> 00:00:04,000
-The shop that sells the spray
-often gives the advice too.
+00:00:00,250 --> 00:00:03,690
+Hello everyone, I am Raiyan Rahman and
+this is Unsick.
 
 2
-00:00:04,000 --> 00:00:08,000
-Kom Bish tells a rice farmer
-whether to spray at all.
+00:00:03,790 --> 00:00:07,230
+Bangladeshi farmer often sprays more
+pesticides than their crop need.
 
 3
-00:00:08,000 --> 00:00:11,000
-[App] Kom Bish is a computer program,
-not a government officer.
+00:00:07,570 --> 00:00:09,530
+Usually on a dealer's word,
 
 4
-00:00:11,000 --> 00:00:14,000
-[App] We do not keep your photo
-or your voice recording.
+00:00:10,950 --> 00:00:15,290
+Kom Bish, meaning less poison, helps them
+decide whether to spray at all.
 
 5
-00:00:14,000 --> 00:00:17,000
-[App] We keep only the disease and
-the advice, with no name or number.
+00:00:15,400 --> 00:00:17,200
+It's a free web app in Bangla.
 
 6
-00:00:17,000 --> 00:00:19,000
-[App] Tick if you agree.
+00:00:17,220 --> 00:00:19,460
+The farmer agrees to a short consent.
 
 7
-00:00:19,000 --> 00:00:22,000
-The farmer uploads a leaf photo.
-(Sample image: RiceLeafBD test split)
+00:00:19,960 --> 00:00:21,580
+We store no photos or names.
 
 8
-00:00:22,000 --> 00:00:25,000
-[App] Do the yellow or straw-coloured
-patches start at the leaf tip or edge
+00:00:21,600 --> 00:00:25,580
+Then they take a close-up photo of one
+rice leaf.
 
 9
-00:00:25,000 --> 00:00:28,000
-and run down along the edge?
-(The farmer answers yes.)
+00:00:25,600 --> 00:00:31,080
+[App] Kom Bish is a computer program, not
+a government officer.
 
 10
-00:00:28,000 --> 00:00:31,000
-[App] No insecticide needed,
-fix the fertiliser
+00:00:31,100 --> 00:00:33,860
+After ticking here, the farmer can upload
+their pictures.
 
 11
-00:00:31,000 --> 00:00:35,000
-[App voice] It looks like
-bacterial leaf blight.
+00:00:33,940 --> 00:00:38,980
+Here the AI sees bacterial blight,
 
 12
-00:00:35,000 --> 00:00:39,000
-[App voice] Insecticide does not
-cure it, so don't buy any.
+00:00:39,920 --> 00:00:43,700
+before giving any advice, it asks the
+farmer to confirm one symptom.
 
 13
-00:00:39,000 --> 00:00:42,000
-[App voice] Stop urea for now.
+00:00:44,060 --> 00:00:47,440
+The farmer says yes, the answer spoken in
+Bangla,
 
 14
-00:00:42,000 --> 00:00:47,000
-[App voice] After the rain, per bigha:
-5 kg potash and 3.5 kg gypsum.
+00:00:47,760 --> 00:00:50,700
+insecticide won't help, so don't buy it.
 
 15
-00:00:47,000 --> 00:00:52,000
-[App voice] Before spraying anything
-else, talk to your agriculture officer.
+00:00:50,920 --> 00:00:54,340
+Stop urea and add potash,
 
 16
-00:00:52,000 --> 00:00:55,000
-A second photo looks like blast.
-(Sample image: Paddy Doctor held-out)
+00:00:55,180 --> 00:00:56,530
+that's one spray avoided.
 
 17
-00:00:55,000 --> 00:01:00,000
-[App] Are the spots long like an eye,
-narrow ends, grey centre, brown edge?
+00:00:56,550 --> 00:01:00,130
+[App] It looks like bacterial leaf blight.
 
 18
-00:01:00,000 --> 00:01:03,000
-Only a "yes" gives spray advice.
+00:01:00,150 --> 00:01:03,630
+[App] Insecticide does not cure it, so
+don't buy any.
 
 19
-00:01:03,000 --> 00:01:06,000
-[App] A spray is needed,
-but done correctly
+00:01:03,650 --> 00:01:05,230
+So yeah,
 
 20
-00:01:06,000 --> 00:01:12,000
-[App voice] A tricyclazole-group
-fungicide. Dose: follow the packet.
+00:01:06,530 --> 00:01:08,480
+here it is asking for confirmation.
 
 21
-00:01:12,000 --> 00:01:18,000
-[App voice] Long sleeves, gloves,
-wind at your back. Wash afterwards.
+00:01:08,500 --> 00:01:11,030
+[App] It looks like blast.
 
 22
-00:01:18,000 --> 00:01:22,000
-A third photo is unclear.
+00:01:11,050 --> 00:01:13,880
+[App] This disease does need a spray, but
+done correctly.
 
 23
-00:01:22,000 --> 00:01:28,000
-[App] I can't be sure from this photo.
-Call 16123 or your local officer.
+00:01:13,900 --> 00:01:16,130
+[App] Before spraying, read the label on
+the packet or bottle
 
 24
-00:01:28,000 --> 00:01:33,000
-When it is not sure,
-Kom Bish does not guess.
+00:01:16,150 --> 00:01:18,380
+[App] and check the colour band.
 
 25
-00:01:33,000 --> 00:01:39,000
-Tested on photos from Bangladesh,
-India and the Philippines.
+00:01:18,400 --> 00:01:20,980
+[App] I can't be sure from this photo.
 
 26
-00:01:39,000 --> 00:01:45,000
-Code, live demo and evaluation:
-links on screen
+00:01:21,000 --> 00:01:23,900
+[App] Better not to answer than to give
+wrong advice.
+
+27
+00:01:23,920 --> 00:01:27,080
+So we tested it on photos,
+
+28
+00:01:27,100 --> 00:01:28,980
+of Bangladesh, India and Philippines.
+
+29
+00:01:29,000 --> 00:01:33,120
+But still the data set is not enough for
+it to judge every kind.
+
+30
+00:01:33,170 --> 00:01:39,350
+So our next step would be to train it on a
+bigger data set where it can be polished
+
+31
+00:01:39,370 --> 00:01:41,570
+more and can be more accurate.
+
+32
+00:01:41,590 --> 00:01:46,230
+But if we give images from like a real
+field, it might give some wrong answers.
+
+33
+00:01:46,250 --> 00:01:52,330
+So the only thing we can do is train it on
+local field photos and
+
+34
+00:01:52,350 --> 00:01:57,930
+as well as inputs. So yes, this is the
+prototype for Kom Bish, thank you.

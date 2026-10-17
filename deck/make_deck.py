@@ -36,7 +36,8 @@ SHOT_RATIO = 412 / 860            # width / height of a phone screenshot from ta
 
 GREEN, DARK, GREY = RGBColor(0x2E, 0x7D, 0x32), RGBColor(0x1B, 0x5E, 0x20), RGBColor(0x55, 0x55, 0x55)
 INK, WHITE = RGBColor(0x1B, 0x1B, 0x1B), RGBColor(0xFF, 0xFF, 0xFF)
-REAL_FILL, PLAN_FILL, PLAN_LINE = RGBColor(0xE8, 0xF3, 0xE8), RGBColor(0xFF, 0xF3, 0xD6), RGBColor(0xE6, 0x7E, 0x00)
+# Light theme: white slides, dark text, one accent colour (green). "Planned" is grey and dashed, not a second colour.
+REAL_FILL, PLAN_FILL, PLAN_LINE = RGBColor(0xE8, 0xF3, 0xE8), RGBColor(0xF5, 0xF5, 0xF5), RGBColor(0x80, 0x80, 0x80)
 ROW_FILL = RGBColor(0xF4, 0xF8, 0xF4)
 
 S: dict = {}
@@ -81,7 +82,7 @@ def text(slide, lines, left, top, width, height, size: float = 18, bold: bool = 
 
 
 def box(slide, label: str, left, top, width, height, size: float = 13, planned: bool = False, bold: bool = False):
-    """A rounded box. Green and solid = real and live; orange and dashed = planned."""
+    """A rounded box. Green and solid = real and live; grey and dashed = planned."""
     shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height))
     shape.fill.solid()
     shape.fill.fore_color.rgb = PLAN_FILL if planned else REAL_FILL
@@ -108,8 +109,16 @@ def arrow(slide, left, top, width=0.24, height=0.3, down: bool = False):
     return shape
 
 
-def new_slide(title: str, source: str = "", size: float = 30):
+def white_slide():
+    """A blank slide with an explicit white background (the light theme on every slide, the title slide too)."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])   # blank: every shape is placed here
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = WHITE
+    return slide
+
+
+def new_slide(title: str, source: str = "", size: float = 30):
+    slide = white_slide()
     text(slide, title, 0.6, 0.35, 12.1, 0.9, size=size, bold=True, color=DARK)
     rule = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.6), Inches(1.22), Inches(12.1), Inches(0.04))
     rule.fill.solid()
@@ -148,12 +157,12 @@ def table(slide, rows: list[list[str]], left, top, widths: list[float], row_heig
             cell.text = str(value)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
             cell.fill.solid()
-            cell.fill.fore_color.rgb = DARK if r == 0 else (ROW_FILL if r % 2 else WHITE)
+            cell.fill.fore_color.rgb = REAL_FILL if r == 0 else (ROW_FILL if r % 2 else WHITE)   # no dark header band
             for p in cell.text_frame.paragraphs:
                 p.alignment = PP_ALIGN.LEFT if c == 0 else PP_ALIGN.CENTER
                 for run in p.runs:
                     run.font.size, run.font.bold = Pt(size), r == 0 or c == 0
-                    run.font.color.rgb = WHITE if r == 0 else INK
+                    run.font.color.rgb = INK
     return tbl
 
 
@@ -184,7 +193,7 @@ def build(team: str, video_url: str, demo_url: str) -> None:
         links.append(f"Video: {video_url}")
 
     # 1 ---------------------------------------------------------------- title
-    s = prs.slides.add_slide(prs.slide_layouts[6])
+    s = white_slide()
     text(s, "Kom Bish (কম বিষ)", 0.7, 1.0, 8.6, 1.1, size=54, bold=True, color=DARK)
     text(s, "A Bangla rice adviser that says whether to spray at all.", 0.7, 2.25, 8.6, 1.0, size=28, color=INK)
     text(s, "Safe by design: it refers what it doesn't know.", 0.7, 3.35, 8.6, 0.6, size=22, bold=True, color=GREEN)
